@@ -120,7 +120,7 @@ export const transactionsEngine = {
           categoryId,
           categoryName: category.name,
           total,
-          percentage: divideCents(total, totalExpenses) / 100,
+          percentage: (total / totalExpenses) * 100,
           color: category.color,
           icon: category.icon,
         });

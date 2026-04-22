@@ -1,4 +1,9 @@
 import React from 'react';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface DonutChartProps {
   data: { label: string; value: number; color: string }[];
@@ -8,52 +13,45 @@ interface DonutChartProps {
 
 export const DonutChart: React.FC<DonutChartProps> = ({
   data,
-  size = 120,
-  strokeWidth = 24,
+  size = 200,
 }) => {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  if (total === 0) {
-    return (
-      <div className="flex items-center justify-center">
-        <div
-          className="rounded-full bg-gray-100"
-          style={{ width: size, height: size }}
-        />
-      </div>
-    );
-  }
+  const chartData = {
+    labels: data.map(d => d.label),
+    datasets: [
+      {
+        data: data.map(d => d.value),
+        backgroundColor: data.map(d => d.color),
+        borderColor: data.map(d => d.color),
+        borderWidth: 1,
+        cutout: '75%', // This controls the "donut" hole size
+      },
+    ],
+  };
 
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const center = size / 2;
-
-  let currentOffset = 0;
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: false, // We use our own custom legend below the chart
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        titleColor: '#1e293b',
+        bodyColor: '#1e293b',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        padding: 10,
+        boxPadding: 5,
+        usePointStyle: true,
+      },
+    },
+  };
 
   return (
-    <div className="flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
-        {data.map((item, index) => {
-          const percentage = item.value / total;
-          const dashLength = percentage * circumference;
-          const dashOffset = currentOffset;
-          currentOffset += dashLength;
-
-          return (
-            <circle
-              key={index}
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={item.color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={`${dashLength} ${circumference - dashLength}`}
-              strokeDashoffset={-dashOffset}
-              strokeLinecap="round"
-            />
-          );
-        })}
-      </svg>
+    <div style={{ width: size, height: size }} className="relative flex items-center justify-center mx-auto">
+      <Doughnut data={chartData} options={options} />
     </div>
   );
 };
