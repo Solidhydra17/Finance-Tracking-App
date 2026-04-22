@@ -27,7 +27,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="px-4 space-y-6 pb-24">
       {/* App Header */}
-      <header className="py-4">
+      <header className="pt-4">
         <h1 className="text-3xl font-extrabold text-midblue tracking-wider">PITAKA</h1>
       </header>
 
@@ -35,7 +35,9 @@ export const DashboardPage: React.FC = () => {
       <div className="bg-midblue rounded-3xl p-6 shadow-medium border-2 border-midblue">
         <div className="mb-6">
           <p className="text-xs font-bold text-white uppercase tracking-widest mb-1">Remaining Balance</p>
-          <h2 className="text-4xl font-black text-white">
+          <h2 className={`pt-2 font-black text-white whitespace-nowrap overflow-hidden transition-all duration-300 ${centsToDisplay(data.summary.totalBalance).length > 15 ? 'text-2xl' :
+              centsToDisplay(data.summary.totalBalance).length > 12 ? 'text-3xl' : 'text-4xl'
+            }`}>
             {centsToDisplay(data.summary.totalBalance)}
           </h2>
         </div>

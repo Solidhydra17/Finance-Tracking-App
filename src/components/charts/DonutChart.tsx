@@ -1,5 +1,5 @@
-import React from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { useState, useEffect } from 'react';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartEvent, ActiveElement } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 
 // Register ChartJS components
@@ -15,6 +15,17 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   data,
   size = 200,
 }) => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [showHint, setShowHint] = useState(true);
+
+  // Hide hint after 5 seconds or on interaction
+  useEffect(() => {
+    const timer = setTimeout(() => setShowHint(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+
   const chartData = {
     labels: data.map(d => d.label),
     datasets: [
@@ -23,7 +34,8 @@ export const DonutChart: React.FC<DonutChartProps> = ({
         backgroundColor: data.map(d => d.color),
         borderColor: data.map(d => d.color),
         borderWidth: 1,
-        cutout: '75%', // This controls the "donut" hole size
+        cutout: '75%',
+        hoverOffset: 10,
       },
     ],
   };
@@ -31,27 +43,59 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   const options = {
     responsive: true,
     maintainAspectRatio: true,
+    onHover: (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (elements.length > 0) {
+        setActiveIndex(elements[0].index);
+        setShowHint(false);
+      } else {
+        setActiveIndex(null);
+      }
+    },
     plugins: {
       legend: {
-        display: false, // We use our own custom legend below the chart
+        display: false,
       },
       tooltip: {
-        enabled: true,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        titleColor: '#1e293b',
-        bodyColor: '#1e293b',
-        borderColor: '#e2e8f0',
-        borderWidth: 1,
-        padding: 10,
-        boxPadding: 5,
-        usePointStyle: true,
+        enabled: false, // We'll show info in the center instead
       },
+    },
+    layout: {
+      padding: 15, // Gives room for the hoverOffset expansion
     },
   };
 
+  const activeCategory = activeIndex !== null ? data[activeIndex] : null;
+  const percentage = activeCategory ? ((activeCategory.value / total) * 100).toFixed(0) : 0;
+
   return (
     <div style={{ width: size, height: size }} className="relative flex items-center justify-center mx-auto">
+      {/* Chart */}
       <Doughnut data={chartData} options={options} />
+
+      {/* Center Display */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-4">
+        {activeCategory ? (
+          <>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">
+              {activeCategory.label}
+            </p>
+            <p className="text-2xl font-black text-midblue leading-none">
+              {percentage}%
+            </p>
+          </>
+        ) : (
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">
+            Tap to<br />explore
+          </p>
+        )}
+      </div>
+
+      {/* Onboarding Tooltip */}
+      <div className={`absolute top-8 left-1/2 -translate-x-1/2 bg-midblue text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg animate-bounce whitespace-nowrap z-10 transition-opacity duration-700 pointer-events-none ${showHint ? 'opacity-100' : 'opacity-0'
+        }`}>
+        Click segments for details
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-midblue rotate-45" />
+      </div>
     </div>
   );
 };
