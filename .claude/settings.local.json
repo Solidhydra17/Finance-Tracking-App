@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(where npm:*)",
+      "Bash(cmd:*)",
+      "Bash(powershell:*)",
+      "Bash(C:/nodejs/npm.cmd:*)",
+      "Bash(\"C:/nodejs/npm.cmd\" install:*)",
+      "Bash(\"C:/nodejs/node.exe\" \"C:/nodejs/node_modules/npm/bin/npm-cli.js\" install)",
+      "Bash(set \"PATH=C:\\\\nodejs;%PATH%\")",
+      "Bash(\"C:/nodejs/npm.cmd\" run:*)"
+    ]
+  }
+}
