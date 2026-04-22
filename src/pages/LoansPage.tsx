@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Input, TextArea, Button } from '@/components/ui';
+import { Input, TextArea, Button, Icon } from '@/components/ui';
 import { useLoans } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents, centsToDisplay } from '@/lib/money';
@@ -58,7 +58,7 @@ export const LoansPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin text-3xl">⏳</div>
+        <Icon name="ArrowPathIcon" className="w-8 h-8 animate-spin text-midblue" />
       </div>
     );
   }
@@ -74,7 +74,9 @@ export const LoansPage: React.FC = () => {
 
       {loans.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p className="text-4xl mb-4">📋</p>
+          <div className="flex justify-center mb-4">
+            <Icon name="BanknotesIcon" className="w-16 h-16 text-gray-200" />
+          </div>
           <p>No loans yet</p>
         </div>
       ) : (
@@ -83,9 +85,10 @@ export const LoansPage: React.FC = () => {
             <div key={loan.id} className="bg-white rounded-2xl shadow-soft p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">
-                    {loan.direction === 'lent' ? '📤' : '📥'}
-                  </span>
+                  <Icon 
+                    name={loan.direction === 'lent' ? 'ArrowUpCircleIcon' : 'ArrowDownCircleIcon'} 
+                    className={`w-8 h-8 ${loan.direction === 'lent' ? 'text-midblue' : 'text-warning-500'}`}
+                  />
                   <div>
                     <p className="font-semibold text-gray-900">
                       {loan.counterpartyName}
@@ -99,7 +102,7 @@ export const LoansPage: React.FC = () => {
                   onClick={() => deleteLoan(loan.id!)}
                   className="p-2 text-gray-400 hover:text-danger-500"
                 >
-                  🗑️
+                  <Icon name="TrashIcon" className="w-5 h-5" />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -140,7 +143,7 @@ export const LoansPage: React.FC = () => {
               type="button"
               onClick={() => setDirection('borrowed')}
               className={`
-                flex-1 py-3 rounded-xl font-medium transition-all
+                flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2
                 ${
                   direction === 'borrowed'
                     ? 'bg-warning-500 text-white'
@@ -148,21 +151,21 @@ export const LoansPage: React.FC = () => {
                 }
               `}
             >
-              📥 Borrowed
+              <Icon name="ArrowDownCircleIcon" className="w-5 h-5" /> Borrowed
             </button>
             <button
               type="button"
               onClick={() => setDirection('lent')}
               className={`
-                flex-1 py-3 rounded-xl font-medium transition-all
+                flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2
                 ${
                   direction === 'lent'
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-midblue text-white'
                     : 'bg-gray-100 text-gray-600'
                 }
               `}
             >
-              📤 Lent
+              <Icon name="ArrowUpCircleIcon" className="w-5 h-5" /> Lent
             </button>
           </div>
 
@@ -182,7 +185,7 @@ export const LoansPage: React.FC = () => {
             placeholder="0.00"
             value={principalDisplay}
             onChange={(e) => setPrincipalDisplay(e.target.value)}
-            leftIcon="$"
+            leftIcon={<Icon name="CurrencyDollarIcon" className="w-5 h-5 text-gray-400" />}
             required
           />
 

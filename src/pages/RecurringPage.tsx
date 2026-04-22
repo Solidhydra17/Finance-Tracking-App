@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Input, TextArea, Button } from '@/components/ui';
+import { Input, TextArea, Button, Icon } from '@/components/ui';
 import { useRecurring } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents, centsToDisplay } from '@/lib/money';
@@ -59,7 +59,7 @@ export const RecurringPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin text-3xl">⏳</div>
+        <Icon name="ArrowPathIcon" className="w-8 h-8 animate-spin text-midblue" />
       </div>
     );
   }
@@ -75,7 +75,9 @@ export const RecurringPage: React.FC = () => {
 
       {rules.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p className="text-4xl mb-4">🔄</p>
+          <div className="flex justify-center mb-4">
+            <Icon name="ArrowPathIcon" className="w-16 h-16 text-gray-200" />
+          </div>
           <p>No recurring rules yet</p>
         </div>
       ) : (
@@ -84,7 +86,7 @@ export const RecurringPage: React.FC = () => {
             <div key={rule.id} className="bg-white rounded-2xl shadow-soft p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">🔄</span>
+                  <Icon name="ArrowPathIcon" className="w-6 h-6 text-midblue" />
                   <div>
                     <p className="font-semibold text-gray-900">
                       {rule.description || 'Recurring'}
@@ -98,7 +100,7 @@ export const RecurringPage: React.FC = () => {
                   onClick={() => deleteRule(rule.id!)}
                   className="p-2 text-gray-400 hover:text-danger-500"
                 >
-                  🗑️
+                  <Icon name="TrashIcon" className="w-5 h-5" />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -165,7 +167,7 @@ export const RecurringPage: React.FC = () => {
             placeholder="0.00"
             value={amountDisplay}
             onChange={(e) => setAmountDisplay(e.target.value)}
-            leftIcon="$"
+            leftIcon={<Icon name="CurrencyDollarIcon" className="w-5 h-5 text-gray-400" />}
             required
           />
 

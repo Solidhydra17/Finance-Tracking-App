@@ -11,6 +11,7 @@ import { FilterBar, FilterChip } from "@/components/layout";
 import { useTransactions, useCategories } from "@/hooks";
 import { useUIStore } from "@/store";
 import { centsToDisplay } from "@/lib/money";
+import { Icon } from "@/components/ui";
 import type { TransactionTypeFilter } from "@/types";
 
 export const TransactionsPage: React.FC = () => {
@@ -52,7 +53,7 @@ export const TransactionsPage: React.FC = () => {
                     placeholder="Search transactions..."
                     value={searchTerm}
                     onChange={handleSearch}
-                    leftIcon="🔍"
+                    leftIcon={<Icon name="MagnifyingGlassIcon" className="w-5 h-5 text-gray-400" />}
                 />
             </div>
 
@@ -79,7 +80,9 @@ export const TransactionsPage: React.FC = () => {
 
             {transactions.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                    <p className="text-4xl mb-4">📭</p>
+                    <div className="flex justify-center mb-4">
+                        <Icon name="InboxIcon" className="w-16 h-16 text-gray-300" />
+                    </div>
                     <p>No transactions found</p>
                 </div>
             ) : (
@@ -101,7 +104,11 @@ export const TransactionsPage: React.FC = () => {
                                                         : "bg-danger-100"
                                                 }`}
                                             >
-                                                {category?.icon || "💰"}
+                                                {category?.icon ? (
+                                                    <Icon name={category.icon} className="w-6 h-6" style={{ color: category.color }} />
+                                                ) : (
+                                                    <Icon name="CurrencyDollarIcon" className="w-6 h-6 text-gray-400" />
+                                                )}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-gray-900">
@@ -142,7 +149,7 @@ export const TransactionsPage: React.FC = () => {
                                             }
                                             className="ml-2 p-2 text-gray-400 hover:text-danger-500 transition-colors"
                                         >
-                                            🗑️
+                                            <Icon name="TrashIcon" className="w-5 h-5" />
                                         </button>
                                     </CardBody>
                                 </Card>

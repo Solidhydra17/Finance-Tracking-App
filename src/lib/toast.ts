@@ -8,10 +8,10 @@ export interface Toast {
 }
 
 const TOAST_ICONS: Record<ToastType, string> = {
-  success: '✓',
-  error: '✕',
-  warning: '⚠',
-  info: 'ℹ',
+  success: 'CheckCircleIcon',
+  error: 'XCircleIcon',
+  warning: 'ExclamationTriangleIcon',
+  info: 'InformationCircleIcon',
 };
 
 const TOAST_COLORS: Record<ToastType, string> = {
