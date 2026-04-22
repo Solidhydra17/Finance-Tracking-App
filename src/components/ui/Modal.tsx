@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ModalProps {
@@ -16,6 +16,9 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   size = 'md',
 }) => {
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
+
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -25,16 +28,26 @@ export const Modal: React.FC<ModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
+    } else if (shouldRender) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        setIsClosing(false);
+      }, 300); // Matches animation duration
+      return () => clearTimeout(timer);
     }
+    
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
     };
-  }, [isOpen, handleEscape]);
+  }, [isOpen, shouldRender, handleEscape]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   const sizeClasses = {
     sm: 'max-w-sm',
@@ -44,15 +57,21 @@ export const Modal: React.FC<ModalProps> = ({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+        className={`
+          absolute inset-0 bg-black/50 backdrop-blur-sm 
+          ${isClosing ? 'animate-[fadeOut_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[fadeIn_0.2s_ease-out]'}
+        `}
         onClick={onClose}
       />
+      
+      {/* Modal Content */}
       <div
         className={`
           relative bg-white rounded-t-3xl sm:rounded-2xl shadow-hard
           w-full ${sizeClasses[size]} max-h-[90vh] overflow-auto
-          animate-[slideUp_0.3s_ease-out]
+          ${isClosing ? 'animate-[slideOutDown_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[slideUp_0.3s_ease-out]'}
         `}
       >
         {title && (

@@ -1,21 +1,81 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { DonutChart } from '@/components/charts';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { useDashboard } from '@/hooks';
 import { useUIStore } from '@/store';
 import { Icon } from '@/components/ui';
 import { centsToDisplay } from '@/lib/money';
+import { Link } from 'react-router-dom';
+const LOADING_MESSAGES = [
+  "Nagbibilang ng natitirang barya…",
+  "Fetching data… at pati utang mo",
+  "Balancing… hindi lang budget, pati emotions",
+  "Manifesting: Sana dumami pera habang naglo-load",
+  "Analyzing expenses… result: petsa de peligro"
+];
+
+const FunnyLoadingScreen = () => {
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    // Message rotation
+    const messageInterval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 2000);
+
+    // Simulated progress bar (3 seconds total)
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) return 100;
+        return prev + 1;
+      });
+    }, 50);
+
+    return () => {
+      clearInterval(messageInterval);
+      clearInterval(progressInterval);
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center p-8 z-50">
+      <div className="w-full max-w-xs space-y-8 text-center">
+        {/* Animated Icon/Logo placeholder */}
+        <div className="flex justify-center">
+          <div className="w-16 h-16 bg-midblue/10 rounded-3xl flex items-center justify-center animate-bounce">
+            <Icon name="BanknotesIcon" className="w-8 h-8 text-midblue" />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-black text-midblue tracking-tight">
+            KURIPOT
+          </h2>
+          
+          {/* Progress Bar Container */}
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-midblue transition-all duration-300 ease-out shadow-[0_0_10px_rgba(40,92,204,0.3)]"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <p className="text-sm font-bold text-gray-500 animate-pulse min-h-[40px] flex items-center justify-center px-4">
+            {LOADING_MESSAGES[messageIndex]}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const DashboardPage: React.FC = () => {
   const { filters, showLoans } = useUIStore();
   const { data, isLoading } = useDashboard(filters, showLoans);
 
   if (isLoading || !data) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Icon name="ArrowPathIcon" className="w-8 h-8 animate-spin text-midblue" />
-      </div>
-    );
+    return <FunnyLoadingScreen />;
   }
 
   const chartData = data.categoryBreakdown.map((c) => ({
@@ -28,7 +88,7 @@ export const DashboardPage: React.FC = () => {
     <div className="px-4 space-y-6 pb-24">
       {/* App Header */}
       <header className="pt-4">
-        <h1 className="text-3xl font-extrabold text-midblue tracking-wider">PITAKA</h1>
+        <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
       </header>
 
       {/* Balance Card */}
@@ -90,6 +150,14 @@ export const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              <div className="pt-2">
+                <Link 
+                  to="/transactions" 
+                  className="w-full flex items-center justify-center py-3 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-xs font-bold uppercase tracking-widest hover:border-midblue hover:text-midblue transition-all"
+                >
+                  See more
+                </Link>
+              </div>
             </div>
           </div>
         ) : (

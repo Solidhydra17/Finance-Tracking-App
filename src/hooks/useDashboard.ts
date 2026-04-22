@@ -4,7 +4,7 @@ import type { FilterState } from '@/types';
 import { useUIStore } from '@/store';
 import { seedRandomData } from '@/lib/mockDataGenerator';
 
-const DELAY_MS = 3000;
+const DELAY_MS = 5000;
 
 export function useDashboard(filters: FilterState, showLoans: boolean = false) {
   const [data, setData] = useState<DashboardData | null>(null);
