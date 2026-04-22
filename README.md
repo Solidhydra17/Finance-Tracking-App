@@ -1,5 +1,6 @@
 # Finance Tracker
 
+-- Test update
 A production-ready offline-first personal finance tracking application.
 
 ## Features
