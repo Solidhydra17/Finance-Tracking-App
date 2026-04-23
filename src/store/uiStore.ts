@@ -32,6 +32,8 @@ interface UIState {
   // Loading states
   isLoading: boolean;
   setLoading: (loading: boolean) => void;
+  isFirstLoad: boolean;
+  setFirstLoad: (first: boolean) => void;
 }
 
 const getDefaultDateRange = (): DateRange => {
@@ -98,4 +100,6 @@ export const useUIStore = create<UIState>((set) => ({
   // Loading
   isLoading: false,
   setLoading: (loading) => set({ isLoading: loading }),
+  isFirstLoad: true,
+  setFirstLoad: (first) => set({ isFirstLoad: first }),
 }));

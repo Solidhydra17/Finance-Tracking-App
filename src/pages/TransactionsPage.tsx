@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Card,
     CardBody,
@@ -15,6 +16,7 @@ import type { TransactionTypeFilter } from "@/types";
 import { formatDateLocal, parseDateLocal, getMonthRange } from "@/lib/date";
 
 export const TransactionsPage: React.FC = () => {
+    const navigate = useNavigate();
     const { filters, setFilters } = useUIStore();
     const { categories } = useCategories("both");
     const { transactions, pagination, isLoading, deleteTransaction, setPage } =
@@ -78,7 +80,7 @@ export const TransactionsPage: React.FC = () => {
     }, [transactions]);
 
     return (
-        <div id="page-transactions" className="pb-16">
+        <div id="page-transactions">
             <header className="px-4 pt-4 mb-2">
                 <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
             </header>
@@ -93,26 +95,27 @@ export const TransactionsPage: React.FC = () => {
             </div>
 
             <FilterBar id="transactions-filter-bar">
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
                     <FilterChip
                         id="filter-type-all"
+                        isActive={filters.transactionType === "all"}
                         onClick={() => handleTypeFilter("all")}
                     >
                         All
                     </FilterChip>
                     <FilterChip
                         id="filter-type-income"
+                        isActive={filters.transactionType === "income"}
                         onClick={() => handleTypeFilter("income")}
                     >
                         Income
                     </FilterChip>
                     <FilterChip
                         id="filter-type-expense"
+                        isActive={filters.transactionType === "expense"}
                         onClick={() => handleTypeFilter("expense")}
                     >
                         Expenses
                     </FilterChip>
-                </div>
             </FilterBar>
             <div className="mb-4"></div>
 
@@ -177,36 +180,54 @@ export const TransactionsPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="min-h-[400px] transition-all duration-300">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center h-64 space-y-4 animate-[fadeIn_0.2s_ease-in-out]">
+            <div className="min-h-[400px] relative">
+                {/* Subtle loading overlay for updates */}
+                {isLoading && transactions.length > 0 && (
+                    <div className="absolute inset-x-0 top-0 z-30 flex justify-center pt-8">
+                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2 animate-bounce">
+                            <div className="animate-spin text-midblue">
+                                <Icon name="ArrowPathIcon" className="w-4 h-4" />
+                            </div>
+                            <span className="text-[10px] font-black text-midblue uppercase tracking-widest">Updating...</span>
+                        </div>
+                    </div>
+                )}
+
+                {isLoading && transactions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 space-y-4">
                         <div className="animate-spin text-midblue">
                             <Icon name="ArrowPathIcon" className="w-8 h-8" />
                         </div>
-                        <p className="text-sm font-bold text-gray-400 animate-pulse">Fetching transactions...</p>
+                        <p className="text-sm font-bold text-gray-400">Fetching transactions...</p>
                     </div>
                 ) : transactions.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 animate-[fadeIn_0.2s_ease-in-out]">
+                    <div className="text-center py-12 text-gray-500">
                         <div className="flex justify-center mb-4">
                             <Icon name="InboxIcon" className="w-16 h-16 text-gray-300" />
                         </div>
                         <p className="font-bold">No transactions found</p>
                     </div>
                 ) : (
-                    <>
-                        <div id="transactions-list" className="px-4 animate-[fadeIn_0.2s_ease-in-out]">
+                    <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                        <div id="transactions-list" className="px-4">
                         {Object.entries(groupedTransactions).map(([date, items]) => (
                             <div key={date} className="mb-6">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 py-2">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 py-3 sticky top-0 z-[5]">
                                     {date}
                                 </h3>
                                 <div id={`date-group-${date}`} className="space-y-2">
                                     {items.map((transaction) => {
                                         const category = getCategoryById(transaction.categoryId);
                                         return (
-                                            <Card key={transaction.id} className="border-0 shadow-soft">
+                                            <Card 
+                                                key={transaction.id} 
+                                                className="border-0 shadow-soft transition-all cursor-pointer overflow-hidden"
+                                            >
                                                 <CardBody className="flex items-center justify-between p-3">
-                                                    <div className="flex items-center gap-3">
+                                                    <div 
+                                                        className="flex items-center gap-3 flex-1"
+                                                        onClick={() => navigate(`/add-transaction?edit=${transaction.id}`)}
+                                                    >
                                                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${transaction.type === "income" ? "bg-success-50" : "bg-danger-50"
                                                             }`}>
                                                             {category?.icon ? (
@@ -226,14 +247,19 @@ export const TransactionsPage: React.FC = () => {
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
-                                                        <p className={`font-black text-sm ${transaction.type === "income" ? "text-success-600" : "text-danger-600"
-                                                            }`}>
+                                                        <p 
+                                                            className={`font-black text-sm ${transaction.type === "income" ? "text-success-600" : "text-danger-600"}`}
+                                                            onClick={() => navigate(`/add-transaction?edit=${transaction.id}`)}
+                                                        >
                                                             {transaction.type === "income" ? "+" : "-"}
                                                             {centsToDisplay(transaction.amount)}
                                                         </p>
                                                         <button
-                                                            onClick={() => handleDelete(transaction.id!)}
-                                                            className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDelete(transaction.id!);
+                                                            }}
+                                                            className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
                                                         >
                                                             <Icon name="TrashIcon" className="w-4 h-4" />
                                                         </button>
@@ -255,7 +281,7 @@ export const TransactionsPage: React.FC = () => {
                             onPageChange={setPage}
                         />
                     </div>
-                </>
+                </div>
             )}
             </div>
             {/* Month Picker Modal */}

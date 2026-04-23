@@ -11,8 +11,9 @@ export const AddTransactionPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialType = (searchParams.get('type') as TransactionType) || 'expense';
 
+  const editId = searchParams.get('edit');
   const { categories } = useCategories('both');
-  const { createTransaction } = useTransactions(useUIStore.getState().filters);
+  const { createTransaction, updateTransaction } = useTransactions(useUIStore.getState().filters);
   const { addToast } = useUIStore();
 
   const [type, setType] = useState<TransactionType>(initialType);
@@ -21,14 +22,44 @@ export const AddTransactionPage: React.FC = () => {
   const [categoryId, setCategoryId] = useState<number>(0);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Update type if query param changes
+  
+  // Ensure page starts at the top
   useEffect(() => {
-    const queryType = searchParams.get('type') as TransactionType;
-    if (queryType && (queryType === 'income' || queryType === 'expense')) {
-      setType(queryType);
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Fetch transaction data if in edit mode
+  useEffect(() => {
+    if (editId) {
+      const fetchTransaction = async () => {
+        try {
+          const { transactionsEngine } = await import('@/domain/transactions/transactionsEngine');
+          const transaction = await transactionsEngine.getById(Number(editId));
+          if (transaction) {
+            setType(transaction.type);
+            setAmountDisplay((transaction.amount / 100).toString());
+            setDate(transaction.date);
+            setCategoryId(transaction.categoryId);
+            setNote(transaction.note);
+          }
+        } catch (error) {
+          console.error('Failed to fetch transaction for editing:', error);
+          addToast('error', 'Failed to load transaction data');
+        }
+      };
+      fetchTransaction();
     }
-  }, [searchParams]);
+  }, [editId, addToast]);
+
+  // Update type if query param changes (only if not in edit mode)
+  useEffect(() => {
+    if (!editId) {
+      const queryType = searchParams.get('type') as TransactionType;
+      if (queryType && (queryType === 'income' || queryType === 'expense')) {
+        setType(queryType);
+      }
+    }
+  }, [searchParams, editId]);
 
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
@@ -65,7 +96,16 @@ export const AddTransactionPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      if (isRecurring) {
+      if (editId) {
+        // Edit existing transaction
+        await updateTransaction(Number(editId), {
+          type,
+          amount,
+          date,
+          categoryId,
+          note,
+        });
+      } else if (isRecurring) {
         const { recurringRepository } = await import('@/storage/indexeddb');
         const startDate = new Date(date);
         await recurringRepository.create({
@@ -91,12 +131,11 @@ export const AddTransactionPage: React.FC = () => {
           note,
           source: 'manual',
         });
-        addToast('success', 'Transaction added successfully');
       }
       navigate(-1);
     } catch (error) {
-      console.error('Failed to create transaction:', error);
-      addToast('error', 'Failed to add transaction');
+      console.error('Failed to save transaction:', error);
+      addToast('error', 'Failed to save transaction');
     } finally {
       setIsSubmitting(false);
     }
@@ -117,7 +156,7 @@ export const AddTransactionPage: React.FC = () => {
       const { categoryRepository } = await import('@/storage/indexeddb');
       await categoryRepository.create({
         name: newCategoryName,
-        type: type === 'both' ? 'both' : type,
+        type: type,
         color: newCategoryColor,
         icon: 'TagIcon', // Default icon for custom categories
         isCustom: true
@@ -143,7 +182,7 @@ export const AddTransactionPage: React.FC = () => {
         >
           <Icon name="ArrowLeftIcon" className="w-6 h-6 text-gray-600" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Add {type === 'income' ? 'Income' : 'Expense'}</h1>
+        <h1 className="text-xl font-bold text-gray-900">{editId ? 'Edit' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}</h1>
       </header>
 
       <div id="add-transaction-content" className="px-4 py-6">
@@ -309,7 +348,7 @@ export const AddTransactionPage: React.FC = () => {
             className={`w-full py-5 text-xl font-bold rounded-2xl shadow-xl transition-all active:scale-95 ${type === 'income' ? 'bg-success-500 hover:bg-success-600' : 'bg-danger-500 hover:bg-danger-600'
               }`}
           >
-            Save {type === 'income' ? 'Income' : 'Expense'}
+            {editId ? 'Update' : 'Save'} {type === 'income' ? 'Income' : 'Expense'}
           </Button>
         </form>
       </div>
@@ -404,7 +443,7 @@ export const AddTransactionPage: React.FC = () => {
 
                 <div className="flex gap-3 pt-4">
                     <Button 
-                        variant="outline" 
+                        variant="secondary" 
                         onClick={() => setIsAddingCategory(false)}
                         className="flex-1"
                     >

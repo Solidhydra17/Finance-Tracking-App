@@ -76,12 +76,14 @@ const FunnyLoadingScreen = () => {
 };
 
 export const DashboardPage: React.FC = () => {
-  const { filters, showLoans } = useUIStore();
+  const { filters, showLoans, isFirstLoad } = useUIStore();
   const { data, isLoading } = useDashboard(filters, showLoans);
 
-  if (isLoading || !data) {
+  if (isFirstLoad || (isLoading && !data)) {
     return <FunnyLoadingScreen />;
   }
+
+  if (!data) return null;
 
   const chartData = data.categoryBreakdown.map((c: any) => ({
     label: c.categoryName,
