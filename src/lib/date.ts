@@ -18,10 +18,33 @@ export const parseDateLocal = (dateStr: string): Date => {
 };
 
 /**
+ * Get the start and end dates of a week for a given Date (starts on Sunday)
+ */
+export const getWeekRange = (date: Date) => {
+  const start = new Date(date);
+  const day = start.getDay();
+  start.setDate(start.getDate() - day);
+  
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  
+  return { start, end };
+};
+
+/**
  * Get the start and end dates of a month for a given Date
  */
 export const getMonthRange = (date: Date) => {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
   const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  return { start, end };
+};
+
+/**
+ * Get the start and end dates of a year for a given Date
+ */
+export const getYearRange = (date: Date) => {
+  const start = new Date(date.getFullYear(), 0, 1);
+  const end = new Date(date.getFullYear(), 11, 31);
   return { start, end };
 };

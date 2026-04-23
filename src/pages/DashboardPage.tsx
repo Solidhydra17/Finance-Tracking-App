@@ -75,15 +75,36 @@ const FunnyLoadingScreen = () => {
   );
 };
 
+import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/lib/date';
+
 export const DashboardPage: React.FC = () => {
-  const { filters, showLoans, isFirstLoad } = useUIStore();
+  const { filters, setFilters, showLoans, isFirstLoad } = useUIStore();
   const { data, isLoading } = useDashboard(filters, showLoans);
+
+  const handlePresetChange = (preset: 'week' | 'month' | 'year') => {
+    const now = new Date();
+    let range;
+    
+    if (preset === 'week') range = getWeekRange(now);
+    else if (preset === 'month') range = getMonthRange(now);
+    else range = getYearRange(now);
+
+    setFilters({
+      dateRange: {
+        preset,
+        startDate: formatDateLocal(range.start),
+        endDate: formatDateLocal(range.end)
+      }
+    });
+  };
 
   if (isFirstLoad || (isLoading && !data)) {
     return <FunnyLoadingScreen />;
   }
 
   if (!data) return null;
+
+  const currentPreset = filters.dateRange.preset;
 
   const chartData = data.categoryBreakdown.map((c: any) => ({
     label: c.categoryName,
@@ -127,13 +148,31 @@ export const DashboardPage: React.FC = () => {
 
       {/* Filter Section */}
       <div id="dashboard-filters" className="flex gap-2 py-2">
-        <button id="filter-week" className="flex-1 py-2 px-4 rounded-xl border-2 border-midblue text-midblue font-bold text-sm bg-white hover:bg-midblue/5 transition-colors">
+        <button 
+          id="filter-week" 
+          onClick={() => handlePresetChange('week')}
+          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
+            currentPreset === 'week' ? 'bg-midblue text-white shadow-soft' : 'bg-white text-midblue hover:bg-midblue/5'
+          }`}
+        >
           Week
         </button>
-        <button id="filter-month" className="flex-1 py-2 px-4 rounded-xl border-2 border-midblue bg-midblue text-white font-bold text-sm shadow-soft">
+        <button 
+          id="filter-month" 
+          onClick={() => handlePresetChange('month')}
+          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
+            currentPreset === 'month' ? 'bg-midblue text-white shadow-soft' : 'bg-white text-midblue hover:bg-midblue/5'
+          }`}
+        >
           Month
         </button>
-        <button id="filter-year" className="flex-1 py-2 px-4 rounded-xl border-2 border-midblue text-midblue font-bold text-sm bg-white hover:bg-midblue/5 transition-colors">
+        <button 
+          id="filter-year" 
+          onClick={() => handlePresetChange('year')}
+          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
+            currentPreset === 'year' ? 'bg-midblue text-white shadow-soft' : 'bg-white text-midblue hover:bg-midblue/5'
+          }`}
+        >
           Year
         </button>
       </div>
