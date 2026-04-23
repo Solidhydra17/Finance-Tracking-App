@@ -14,13 +14,19 @@ const LOADING_MESSAGES = [
 ];
 
 const FunnyLoadingScreen = () => {
-  const [messageIndex, setMessageIndex] = useState(0);
+  const [messageIndex, setMessageIndex] = useState(() => Math.floor(Math.random() * LOADING_MESSAGES.length));
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     // Message rotation
     const messageInterval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      setMessageIndex(prev => {
+        let next;
+        do {
+          next = Math.floor(Math.random() * LOADING_MESSAGES.length);
+        } while (next === prev && LOADING_MESSAGES.length > 1);
+        return next;
+      });
     }, 2000);
 
     // Simulated progress bar (3 seconds total)
