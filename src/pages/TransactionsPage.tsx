@@ -20,6 +20,7 @@ export const TransactionsPage: React.FC = () => {
         useTransactions(filters);
     const [searchTerm, setSearchTerm] = useState("");
     const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const updateDateRange = (month: number, year: number) => {
         const start = new Date(year, month, 1);
@@ -46,8 +47,13 @@ export const TransactionsPage: React.FC = () => {
     const getCategoryById = (id: number) => categories.find((c) => c.id === id);
 
     const handleDelete = async (id: number) => {
-        if (window.confirm("Delete this transaction?")) {
-            await deleteTransaction(id);
+        setConfirmDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (confirmDeleteId !== null) {
+            await deleteTransaction(confirmDeleteId);
+            setConfirmDeleteId(null);
         }
     };
 
@@ -282,6 +288,35 @@ export const TransactionsPage: React.FC = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            </Modal>
+
+            {/* Deletion Confirmation Modal */}
+            <Modal
+                isOpen={confirmDeleteId !== null}
+                onClose={() => setConfirmDeleteId(null)}
+                title="Confirm Deletion"
+                size="sm"
+                position="bottom"
+            >
+                <div className="space-y-4 pt-2 pb-6">
+                    <p className="text-gray-600 text-center font-medium">
+                        Are you sure you want to delete this transaction? This action cannot be undone.
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold hover:bg-danger-600 shadow-lg shadow-danger-200 transition-colors"
+                        >
+                            Delete
+                        </button>
+                    </div>
                 </div>
             </Modal>
         </div>

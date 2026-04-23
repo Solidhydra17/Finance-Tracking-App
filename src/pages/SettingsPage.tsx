@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Card, CardBody, Button } from '@/components/ui';
+import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
@@ -9,6 +9,7 @@ export const SettingsPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
 
   const handleExportJSON = useCallback(async () => {
     setIsExporting(true);
@@ -92,13 +93,11 @@ export const SettingsPage: React.FC = () => {
   }, [addToast]);
 
   const handleClearData = useCallback(async () => {
-    if (
-      !window.confirm(
-        'Are you sure you want to delete ALL data? This cannot be undone.'
-      )
-    ) {
-      return;
-    }
+    setIsConfirmClearOpen(true);
+  }, []);
+
+  const confirmClearData = useCallback(async () => {
+    setIsConfirmClearOpen(false);
 
     setIsClearing(true);
     try {
@@ -184,6 +183,45 @@ export const SettingsPage: React.FC = () => {
           </p>
         </CardBody>
       </Card>
+
+      {/* Confirmation Modal */}
+      <Modal
+        isOpen={isConfirmClearOpen}
+        onClose={() => setIsConfirmClearOpen(false)}
+        title="Wipe All Data?"
+        size="sm"
+        position="bottom"
+      >
+        <div className="space-y-6 pt-2 pb-6">
+          <div className="flex flex-col items-center gap-4 text-center px-4">
+            <div className="w-16 h-16 bg-danger-50 rounded-full flex items-center justify-center">
+              <Icon name="ExclamationTriangleIcon" className="w-8 h-8 text-danger-500" />
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 text-lg">Are you absolutely sure?</p>
+              <p className="text-gray-500 text-sm mt-1">
+                This will permanently delete all transactions, categories, loans, and recurring rules. 
+                <span className="text-danger-600 font-bold block mt-1">This cannot be undone!</span>
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => setIsConfirmClearOpen(false)}
+              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+            >
+              No, keep data
+            </button>
+            <button
+              onClick={confirmClearData}
+              className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold hover:bg-danger-600 shadow-lg shadow-danger-200 transition-colors"
+            >
+              Yes, wipe it
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
