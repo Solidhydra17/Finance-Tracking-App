@@ -2,14 +2,35 @@ import { Category, Transaction, TransactionType } from '@/types';
 import { db, clearAllData } from '@/storage/indexeddb/database';
 
 const CATEGORIES: Omit<Category, 'id'>[] = [
-  { name: 'Salary', type: 'income', color: '#10b981', icon: 'BanknotesIcon', isCustom: false },
-  { name: 'Freelance', type: 'income', color: '#3b82f6', icon: 'BriefcaseIcon', isCustom: false },
-  { name: 'Food', type: 'expense', color: '#ef4444', icon: 'CakeIcon', isCustom: false },
-  { name: 'Transport', type: 'expense', color: '#f59e0b', icon: 'TruckIcon', isCustom: false },
-  { name: 'Housing', type: 'expense', color: '#8b5cf6', icon: 'HomeIcon', isCustom: false },
-  { name: 'Entertainment', type: 'expense', color: '#ec4899', icon: 'MusicalNoteIcon', isCustom: false },
-  { name: 'Health', type: 'expense', color: '#06b6d4', icon: 'HeartIcon', isCustom: false },
-  { name: 'Utilities', type: 'expense', color: '#64748b', icon: 'LightBulbIcon', isCustom: false },
+  // Income Categories
+  { name: 'Allowance', type: 'income', color: '#10b981', icon: 'BanknotesIcon', isCustom: false },
+  { name: 'Savings', type: 'income', color: '#3b82f6', icon: 'ArrowPathIcon', isCustom: false },
+  { name: 'Extra Income', type: 'income', color: '#8b5cf6', icon: 'SparklesIcon', isCustom: false },
+  { name: 'Fund transfer', type: 'income', color: '#f59e0b', icon: 'ArrowsRightLeftIcon', isCustom: false },
+  { name: 'Insurance', type: 'income', color: '#ec4899', icon: 'ShieldCheckIcon', isCustom: false },
+  { name: 'Loan', type: 'income', color: '#64748b', icon: 'DocumentTextIcon', isCustom: false },
+  { name: 'Salary', type: 'income', color: '#059669', icon: 'CurrencyDollarIcon', isCustom: false },
+  { name: 'Others', type: 'income', color: '#94a3b8', icon: 'EllipsisHorizontalCircleIcon', isCustom: false },
+  { name: 'Uncategorized', type: 'income', color: '#cbd5e1', icon: 'QuestionMarkCircleIcon', isCustom: false },
+
+  // Expense Categories
+  { name: 'Bills', type: 'expense', color: '#ef4444', icon: 'NewspaperIcon', isCustom: false },
+  { name: 'Business Expense', type: 'expense', color: '#4338ca', icon: 'BriefcaseIcon', isCustom: false },
+  { name: 'Car', type: 'expense', color: '#6366f1', icon: 'TruckIcon', isCustom: false },
+  { name: 'Gas', type: 'expense', color: '#f97316', icon: 'FireIcon', isCustom: false },
+  { name: 'Food', type: 'expense', color: '#f43f5e', icon: 'CakeIcon', isCustom: false },
+  { name: 'Fund transfer', type: 'expense', color: '#f59e0b', icon: 'ArrowsRightLeftIcon', isCustom: false },
+  { name: 'Groceries', type: 'expense', color: '#10b981', icon: 'ShoppingCartIcon', isCustom: false },
+  { name: 'Loan Payment', type: 'expense', color: '#7c3aed', icon: 'ReceiptPercentIcon', isCustom: false },
+  { name: 'Internet', type: 'expense', color: '#06b6d4', icon: 'WifiIcon', isCustom: false },
+  { name: 'Mobile Prepaid', type: 'expense', color: '#8b5cf6', icon: 'DevicePhoneMobileIcon', isCustom: false },
+  { name: 'Online Shopping', type: 'expense', color: '#ec4899', icon: 'ShoppingBagIcon', isCustom: false },
+  { name: 'Parking Fee', type: 'expense', color: '#64748b', icon: 'NoSymbolIcon', isCustom: false },
+  { name: 'Rent', type: 'expense', color: '#475569', icon: 'HomeIcon', isCustom: false },
+  { name: 'Subscriptions', type: 'expense', color: '#dc2626', icon: 'PlayIcon', isCustom: false },
+  { name: 'Transportation', type: 'expense', color: '#fbbf24', icon: 'MapIcon', isCustom: false },
+  { name: 'Others', type: 'expense', color: '#94a3b8', icon: 'EllipsisHorizontalCircleIcon', isCustom: false },
+  { name: 'Uncategorized', type: 'expense', color: '#cbd5e1', icon: 'QuestionMarkCircleIcon', isCustom: false },
 ];
 
 const NOTES = [
@@ -30,11 +51,20 @@ const NOTES = [
 export async function seedRandomData(count: number = 20) {
   await clearAllData();
 
-  // 1. Seed Categories
+  // 1. Seed Categories (Smart Upsert)
   const categoryIds: Record<string, number> = {};
   for (const cat of CATEGORIES) {
-    const id = await db.categories.add(cat as Category);
-    categoryIds[cat.name] = id;
+    let existing = await db.categories
+      .where('[name+type]')
+      .equals([cat.name, cat.type])
+      .first();
+    
+    if (existing) {
+      categoryIds[cat.name] = existing.id!;
+    } else {
+      const id = await db.categories.add(cat as Category);
+      categoryIds[cat.name] = id;
+    }
   }
 
   // 2. Seed Transactions

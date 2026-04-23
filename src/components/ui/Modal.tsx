@@ -7,6 +7,7 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  position?: 'center' | 'bottom';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -15,6 +16,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   size = 'md',
+  position = 'center',
 }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
@@ -56,7 +58,7 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className={`fixed inset-0 z-50 flex justify-center ${position === 'bottom' ? 'items-end' : 'items-end sm:items-center'}`}>
       {/* Backdrop */}
       <div
         className={`
@@ -69,7 +71,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Content */}
       <div
         className={`
-          relative bg-white rounded-t-3xl sm:rounded-2xl shadow-hard
+          relative bg-white rounded-t-3xl ${position === 'center' ? 'sm:rounded-2xl' : ''} shadow-hard
           w-full ${sizeClasses[size]} max-h-[90vh] overflow-auto
           ${isClosing ? 'animate-[slideOutDown_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[slideUp_0.3s_ease-out]'}
         `}

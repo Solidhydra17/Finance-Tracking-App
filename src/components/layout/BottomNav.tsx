@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 import { 
   HomeIcon, 
@@ -14,6 +14,8 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
+  const location = useLocation();
+  const isAddPage = location.pathname === '/add-transaction';
 
   const navItems = [
     { path: '/', label: 'Home', icon: HomeIcon },
@@ -21,6 +23,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
     { path: '/loans', label: 'Loans', icon: BanknotesIcon },
     { path: '/settings', label: 'Settings', icon: Cog6ToothIcon },
   ];
+
+  const handleFABClick = () => {
+    // Logical lockdown: ignore clicks if on the add page
+    if (isAddPage) return;
+    onAddClick();
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area-pb z-40 px-4">
@@ -67,20 +75,21 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
 
       {/* FAB Add Button */}
       <button
-        onClick={onAddClick}
-        className="
+        onClick={handleFABClick}
+        disabled={isAddPage}
+        className={`
           absolute left-1/2 -translate-x-1/2 -top-8
           w-16 h-16 rounded-full
-          bg-midblue text-white
-          shadow-[0_8px_25px_rgba(40,92,204,0.4)]
           flex items-center justify-center
-          hover:scale-110 active:scale-95
-          transition-all duration-200
-          text-3xl font-bold
-          border-4 border-white
-        "
+          transition-all duration-300
+          border-4 border-white shadow-xl
+          ${isAddPage 
+            ? 'bg-gray-100 cursor-not-allowed scale-95 opacity-80' 
+            : 'bg-midblue text-white shadow-[0_8px_25px_rgba(40,92,204,0.4)] hover:scale-110 active:scale-95'
+          }
+        `}
       >
-        <PlusIcon className="w-10 h-10 stroke-[3]" />
+        <PlusIcon className={`w-10 h-10 stroke-[3] ${isAddPage ? 'text-gray-400' : 'text-white'}`} />
       </button>
     </nav>
   );
