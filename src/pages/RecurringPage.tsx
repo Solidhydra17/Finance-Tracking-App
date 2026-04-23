@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Input, TextArea, Button } from '@/components/ui';
+import { Input, Button, Icon } from '@/components/ui';
 import { useRecurring } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents, centsToDisplay } from '@/lib/money';
@@ -14,9 +14,9 @@ export const RecurringPage: React.FC = () => {
   const [amountDisplay, setAmountDisplay] = useState('');
   const [categoryId, setCategoryId] = useState<number>(0);
   const [frequency, setFrequency] = useState<RecurringFrequency>('monthly');
-  const [dayOfMonth, setDayOfMonth] = useState<number>(1);
-  const [dayOfWeek, setDayOfWeek] = useState<number>(1);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dayOfMonth] = useState<number>(1);
+  const [dayOfWeek] = useState<number>(1);
+  const [startDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,14 +59,14 @@ export const RecurringPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin text-3xl">⏳</div>
+        <Icon name="ArrowPathIcon" className="w-8 h-8 animate-spin text-midblue" />
       </div>
     );
   }
 
   return (
-    <div className="px-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div id="page-recurring" className="px-4 space-y-4">
+      <div id="recurring-header" className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Recurring</h1>
         <Button size="sm" onClick={() => setAddRecurringOpen(true)}>
           + Add Rule
@@ -75,16 +75,18 @@ export const RecurringPage: React.FC = () => {
 
       {rules.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p className="text-4xl mb-4">🔄</p>
+          <div className="flex justify-center mb-4">
+            <Icon name="ArrowPathIcon" className="w-16 h-16 text-gray-200" />
+          </div>
           <p>No recurring rules yet</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div id="recurring-rules-list" className="space-y-3">
           {rules.map((rule) => (
             <div key={rule.id} className="bg-white rounded-2xl shadow-soft p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">🔄</span>
+                  <Icon name="ArrowPathIcon" className="w-6 h-6 text-midblue" />
                   <div>
                     <p className="font-semibold text-gray-900">
                       {rule.description || 'Recurring'}
@@ -98,7 +100,7 @@ export const RecurringPage: React.FC = () => {
                   onClick={() => deleteRule(rule.id!)}
                   className="p-2 text-gray-400 hover:text-danger-500"
                 >
-                  🗑️
+                  <Icon name="TrashIcon" className="w-5 h-5" />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -125,8 +127,8 @@ export const RecurringPage: React.FC = () => {
         onClose={() => setAddRecurringOpen(false)}
         title="Add Recurring Rule"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2">
+        <form id="form-add-recurring" onSubmit={handleSubmit} className="space-y-4">
+          <div id="recurring-type-toggle" className="flex gap-2">
             <button
               type="button"
               onClick={() => setType('income')}
@@ -165,11 +167,11 @@ export const RecurringPage: React.FC = () => {
             placeholder="0.00"
             value={amountDisplay}
             onChange={(e) => setAmountDisplay(e.target.value)}
-            leftIcon="$"
+            leftIcon={<Icon name="CurrencyDollarIcon" className="w-5 h-5 text-gray-400" />}
             required
           />
 
-          <div className="flex gap-2">
+          <div id="recurring-frequency-toggle" className="flex gap-2">
             <button
               type="button"
               onClick={() => setFrequency('weekly')}

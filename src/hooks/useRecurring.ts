@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { recurringEngine } from '@/domain/recurring/recurringEngine';
-import type { RecurringRule, RecurringRuleCreate, RecurringTransaction } from '@/types';
+import type { RecurringRule, RecurringRuleCreate } from '@/types';
 import { useUIStore } from '@/store';
 
 export function useRecurring() {

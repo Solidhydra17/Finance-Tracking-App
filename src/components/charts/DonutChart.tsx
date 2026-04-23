@@ -1,4 +1,9 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartEvent, ActiveElement } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface DonutChartProps {
   data: { label: string; value: number; color: string }[];
@@ -8,52 +13,89 @@ interface DonutChartProps {
 
 export const DonutChart: React.FC<DonutChartProps> = ({
   data,
-  size = 120,
-  strokeWidth = 24,
+  size = 200,
 }) => {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  if (total === 0) {
-    return (
-      <div className="flex items-center justify-center">
-        <div
-          className="rounded-full bg-gray-100"
-          style={{ width: size, height: size }}
-        />
-      </div>
-    );
-  }
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [showHint, setShowHint] = useState(true);
 
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const center = size / 2;
+  // Hide hint after 5 seconds or on interaction
+  useEffect(() => {
+    const timer = setTimeout(() => setShowHint(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  let currentOffset = 0;
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+
+  const chartData = {
+    labels: data.map(d => d.label),
+    datasets: [
+      {
+        data: data.map(d => d.value),
+        backgroundColor: data.map(d => d.color),
+        borderColor: data.map(d => d.color),
+        borderWidth: 1,
+        cutout: '75%',
+        hoverOffset: 10,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    onHover: (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (elements.length > 0) {
+        setActiveIndex(elements[0].index);
+        setShowHint(false);
+      } else {
+        setActiveIndex(null);
+      }
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        enabled: false, // We'll show info in the center instead
+      },
+    },
+    layout: {
+      padding: 15, // Gives room for the hoverOffset expansion
+    },
+  };
+
+  const activeCategory = activeIndex !== null ? data[activeIndex] : null;
+  const percentage = activeCategory ? ((activeCategory.value / total) * 100).toFixed(0) : 0;
 
   return (
-    <div className="flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
-        {data.map((item, index) => {
-          const percentage = item.value / total;
-          const dashLength = percentage * circumference;
-          const dashOffset = currentOffset;
-          currentOffset += dashLength;
+    <div style={{ width: size, height: size }} className="relative flex items-center justify-center mx-auto">
+      {/* Chart */}
+      <Doughnut data={chartData} options={options} />
 
-          return (
-            <circle
-              key={index}
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={item.color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={`${dashLength} ${circumference - dashLength}`}
-              strokeDashoffset={-dashOffset}
-              strokeLinecap="round"
-            />
-          );
-        })}
-      </svg>
+      {/* Center Display */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-4">
+        {activeCategory ? (
+          <>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">
+              {activeCategory.label}
+            </p>
+            <p className="text-2xl font-black text-midblue leading-none">
+              {percentage}%
+            </p>
+          </>
+        ) : (
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">
+            Tap to<br />explore
+          </p>
+        )}
+      </div>
+
+      {/* Onboarding Tooltip */}
+      <div className={`absolute top-8 left-1/2 -translate-x-1/2 bg-midblue text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg animate-bounce whitespace-nowrap z-10 transition-opacity duration-700 pointer-events-none ${showHint ? 'opacity-100' : 'opacity-0'
+        }`}>
+        Click segments for details
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-midblue rotate-45" />
+      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { transactionRepository } from '@/storage/indexeddb';
-import { divideCents, addCents, subtractCents, absCents } from '@/lib/money';
+import { addCents, subtractCents } from '@/lib/money';
 
 export interface TransactionStats {
   totalIncome: number;
@@ -42,7 +42,7 @@ export const transactionsEngine = {
   async getByFilters(filters: FilterState): Promise<Transaction[]> {
     let transactions = await transactionRepository.getAll();
 
-    if (filters.dateRange.preset !== 'custom') {
+    if (filters.dateRange.startDate && filters.dateRange.endDate) {
       const { startDate, endDate } = filters.dateRange;
       transactions = transactions.filter(t => t.date >= startDate && t.date <= endDate);
     }
@@ -120,7 +120,7 @@ export const transactionsEngine = {
           categoryId,
           categoryName: category.name,
           total,
-          percentage: divideCents(total, totalExpenses) / 100,
+          percentage: (total / totalExpenses) * 100,
           color: category.color,
           icon: category.icon,
         });

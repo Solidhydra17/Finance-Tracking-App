@@ -1,12 +1,13 @@
 import React from 'react';
 import { useUIStore } from '@/store';
 import { getToastIcon, getToastColor } from '@/lib/toast';
+import { Icon } from './Icon';
 
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useUIStore();
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 w-full max-w-sm px-4">
       {toasts.map((toast) => (
         <div
           key={toast.id}
@@ -17,7 +18,7 @@ export const ToastContainer: React.FC = () => {
           `}
           onClick={() => removeToast(toast.id)}
         >
-          <span className="text-lg">{getToastIcon(toast.type)}</span>
+          <Icon name={getToastIcon(toast.type)} className="w-6 h-6" />
           <span className="flex-1 text-sm font-medium">{toast.message}</span>
         </div>
       ))}

@@ -43,18 +43,18 @@ export const categoryRepository: CategoryRepository = {
 
 // Default categories
 export const defaultCategories: Omit<Category, 'id'>[] = [
-  { name: 'Salary', type: 'income', color: '#22c55e', icon: '💰', isCustom: false },
-  { name: 'Freelance', type: 'income', color: '#10b981', icon: '💼', isCustom: false },
-  { name: 'Investment', type: 'income', color: '#14b8a6', icon: '📈', isCustom: false },
-  { name: 'Other Income', type: 'income', color: '#06b6d4', icon: '💵', isCustom: false },
-  { name: 'Food & Dining', type: 'expense', color: '#f97316', icon: '🍽️', isCustom: false },
-  { name: 'Transportation', type: 'expense', color: '#eab308', icon: '🚗', isCustom: false },
-  { name: 'Shopping', type: 'expense', color: '#ec4899', icon: '🛍️', isCustom: false },
-  { name: 'Entertainment', type: 'expense', color: '#8b5cf6', icon: '🎬', isCustom: false },
-  { name: 'Bills & Utilities', type: 'expense', color: '#6366f1', icon: '📄', isCustom: false },
-  { name: 'Healthcare', type: 'expense', color: '#ef4444', icon: '🏥', isCustom: false },
-  { name: 'Education', type: 'expense', color: '#3b82f6', icon: '📚', isCustom: false },
-  { name: 'Other Expense', type: 'expense', color: '#78716c', icon: '📦', isCustom: false },
+  { name: 'Salary', type: 'income', color: '#22c55e', icon: 'BanknotesIcon', isCustom: false },
+  { name: 'Freelance', type: 'income', color: '#10b981', icon: 'BriefcaseIcon', isCustom: false },
+  { name: 'Investment', type: 'income', color: '#14b8a6', icon: 'ChartBarIcon', isCustom: false },
+  { name: 'Other Income', type: 'income', color: '#06b6d4', icon: 'BanknotesIcon', isCustom: false },
+  { name: 'Food & Dining', type: 'expense', color: '#f97316', icon: 'CakeIcon', isCustom: false },
+  { name: 'Transportation', type: 'expense', color: '#eab308', icon: 'TruckIcon', isCustom: false },
+  { name: 'Shopping', type: 'expense', color: '#ec4899', icon: 'ShoppingBagIcon', isCustom: false },
+  { name: 'Entertainment', type: 'expense', color: '#8b5cf6', icon: 'TicketIcon', isCustom: false },
+  { name: 'Bills & Utilities', type: 'expense', color: '#6366f1', icon: 'DocumentTextIcon', isCustom: false },
+  { name: 'Healthcare', type: 'expense', color: '#ef4444', icon: 'HeartIcon', isCustom: false },
+  { name: 'Education', type: 'expense', color: '#3b82f6', icon: 'AcademicCapIcon', isCustom: false },
+  { name: 'Other Expense', type: 'expense', color: '#78716c', icon: 'ArchiveBoxIcon', isCustom: false },
 ];
 
 export async function seedDefaultCategories(): Promise<void> {

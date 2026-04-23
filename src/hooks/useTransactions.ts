@@ -1,44 +1,55 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
-import { recurringEngine } from '@/domain/recurring/recurringEngine';
-import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
-import { useUIStore } from '@/store';
-import { paginateItems, createPaginationState, type PaginationResult } from '@/lib/pagination';
+import type { TransactionCreate, TransactionUpdate, FilterState } from '@/types';
+import { useUIStore, useTransactionStore } from '@/store';
+import { paginateItems, type PaginationResult } from '@/lib/pagination';
 
 export function useTransactions(filters: FilterState) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [paginationState, setPaginationState] = useState(createPaginationState(20));
+  const { 
+    transactions, setTransactions, 
+    isLoading, setLoading, 
+    totalTransactions, setTotal,
+    currentPage, setPage,
+    lastFilters, setLastFilters
+  } = useTransactionStore();
+  
   const { addToast } = useUIStore();
 
-  const loadTransactions = useCallback(async () => {
-    setIsLoading(true);
+  const loadTransactions = useCallback(async (forceLoading = false) => {
+    // Only show loading if forced or if filters changed or if we have no data
+    const filtersChanged = JSON.stringify(filters) !== JSON.stringify(lastFilters);
+    
+    if (forceLoading || filtersChanged || transactions.length === 0) {
+      setLoading(true);
+    }
+    
     try {
       const allTransactions = await transactionsEngine.getByFilters(filters);
       setTransactions(allTransactions);
-      setPaginationState((prev) => ({ ...prev, total: allTransactions.length }));
+      setTotal(allTransactions.length);
+      setLastFilters(filters);
     } catch (error) {
       console.error('Failed to load transactions:', error);
       addToast('error', 'Failed to load transactions');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [filters, addToast]);
+  }, [filters, lastFilters, transactions.length, setTransactions, setTotal, setLoading, setLastFilters, addToast]);
 
   useEffect(() => {
     loadTransactions();
   }, [loadTransactions]);
 
-  const paginatedResult = useMemo<PaginationResult<Transaction>>(() => {
-    return paginateItems(transactions, paginationState.page, paginationState.pageSize);
-  }, [transactions, paginationState.page, paginationState.pageSize]);
+  const paginatedResult = useMemo<PaginationResult<any>>(() => {
+    return paginateItems(transactions, currentPage, 20); // Fixed page size for now
+  }, [transactions, currentPage]);
 
   const createTransaction = useCallback(
     async (data: TransactionCreate) => {
       try {
         await transactionsEngine.create(data);
         addToast('success', 'Transaction added successfully');
-        await loadTransactions();
+        await loadTransactions(true);
         return true;
       } catch (error) {
         console.error('Failed to create transaction:', error);
@@ -54,7 +65,7 @@ export function useTransactions(filters: FilterState) {
       try {
         await transactionsEngine.update(id, data);
         addToast('success', 'Transaction updated successfully');
-        await loadTransactions();
+        await loadTransactions(true);
         return true;
       } catch (error) {
         console.error('Failed to update transaction:', error);
@@ -70,7 +81,7 @@ export function useTransactions(filters: FilterState) {
       try {
         await transactionsEngine.softDelete(id);
         addToast('success', 'Transaction deleted');
-        await loadTransactions();
+        await loadTransactions(true);
         return true;
       } catch (error) {
         console.error('Failed to delete transaction:', error);
@@ -83,13 +94,16 @@ export function useTransactions(filters: FilterState) {
 
   return {
     transactions: paginatedResult.items,
-    pagination: paginatedResult.pagination,
+    pagination: {
+      page: currentPage,
+      pageSize: 20,
+      total: totalTransactions
+    },
     isLoading,
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    setPage: (page: number) =>
-      setPaginationState((prev) => ({ ...prev, page })),
-    refetch: loadTransactions,
+    setPage,
+    refetch: () => loadTransactions(true),
   };
 }

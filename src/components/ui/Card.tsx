@@ -5,6 +5,7 @@ interface CardProps {
   className?: string;
   gradient?: boolean;
   onClick?: () => void;
+  id?: string;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -12,9 +13,11 @@ export const Card: React.FC<CardProps> = ({
   className = '',
   gradient = false,
   onClick,
+  id,
 }) => {
   return (
     <div
+      id={id}
       className={`
         bg-white rounded-2xl shadow-soft overflow-hidden
         ${gradient ? 'bg-gradient-to-br from-primary-50 to-primary-100' : ''}

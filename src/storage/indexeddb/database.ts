@@ -10,9 +10,9 @@ export class FinanceDatabase extends Dexie {
 
   constructor() {
     super('FinanceTrackerDB');
-    this.version(1).stores({
+    this.version(2).stores({
       transactions: '++id, type, date, categoryId, source, deletedAt',
-      categories: '++id, type, isCustom',
+      categories: '++id, type, isCustom, name, [name+type]',
       loans: '++id, direction, startDate',
       loanPayments: '++id, loanId, date',
       recurringRules: '++id, type, frequency, startDate, endDate',

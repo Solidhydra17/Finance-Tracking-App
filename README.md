@@ -67,7 +67,9 @@ npm run dev
 npm run build
 ```
 
-## Mobile Development
+## Mobile Development & PWA Testing
+
+### Native Apps (Capacitor)
 
 ```bash
 # Add platforms
@@ -79,6 +81,42 @@ npx cap sync
 
 # Open native IDE
 npx cap open ios    # or android
+```
+
+### PWA Testing on Mobile (HTTPS)
+
+Since PWAs and IndexedDB require a secure context (HTTPS), use `localtunnel` (loca.lt) to test on your actual mobile device:
+
+1. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   *Note the port (usually `5173`).*
+
+2. **Expose the port using localtunnel:**
+   Open a new terminal and run:
+   ```bash
+   npx localtunnel --port 5173
+   ```
+
+3. **Access on Mobile:**
+   - Copy the URL provided (e.g., `https://XXXX.loca.lt`).
+   - Open it in your mobile browser (Safari on iOS, Chrome on Android).
+   - Use "Add to Home Screen" to install it as a PWA.
+
+### Production Build
+
+To test the production-optimized version:
+
+```bash
+# Build the project
+npm run build
+
+# Preview locally
+npm run preview
+
+# Then expose the preview port (usually 4173)
+npx localtunnel --port 4173
 ```
 
 ## Project Structure

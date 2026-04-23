@@ -66,7 +66,9 @@ export default {
           700: '#374151',
           800: '#1f2937',
           900: '#111827',
-        }
+        },
+        buttermilk: '#fff2bd',
+        midblue: '#285ccc',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

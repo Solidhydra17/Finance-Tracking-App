@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Select, Input, TextArea, Button } from '@/components/ui';
-import { useCategories } from '@/hooks';
-import { useTransactions } from '@/hooks';
+import React, { useState } from 'react';
+import { Select, Input, TextArea, Button, Icon } from '@/components/ui';
+import { useCategories, useTransactions } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents, centsToDisplay } from '@/lib/money';
 import type { TransactionType } from '@/types';
@@ -81,8 +80,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex gap-2">
+    <form id="form-edit-transaction" onSubmit={handleSubmit} className="space-y-4">
+      <div id="edit-transaction-type-toggle" className="flex gap-2">
         <button
           type="button"
           onClick={() => setType('income')}
@@ -121,7 +120,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         placeholder="0.00"
         value={amountDisplay}
         onChange={(e) => setAmountDisplay(e.target.value)}
-        leftIcon="$"
+        leftIcon={<Icon name="CurrencyDollarIcon" className="w-5 h-5 text-gray-400" />}
         required
       />
 
@@ -141,7 +140,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           { value: 0, label: 'Select category...' },
           ...filteredCategories.map((c) => ({
             value: c.id!,
-            label: `${c.icon} ${c.name}`,
+            label: c.name,
           })),
         ]}
         required

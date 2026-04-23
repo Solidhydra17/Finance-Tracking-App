@@ -8,6 +8,7 @@ import {
     LoansPage,
     RecurringPage,
     SettingsPage,
+    AddTransactionPage,
 } from "@/pages";
 
 export const App: React.FC = () => {
@@ -24,6 +25,7 @@ export const App: React.FC = () => {
                         <Route path="loans" element={<LoansPage />} />
                         <Route path="recurring" element={<RecurringPage />} />
                         <Route path="settings" element={<SettingsPage />} />
+                        <Route path="add-transaction" element={<AddTransactionPage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Toast, ToastType } from '@/lib/toast';
 import type { FilterState, DateRange } from '@/types';
+import { formatDateLocal } from '@/lib/date';
 
 interface UIState {
   // Toasts
@@ -21,6 +22,8 @@ interface UIState {
   setAddLoanOpen: (open: boolean) => void;
   isAddRecurringOpen: boolean;
   setAddRecurringOpen: (open: boolean) => void;
+  isAddMenuOpen: boolean;
+  setAddMenuOpen: (open: boolean) => void;
 
   // Loan visibility
   showLoans: boolean;
@@ -29,6 +32,8 @@ interface UIState {
   // Loading states
   isLoading: boolean;
   setLoading: (loading: boolean) => void;
+  isFirstLoad: boolean;
+  setFirstLoad: (first: boolean) => void;
 }
 
 const getDefaultDateRange = (): DateRange => {
@@ -36,8 +41,8 @@ const getDefaultDateRange = (): DateRange => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   return {
     preset: 'month',
-    startDate: startOfMonth.toISOString().split('T')[0],
-    endDate: now.toISOString().split('T')[0],
+    startDate: formatDateLocal(startOfMonth),
+    endDate: formatDateLocal(now),
   };
 };
 
@@ -85,6 +90,8 @@ export const useUIStore = create<UIState>((set) => ({
   setAddLoanOpen: (open) => set({ isAddLoanOpen: open }),
   isAddRecurringOpen: false,
   setAddRecurringOpen: (open) => set({ isAddRecurringOpen: open }),
+  isAddMenuOpen: false,
+  setAddMenuOpen: (open) => set({ isAddMenuOpen: open }),
 
   // Loan visibility
   showLoans: true,
@@ -93,4 +100,6 @@ export const useUIStore = create<UIState>((set) => ({
   // Loading
   isLoading: false,
   setLoading: (loading) => set({ isLoading: loading }),
+  isFirstLoad: true,
+  setFirstLoad: (first) => set({ isFirstLoad: first }),
 }));

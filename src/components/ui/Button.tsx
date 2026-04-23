@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -38,6 +38,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={`
+        ui-button
         ${variantClasses[variant]} ${sizeClasses[size]}
         rounded-xl font-medium transition-all duration-200
         disabled:opacity-50 disabled:cursor-not-allowed

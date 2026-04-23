@@ -2,11 +2,12 @@ import React from 'react';
 
 interface FilterBarProps {
   children: React.ReactNode;
+  id?: string;
 }
 
-export const FilterBar: React.FC<FilterBarProps> = ({ children }) => {
+export const FilterBar: React.FC<FilterBarProps> = ({ children, id }) => {
   return (
-    <div className="bg-white border-b border-gray-100 px-4 py-3">
+    <div id={id} className="bg-white border-b border-gray-100 px-4 py-3">
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
         {children}
       </div>
@@ -18,15 +19,18 @@ interface FilterChipProps {
   children: React.ReactNode;
   isActive?: boolean;
   onClick?: () => void;
+  id?: string;
 }
 
 export const FilterChip: React.FC<FilterChipProps> = ({
   children,
   isActive = false,
   onClick,
+  id,
 }) => {
   return (
     <button
+      id={id}
       onClick={onClick}
       className={`
         px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap
