@@ -66,7 +66,7 @@ export const recurringEngine = {
   },
 
   generateDates(
-    frequency: 'weekly' | 'monthly',
+    frequency: 'weekly' | 'bi-weekly' | 'monthly',
     dayOfWeek: number | null,
     dayOfMonth: number | null,
     startDate: Date,
@@ -75,15 +75,16 @@ export const recurringEngine = {
     const dates: string[] = [];
     const current = new Date(startDate);
 
-    if (frequency === 'weekly' && dayOfWeek !== null) {
+    if ((frequency === 'weekly' || frequency === 'bi-weekly') && dayOfWeek !== null) {
       // Find the first occurrence of the day of week
       while (current.getDay() !== dayOfWeek) {
         current.setDate(current.getDate() + 1);
       }
 
+      const increment = frequency === 'weekly' ? 7 : 14;
       while (current <= endDate) {
         dates.push(current.toISOString().split('T')[0]);
-        current.setDate(current.getDate() + 7);
+        current.setDate(current.getDate() + increment);
       }
     } else if (frequency === 'monthly' && dayOfMonth !== null) {
       // Set to the specified day of month

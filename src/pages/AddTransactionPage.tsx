@@ -22,7 +22,7 @@ export const AddTransactionPage: React.FC = () => {
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update type if query param changes (optional, but good for consistency)
+  // Update type if query param changes
   useEffect(() => {
     const queryType = searchParams.get('type') as TransactionType;
     if (queryType && (queryType === 'income' || queryType === 'expense')) {
@@ -45,6 +45,9 @@ export const AddTransactionPage: React.FC = () => {
     setCategorySearch('');
   };
 
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<'weekly' | 'bi-weekly' | 'monthly'>('monthly');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -62,15 +65,34 @@ export const AddTransactionPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await createTransaction({
-        type,
-        amount,
-        date,
-        categoryId,
-        note,
-        source: 'manual',
-      });
-      addToast('success', 'Transaction added successfully');
+      if (isRecurring) {
+        const { recurringRepository } = await import('@/storage/indexeddb');
+        const startDate = new Date(date);
+        await recurringRepository.create({
+          type,
+          amount,
+          categoryId,
+          frequency,
+          dayOfWeek: (frequency === 'weekly' || frequency === 'bi-weekly') ? startDate.getDay() : null,
+          dayOfMonth: frequency === 'monthly' ? startDate.getDate() : null,
+          startDate: date,
+          endDate: null,
+          description: note || 'Recurring Transaction',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as any);
+        addToast('success', 'Recurring rule created successfully');
+      } else {
+        await createTransaction({
+          type,
+          amount,
+          date,
+          categoryId,
+          note,
+          source: 'manual',
+        });
+        addToast('success', 'Transaction added successfully');
+      }
       navigate(-1);
     } catch (error) {
       console.error('Failed to create transaction:', error);
@@ -165,19 +187,70 @@ export const AddTransactionPage: React.FC = () => {
               placeholder="0.00"
               value={amountDisplay}
               onChange={(e) => setAmountDisplay(e.target.value)}
-              leftIcon={<Icon name="CurrencyDollarIcon" className="w-6 h-6 text-gray-400" />}
+              leftIcon={<Icon name="BanknotesIcon" className="w-6 h-6 text-gray-400" />}
               required
               className="text-3xl font-bold text-gray-900"
             />
 
-            <Input
-              label="Date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="text-lg"
-            />
+            <div className="flex gap-4">
+                <div className="flex-1">
+                    <Input
+                        label="Date"
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        required
+                        className="text-lg"
+                    />
+                </div>
+                <div className="flex-1">
+                    <label className="text-sm font-bold text-gray-500 ml-1">Recurring</label>
+                    <button
+                        type="button"
+                        onClick={() => setIsRecurring(!isRecurring)}
+                        className={`w-full h-[48px] rounded-2xl flex items-center justify-center font-bold transition-all ${
+                            isRecurring ? 'bg-midblue text-white shadow-md' : 'bg-gray-100 text-gray-500'
+                        }`}
+                    >
+                        {isRecurring ? 'YES' : 'NO'}
+                    </button>
+                </div>
+            </div>
+
+            {isRecurring && (
+                <div id="field-frequency" className="space-y-2 animate-[fadeIn_0.2s_ease-out]">
+                    <label className="text-sm font-bold text-gray-500 ml-1">Frequency</label>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setFrequency('weekly')}
+                            className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
+                                frequency === 'weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
+                            }`}
+                        >
+                            Weekly
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFrequency('bi-weekly')}
+                            className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
+                                frequency === 'bi-weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
+                            }`}
+                        >
+                            Every 2 Weeks
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFrequency('monthly')}
+                            className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
+                                frequency === 'monthly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
+                            }`}
+                        >
+                            Monthly
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Custom Category Picker Trigger */}
             <div id="field-category" className="space-y-2">

@@ -5,7 +5,7 @@ export function centsToDisplay(cents: number): string {
   const dollars = Math.floor(abs / 100);
   const remainder = abs % 100;
   const sign = cents < 0 ? '-' : '';
-  return `${sign}$${dollars.toLocaleString()}.${remainder.toString().padStart(2, '0')}`;
+  return `${sign}₱${dollars.toLocaleString()}.${remainder.toString().padStart(2, '0')}`;
 }
 
 export function displayToCents(display: string): number {

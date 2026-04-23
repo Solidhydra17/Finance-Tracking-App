@@ -46,7 +46,7 @@ export const defaultCategories: Omit<Category, 'id'>[] = [
   { name: 'Salary', type: 'income', color: '#22c55e', icon: 'BanknotesIcon', isCustom: false },
   { name: 'Freelance', type: 'income', color: '#10b981', icon: 'BriefcaseIcon', isCustom: false },
   { name: 'Investment', type: 'income', color: '#14b8a6', icon: 'ChartBarIcon', isCustom: false },
-  { name: 'Other Income', type: 'income', color: '#06b6d4', icon: 'CurrencyDollarIcon', isCustom: false },
+  { name: 'Other Income', type: 'income', color: '#06b6d4', icon: 'BanknotesIcon', isCustom: false },
   { name: 'Food & Dining', type: 'expense', color: '#f97316', icon: 'CakeIcon', isCustom: false },
   { name: 'Transportation', type: 'expense', color: '#eab308', icon: 'TruckIcon', isCustom: false },
   { name: 'Shopping', type: 'expense', color: '#ec4899', icon: 'ShoppingBagIcon', isCustom: false },

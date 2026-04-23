@@ -212,7 +212,7 @@ export const TransactionsPage: React.FC = () => {
                                                             {category?.icon ? (
                                                                 <Icon name={category.icon} className="w-6 h-6" style={{ color: category.color }} />
                                                             ) : (
-                                                                <Icon name="CurrencyDollarIcon" className="w-6 h-6 text-gray-400" />
+                                                                <Icon name="BanknotesIcon" className="w-6 h-6 text-gray-400" />
                                                             )}
                                                         </div>
                                                         <div>
