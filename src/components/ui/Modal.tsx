@@ -74,7 +74,7 @@ export const Modal: React.FC<ModalProps> = ({
         className={`
           ui-modal-container
           relative bg-white rounded-t-3xl ${position === 'center' ? 'sm:rounded-2xl' : ''} shadow-hard
-          w-full ${sizeClasses[size]} max-h-[90vh] overflow-auto
+          w-full ${sizeClasses[size]} max-h-[90dvh] overflow-auto
           ${isClosing ? 'animate-[slideOutDown_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[slideUp_0.3s_ease-out]'}
         `}
       >

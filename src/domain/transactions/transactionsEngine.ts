@@ -42,7 +42,7 @@ export const transactionsEngine = {
   async getByFilters(filters: FilterState): Promise<Transaction[]> {
     let transactions = await transactionRepository.getAll();
 
-    if (filters.dateRange.preset !== 'custom') {
+    if (filters.dateRange.startDate && filters.dateRange.endDate) {
       const { startDate, endDate } = filters.dateRange;
       transactions = transactions.filter(t => t.date >= startDate && t.date <= endDate);
     }

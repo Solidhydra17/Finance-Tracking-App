@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Toast, ToastType } from '@/lib/toast';
 import type { FilterState, DateRange } from '@/types';
+import { formatDateLocal } from '@/lib/date';
 
 interface UIState {
   // Toasts
@@ -38,8 +39,8 @@ const getDefaultDateRange = (): DateRange => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   return {
     preset: 'month',
-    startDate: startOfMonth.toISOString().split('T')[0],
-    endDate: now.toISOString().split('T')[0],
+    startDate: formatDateLocal(startOfMonth),
+    endDate: formatDateLocal(now),
   };
 };
 

@@ -44,7 +44,7 @@ export const AppLayout: React.FC = () => {
     };
 
     return (
-        <div id="app-layout" className="min-h-screen bg-gray-50">
+        <div id="app-layout" className="min-h-screen bg-gray-50 flex flex-col">
             <main id="app-main-content" className="pb-32 pt-2">
                 <Outlet />
             </main>

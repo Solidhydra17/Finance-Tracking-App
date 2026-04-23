@@ -80,6 +80,37 @@ export const AddTransactionPage: React.FC = () => {
     }
   };
 
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+  const { refetch: refetchCategories } = useCategories('both');
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName) {
+      addToast('warning', 'Please enter a category name');
+      return;
+    }
+
+    try {
+      const { categoryRepository } = await import('@/storage/indexeddb');
+      await categoryRepository.create({
+        name: newCategoryName,
+        type: type === 'both' ? 'both' : type,
+        color: newCategoryColor,
+        icon: 'TagIcon', // Default icon for custom categories
+        isCustom: true
+      });
+      
+      await refetchCategories();
+      addToast('success', 'Category added');
+      setIsAddingCategory(false);
+      setNewCategoryName('');
+    } catch (error) {
+      console.error('Failed to add category:', error);
+      addToast('error', 'Failed to add category');
+    }
+  };
+
   return (
     <div id="page-add-transaction" className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -153,7 +184,10 @@ export const AddTransactionPage: React.FC = () => {
               <label className="text-sm font-bold text-gray-500 ml-1">Category</label>
               <button
                 type="button"
-                onClick={() => setIsCategoryPickerOpen(true)}
+                onClick={() => {
+                    setIsAddingCategory(false);
+                    setIsCategoryPickerOpen(true);
+                }}
                 id="btn-category-picker-open"
                 className="w-full flex items-center justify-between p-4 bg-gray-50 border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all"
               >
@@ -211,52 +245,107 @@ export const AddTransactionPage: React.FC = () => {
       <Modal
         isOpen={isCategoryPickerOpen}
         onClose={() => setIsCategoryPickerOpen(false)}
-        title={`Select ${type === 'income' ? 'Income' : 'Expense'} Category`}
+        title={isAddingCategory ? "Create New Category" : `Select ${type === 'income' ? 'Income' : 'Expense'} Category`}
         position="bottom"
         size="lg"
       >
-        <div id="modal-category-picker-content" className="space-y-4 max-h-[70vh] flex flex-col">
-          <div className="px-1">
-            <Input
-              placeholder="Search category..."
-              value={categorySearch}
-              onChange={(e) => setCategorySearch(e.target.value)}
-              leftIcon={<Icon name="MagnifyingGlassIcon" className="w-5 h-5 text-gray-400" />}
-              className="bg-gray-100 border-none"
-            />
-          </div>
-
-          <div id="category-grid-container" className="flex-1 overflow-y-auto pb-6">
-            <div id="category-grid" className="grid grid-cols-3 py-3 mx-1 gap-3">
-              {filteredCategories.map((category) => (
+        <div id="modal-category-picker-content" className="space-y-4 max-h-[70vh] flex flex-col pb-6">
+          {!isAddingCategory ? (
+            <>
+              <div className="px-1 flex gap-2">
+                <div className="flex-1">
+                    <Input
+                        placeholder="Search category..."
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        leftIcon={<Icon name="MagnifyingGlassIcon" className="w-5 h-5 text-gray-400" />}
+                        className="bg-gray-100 border-none"
+                    />
+                </div>
                 <button
-                  key={category.id}
-                  onClick={() => handleCategorySelect(category.id!)}
-                  className={`
-                    flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-90
-                    ${categoryId === category.id ? 'bg-midblue/10 ring-2 ring-midblue' : 'hover:bg-gray-50'}
-                  `}
+                    onClick={() => setIsAddingCategory(true)}
+                    className="px-4 bg-midblue/10 text-midblue rounded-xl font-bold text-sm whitespace-nowrap active:scale-95 transition-all"
                 >
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg"
-                    style={{ backgroundColor: category.color }}
-                  >
-                    <Icon name={category.icon} className="w-8 h-8" />
-                  </div>
-                  <span className={`text-[11px] font-bold text-center leading-tight ${categoryId === category.id ? 'text-midblue' : 'text-gray-600'}`}>
-                    {category.name}
-                  </span>
+                    + Add
                 </button>
-              ))}
-            </div>
-
-            {filteredCategories.length === 0 && (
-              <div className="py-12 text-center text-gray-400">
-                <Icon name="FaceFrownIcon" className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                <p>No categories found</p>
               </div>
-            )}
-          </div>
+
+              <div id="category-grid-container" className="flex-1 overflow-y-auto pr-1">
+                <div id="category-grid" className="grid grid-cols-3 py-3 gap-3">
+                  {filteredCategories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategorySelect(category.id!)}
+                      className={`
+                        flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-90
+                        ${categoryId === category.id ? 'bg-midblue/10 ring-2 ring-midblue' : 'hover:bg-gray-50'}
+                      `}
+                    >
+                      <div
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                        style={{ backgroundColor: category.color }}
+                      >
+                        <Icon name={category.icon} className="w-8 h-8" />
+                      </div>
+                      <span className={`text-[11px] font-bold text-center leading-tight ${categoryId === category.id ? 'text-midblue' : 'text-gray-600'}`}>
+                        {category.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {filteredCategories.length === 0 && (
+                  <div className="py-12 text-center text-gray-400">
+                    <Icon name="FaceFrownIcon" className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p>No categories found</p>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div id="add-category-form" className="space-y-6 pt-2">
+                <div className="space-y-4">
+                    <Input
+                        label="Category Name"
+                        placeholder="e.g. Netflix, Gym, etc."
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        autoFocus
+                    />
+                    
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-500 ml-1">Choose Color</label>
+                        <div className="flex flex-wrap gap-3">
+                            {['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#78716c'].map(color => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    onClick={() => setNewCategoryColor(color)}
+                                    className={`w-10 h-10 rounded-full transition-all active:scale-90 ${newCategoryColor === color ? 'ring-4 ring-offset-2 ring-gray-200' : ''}`}
+                                    style={{ backgroundColor: color }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                    <Button 
+                        variant="outline" 
+                        onClick={() => setIsAddingCategory(false)}
+                        className="flex-1"
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleAddCategory}
+                        className="flex-1 bg-midblue text-white"
+                    >
+                        Save Category
+                    </Button>
+                </div>
+            </div>
+          )}
         </div>
       </Modal>
     </div>

@@ -12,6 +12,7 @@ import { useUIStore } from "@/store";
 import { centsToDisplay } from "@/lib/money";
 import { Icon } from "@/components/ui";
 import type { TransactionTypeFilter } from "@/types";
+import { formatDateLocal, parseDateLocal, getMonthRange } from "@/lib/date";
 
 export const TransactionsPage: React.FC = () => {
     const { filters, setFilters } = useUIStore();
@@ -23,16 +24,19 @@ export const TransactionsPage: React.FC = () => {
     const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const updateDateRange = (month: number, year: number) => {
-        const start = new Date(year, month, 1);
-        const end = new Date(year, month + 1, 0);
-        setFilters({
-            dateRange: {
-                preset: 'custom',
-                startDate: start.toISOString().split('T')[0],
-                endDate: end.toISOString().split('T')[0]
-            }
-        });
         setIsMonthPickerOpen(false);
+        // Delay filter update slightly to allow modal closing animation to start smoothly
+        setTimeout(() => {
+            const date = new Date(year, month, 1);
+            const range = getMonthRange(date);
+            setFilters({
+                dateRange: {
+                    preset: 'custom',
+                    startDate: formatDateLocal(range.start),
+                    endDate: formatDateLocal(range.end)
+                }
+            });
+        }, 100);
     };
 
     const handleTypeFilter = (type: TransactionTypeFilter) => {
@@ -73,23 +77,13 @@ export const TransactionsPage: React.FC = () => {
         return groups;
     }, [transactions]);
 
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                <div className="animate-spin text-midblue">
-                    <Icon name="ArrowPathIcon" className="w-8 h-8" />
-                </div>
-                <p className="text-sm font-bold text-gray-400 animate-pulse">Fetching transactions...</p>
-            </div>
-        );
-    }
-
     return (
-        <div id="page-transactions" className="space-y-4">
-            <header className="px-4 pt-4">
+        <div id="page-transactions" className="pb-16">
+            <header className="px-4 pt-4 mb-2">
                 <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
             </header>
-            <div id="search-container" className="px-4">
+
+            <div id="search-container" className="px-4 mb-4">
                 <Input
                     placeholder="Search transactions..."
                     value={searchTerm}
@@ -99,40 +93,43 @@ export const TransactionsPage: React.FC = () => {
             </div>
 
             <FilterBar id="transactions-filter-bar">
-                <FilterChip
-                    id="filter-type-all"
-                    onClick={() => handleTypeFilter("all")}
-                >
-                    All
-                </FilterChip>
-                <FilterChip
-                    id="filter-type-income"
-                    onClick={() => handleTypeFilter("income")}
-                >
-                    Income
-                </FilterChip>
-                <FilterChip
-                    id="filter-type-expense"
-                    onClick={() => handleTypeFilter("expense")}
-                >
-                    Expenses
-                </FilterChip>
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
+                    <FilterChip
+                        id="filter-type-all"
+                        onClick={() => handleTypeFilter("all")}
+                    >
+                        All
+                    </FilterChip>
+                    <FilterChip
+                        id="filter-type-income"
+                        onClick={() => handleTypeFilter("income")}
+                    >
+                        Income
+                    </FilterChip>
+                    <FilterChip
+                        id="filter-type-expense"
+                        onClick={() => handleTypeFilter("expense")}
+                    >
+                        Expenses
+                    </FilterChip>
+                </div>
             </FilterBar>
+            <div className="mb-4"></div>
 
             {/* Monthly Navigator */}
             <div className="px-4 py-2">
-                <div id="monthly-navigator" className="bg-white rounded-2xl p-3 flex items-center justify-between border-2 border-gray-100 shadow-soft">
+                <div id="monthly-navigator" className="bg-white rounded-2xl h-[58px] px-3 flex items-center justify-between border-2 border-gray-100 shadow-soft">
                     <button
                         id="nav-prev-month"
                         onClick={() => {
-                            const current = new Date(filters.dateRange.startDate);
+                            const current = parseDateLocal(filters.dateRange.startDate);
                             const prev = new Date(current.getFullYear(), current.getMonth() - 1, 1);
-                            const lastDay = new Date(prev.getFullYear(), prev.getMonth() + 1, 0);
+                            const range = getMonthRange(prev);
                             setFilters({
                                 dateRange: {
                                     preset: 'custom',
-                                    startDate: prev.toISOString().split('T')[0],
-                                    endDate: lastDay.toISOString().split('T')[0]
+                                    startDate: formatDateLocal(range.start),
+                                    endDate: formatDateLocal(range.end)
                                 }
                             });
                         }}
@@ -141,13 +138,13 @@ export const TransactionsPage: React.FC = () => {
                         <Icon name="ChevronLeftIcon" className="w-5 h-5 stroke-[3]" />
                     </button>
 
-                    <button 
+                    <button
                         id="nav-month-picker"
                         onClick={() => setIsMonthPickerOpen(true)}
                         className="text-center px-4 py-1 rounded-xl hover:bg-gray-50 transition-colors group"
                     >
                         <p className="text-sm font-black text-midblue uppercase tracking-widest group-hover:scale-105 transition-transform flex items-center gap-2">
-                            {new Date(filters.dateRange.startDate).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                            {parseDateLocal(filters.dateRange.startDate).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
                             <Icon name="ChevronDownIcon" className="w-4 h-4" />
                         </p>
                     </button>
@@ -155,20 +152,21 @@ export const TransactionsPage: React.FC = () => {
                     <button
                         id="nav-next-month"
                         disabled={(() => {
-                            const current = new Date(filters.dateRange.startDate);
+                            const current = parseDateLocal(filters.dateRange.startDate);
                             const next = new Date(current.getFullYear(), current.getMonth() + 1, 1);
                             const now = new Date();
-                            return next > new Date(now.getFullYear(), now.getMonth(), 1);
+                            const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                            return next > startOfThisMonth;
                         })()}
                         onClick={() => {
-                            const current = new Date(filters.dateRange.startDate);
+                            const current = parseDateLocal(filters.dateRange.startDate);
                             const next = new Date(current.getFullYear(), current.getMonth() + 1, 1);
-                            const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0);
+                            const range = getMonthRange(next);
                             setFilters({
                                 dateRange: {
                                     preset: 'custom',
-                                    startDate: next.toISOString().split('T')[0],
-                                    endDate: lastDay.toISOString().split('T')[0]
+                                    startDate: formatDateLocal(range.start),
+                                    endDate: formatDateLocal(range.end)
                                 }
                             });
                         }}
@@ -179,19 +177,27 @@ export const TransactionsPage: React.FC = () => {
                 </div>
             </div>
 
-            {transactions.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                    <div className="flex justify-center mb-4">
-                        <Icon name="InboxIcon" className="w-16 h-16 text-gray-300" />
+            <div className="min-h-[400px] transition-all duration-300">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center h-64 space-y-4 animate-[fadeIn_0.2s_ease-in-out]">
+                        <div className="animate-spin text-midblue">
+                            <Icon name="ArrowPathIcon" className="w-8 h-8" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-400 animate-pulse">Fetching transactions...</p>
                     </div>
-                    <p className="font-bold">No transactions found</p>
-                </div>
-            ) : (
-                <>
-                    <div id="transactions-list" className="px-4 space-y-6">
+                ) : transactions.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 animate-[fadeIn_0.2s_ease-in-out]">
+                        <div className="flex justify-center mb-4">
+                            <Icon name="InboxIcon" className="w-16 h-16 text-gray-300" />
+                        </div>
+                        <p className="font-bold">No transactions found</p>
+                    </div>
+                ) : (
+                    <>
+                        <div id="transactions-list" className="px-4 animate-[fadeIn_0.2s_ease-in-out]">
                         {Object.entries(groupedTransactions).map(([date, items]) => (
-                            <div key={date} className="space-y-3">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 bg-gray-50 py-2 z-10">
+                            <div key={date} className="mb-6">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 py-2">
                                     {date}
                                 </h3>
                                 <div id={`date-group-${date}`} className="space-y-2">
@@ -201,9 +207,8 @@ export const TransactionsPage: React.FC = () => {
                                             <Card key={transaction.id} className="border-0 shadow-soft">
                                                 <CardBody className="flex items-center justify-between p-3">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                                                            transaction.type === "income" ? "bg-success-50" : "bg-danger-50"
-                                                        }`}>
+                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${transaction.type === "income" ? "bg-success-50" : "bg-danger-50"
+                                                            }`}>
                                                             {category?.icon ? (
                                                                 <Icon name={category.icon} className="w-6 h-6" style={{ color: category.color }} />
                                                             ) : (
@@ -219,11 +224,10 @@ export const TransactionsPage: React.FC = () => {
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div className="flex items-center gap-3">
-                                                        <p className={`font-black text-sm ${
-                                                            transaction.type === "income" ? "text-success-600" : "text-danger-600"
-                                                        }`}>
+                                                        <p className={`font-black text-sm ${transaction.type === "income" ? "text-success-600" : "text-danger-600"
+                                                            }`}>
                                                             {transaction.type === "income" ? "+" : "-"}
                                                             {centsToDisplay(transaction.amount)}
                                                         </p>
@@ -253,13 +257,14 @@ export const TransactionsPage: React.FC = () => {
                     </div>
                 </>
             )}
+            </div>
             {/* Month Picker Modal */}
             <Modal
                 isOpen={isMonthPickerOpen}
                 onClose={() => setIsMonthPickerOpen(false)}
                 title="Select Month & Year"
             >
-                <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 scrollbar-hide">
+                <div className="space-y-6 max-h-[60dvh] overflow-y-auto pr-2 scrollbar-hide">
                     {[2026, 2025, 2024].map((year) => (
                         <div key={year} className="space-y-3">
                             <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
@@ -270,8 +275,8 @@ export const TransactionsPage: React.FC = () => {
                                     const date = new Date(year, i, 1);
                                     const now = new Date();
                                     const isFuture = date > new Date(now.getFullYear(), now.getMonth(), 1);
-                                    const isSelected = new Date(filters.dateRange.startDate).getMonth() === i && 
-                                                      new Date(filters.dateRange.startDate).getFullYear() === year;
+                                    const isSelected = parseDateLocal(filters.dateRange.startDate).getMonth() === i &&
+                                        parseDateLocal(filters.dateRange.startDate).getFullYear() === year;
 
                                     return (
                                         <button
@@ -280,10 +285,10 @@ export const TransactionsPage: React.FC = () => {
                                             onClick={() => updateDateRange(i, year)}
                                             className={`
                                                 py-3 px-2 rounded-xl text-[10px] font-bold uppercase transition-all
-                                                ${isSelected 
-                                                    ? 'bg-midblue text-white shadow-soft scale-105' 
-                                                    : isFuture 
-                                                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed opacity-50' 
+                                                ${isSelected
+                                                    ? 'bg-midblue text-white shadow-soft scale-105'
+                                                    : isFuture
+                                                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed opacity-50'
                                                         : 'bg-gray-50 text-gray-500 hover:bg-midblue/10 hover:text-midblue'}
                                             `}
                                         >
