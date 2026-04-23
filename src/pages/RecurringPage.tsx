@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Input, TextArea, Button, Icon } from '@/components/ui';
+import { Input, Button, Icon } from '@/components/ui';
 import { useRecurring } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents, centsToDisplay } from '@/lib/money';
@@ -14,9 +14,9 @@ export const RecurringPage: React.FC = () => {
   const [amountDisplay, setAmountDisplay] = useState('');
   const [categoryId, setCategoryId] = useState<number>(0);
   const [frequency, setFrequency] = useState<RecurringFrequency>('monthly');
-  const [dayOfMonth, setDayOfMonth] = useState<number>(1);
-  const [dayOfWeek, setDayOfWeek] = useState<number>(1);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dayOfMonth] = useState<number>(1);
+  const [dayOfWeek] = useState<number>(1);
+  const [startDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

@@ -1,17 +1,10 @@
-import type { DashboardData, CategoryBreakdown } from './types';
+import type { DashboardData } from './types';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { loansEngine } from '@/domain/loans/loansEngine';
 import { recurringEngine } from '@/domain/recurring/recurringEngine';
 import { categoryRepository } from '@/storage';
-import { FilterState } from '@/types';
-import { addCents, subtractCents } from '@/lib/money';
-
-export interface DashboardSummary {
-  totalBalance: number;
-  income: number;
-  expenses: number;
-  loanExposure: number;
-}
+import { FilterState, Transaction } from '@/types';
+import { addCents } from '@/lib/money';
 
 export const dashboardEngine = {
   async getDashboardData(filters: FilterState, includeLoans: boolean = false): Promise<DashboardData> {
@@ -30,7 +23,7 @@ export const dashboardEngine = {
     const allTransactions = [
       ...transactions,
       ...recurringTransactions,
-    ].sort((a, b) => b.date.localeCompare(a.date));
+    ].sort((a, b) => b.date.localeCompare(a.date)) as Transaction[];
 
     const stats = transactionsEngine.calculateStats(allTransactions);
     const categoryBreakdown = transactionsEngine.getCategoryBreakdown(allTransactions, categories);

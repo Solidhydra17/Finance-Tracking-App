@@ -1,4 +1,4 @@
-import { Category, Transaction, CategoryType, TransactionType } from '@/types';
+import { Category, Transaction, TransactionType } from '@/types';
 import { db, clearAllData } from '@/storage/indexeddb/database';
 
 const CATEGORIES: Omit<Category, 'id'>[] = [

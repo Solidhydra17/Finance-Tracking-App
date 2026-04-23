@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { DonutChart } from '@/components/charts';
-import { Card, CardBody, Badge } from '@/components/ui';
 import { useDashboard } from '@/hooks';
 import { useUIStore } from '@/store';
 import { Icon } from '@/components/ui';
@@ -78,7 +77,7 @@ export const DashboardPage: React.FC = () => {
     return <FunnyLoadingScreen />;
   }
 
-  const chartData = data.categoryBreakdown.map((c) => ({
+  const chartData = data.categoryBreakdown.map((c: any) => ({
     label: c.categoryName,
     value: c.total,
     color: c.color,
@@ -138,7 +137,7 @@ export const DashboardPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center space-y-8">
             <DonutChart data={chartData} size={200} strokeWidth={25} />
             <div className="w-full space-y-3">
-              {data.categoryBreakdown.slice(0, 4).map((cat) => (
+              {data.categoryBreakdown.slice(0, 4).map((cat: any) => (
                 <div key={cat.categoryId} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
                   <div className="flex items-center gap-3">
                     <Icon name={cat.icon} className="w-6 h-6" style={{ color: cat.color }} />

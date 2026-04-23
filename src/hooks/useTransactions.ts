@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
-import { recurringEngine } from '@/domain/recurring/recurringEngine';
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { useUIStore } from '@/store';
 import { paginateItems, createPaginationState, type PaginationResult } from '@/lib/pagination';

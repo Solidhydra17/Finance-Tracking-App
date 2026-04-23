@@ -1,5 +1,12 @@
-import type { DashboardSummary, CategoryBreakdown } from './dashboardEngine';
 import type { Transaction } from '@/types';
+import type { CategoryBreakdown } from '@/domain/transactions/transactionsEngine';
+
+export interface DashboardSummary {
+  totalBalance: number;
+  income: number;
+  expenses: number;
+  loanExposure: number;
+}
 
 export interface DashboardData {
   summary: DashboardSummary;
@@ -7,5 +14,3 @@ export interface DashboardData {
   largestExpense: Transaction | null;
   transactionCount: number;
 }
-
-export type { DashboardSummary, CategoryBreakdown };

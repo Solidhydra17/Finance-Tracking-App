@@ -9,6 +9,7 @@ export const StorageConfig = {
 
 export async function getStorageEngine() {
   if (isCapacitor) {
+    // @ts-ignore - Module only exists in native mobile builds
     const { Storable } = await import('@capacitor/sqlite');
     return new Storable();
   }

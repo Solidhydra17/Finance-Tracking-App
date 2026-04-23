@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 import { 
   HomeIcon, 
@@ -14,7 +14,6 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
-  const location = useLocation();
 
   const navItems = [
     { path: '/', label: 'Home', icon: HomeIcon },

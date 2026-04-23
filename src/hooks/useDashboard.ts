@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { dashboardEngine, type DashboardData } from '@/domain/dashboard/dashboardEngine';
+import { useState, useEffect, useCallback } from 'react';
+import { dashboardEngine } from '@/domain/dashboard/dashboardEngine';
+import type { DashboardData } from '@/domain/dashboard/types';
 import type { FilterState } from '@/types';
 import { useUIStore } from '@/store';
 import { seedRandomData } from '@/lib/mockDataGenerator';
@@ -10,7 +11,6 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { addToast } = useUIStore();
-  const isFirstLoad = useRef(true);
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);

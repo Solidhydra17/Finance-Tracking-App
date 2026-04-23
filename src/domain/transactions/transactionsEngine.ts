@@ -1,6 +1,6 @@
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { transactionRepository } from '@/storage/indexeddb';
-import { divideCents, addCents, subtractCents, absCents } from '@/lib/money';
+import { addCents, subtractCents } from '@/lib/money';
 
 export interface TransactionStats {
   totalIncome: number;

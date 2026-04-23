@@ -2,8 +2,6 @@ import React, { useState, useMemo } from "react";
 import {
     Card,
     CardBody,
-    Badge,
-    Button,
     Pagination,
     Input,
     Modal,
