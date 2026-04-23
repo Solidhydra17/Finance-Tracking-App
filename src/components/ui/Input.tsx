@@ -16,7 +16,7 @@ export const Input: React.FC<InputProps> = ({
   ...props
 }) => {
   return (
-    <div className="w-full">
+    <div className="ui-input-wrapper w-full">
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           {label}
@@ -66,7 +66,7 @@ export const Select: React.FC<SelectProps> = ({
   ...props
 }) => {
   return (
-    <div className="w-full">
+    <div className="ui-select-wrapper w-full">
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           {label}
@@ -106,7 +106,7 @@ export const TextArea: React.FC<TextAreaProps> = ({
   ...props
 }) => {
   return (
-    <div className="w-full">
+    <div className="ui-textarea-wrapper w-full">
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           {label}

@@ -31,12 +31,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area-pb z-40 px-4">
+    <nav id="bottom-nav-bar" className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area-pb z-40 px-4">
       <div className="flex items-center justify-between h-20">
         {/* Left Side Items */}
-        <div className="flex flex-1 justify-around">
+        <div id="nav-left-items" className="flex flex-1 justify-around">
           {navItems.slice(0, 2).map((item) => (
             <NavLink
+              id={`nav-link-${item.label.toLowerCase()}`}
               key={item.path}
               to={item.path}
               className={({ isActive }) => `
@@ -55,9 +56,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
         <div className="w-20" />
 
         {/* Right Side Items */}
-        <div className="flex flex-1 justify-around">
+        <div id="nav-right-items" className="flex flex-1 justify-around">
           {navItems.slice(2, 4).map((item) => (
             <NavLink
+              id={`nav-link-${item.label.toLowerCase()}`}
               key={item.path}
               to={item.path}
               className={({ isActive }) => `
@@ -75,6 +77,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
 
       {/* FAB Add Button */}
       <button
+        id="btn-main-add"
         onClick={handleFABClick}
         disabled={isAddPage}
         className={`

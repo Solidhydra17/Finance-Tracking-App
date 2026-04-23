@@ -113,11 +113,11 @@ export const SettingsPage: React.FC = () => {
   }, [addToast]);
 
   return (
-    <div className="px-4 space-y-6">
+    <div id="page-settings" className="px-4 space-y-6">
       <h1 className="text-xl font-bold text-gray-900">Settings</h1>
 
       {/* Data Management */}
-      <Card>
+      <Card id="card-data-management">
         <CardBody className="space-y-4">
           <h3 className="font-semibold text-gray-900">Data Management</h3>
 
@@ -153,7 +153,7 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {/* Danger Zone */}
-      <Card>
+      <Card id="card-danger-zone">
         <CardBody className="space-y-4">
           <h3 className="font-semibold text-danger-600">Danger Zone</h3>
           <p className="text-sm text-gray-500">
@@ -172,7 +172,7 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {/* App Info */}
-      <Card>
+      <Card id="card-about">
         <CardBody>
           <h3 className="font-semibold text-gray-900 mb-2">About</h3>
           <p className="text-sm text-gray-500">
@@ -192,7 +192,7 @@ export const SettingsPage: React.FC = () => {
         size="sm"
         position="bottom"
       >
-        <div className="space-y-6 pt-2 pb-6">
+        <div id="modal-confirm-clear-content" className="space-y-6 pt-2 pb-6">
           <div className="flex flex-col items-center gap-4 text-center px-4">
             <div className="w-16 h-16 bg-danger-50 rounded-full flex items-center justify-center">
               <Icon name="ExclamationTriangleIcon" className="w-8 h-8 text-danger-500" />

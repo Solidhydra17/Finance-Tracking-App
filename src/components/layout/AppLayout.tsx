@@ -31,11 +31,11 @@ export const AppLayout: React.FC = () => {
         };
         cleanupDuplicates();
     }, []);
-    const { 
-        isAddTransactionOpen, 
+    const {
+        isAddTransactionOpen,
         setAddTransactionOpen,
         isAddMenuOpen,
-        setAddMenuOpen 
+        setAddMenuOpen
     } = useUIStore();
 
     const handleAddSelect = (type: 'income' | 'expense') => {
@@ -44,8 +44,8 @@ export const AppLayout: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <main className="pb-20 pt-2">
+        <div id="app-layout" className="min-h-screen bg-gray-50">
+            <main id="app-main-content" className="pb-32 pt-2">
                 <Outlet />
             </main>
 
@@ -61,7 +61,7 @@ export const AppLayout: React.FC = () => {
                 size="sm"
                 position="bottom"
             >
-                <div className="grid grid-cols-2 gap-4 pt-2 pb-6">
+                <div id="add-menu-options" className="grid grid-cols-2 gap-4 pt-2 pb-6">
                     <button
                         onClick={() => handleAddSelect('income')}
                         className="flex flex-col items-center justify-center gap-3 p-6 bg-success-50 rounded-3xl border-2 border-transparent hover:border-success-500 transition-all active:scale-95 group"
@@ -69,7 +69,7 @@ export const AppLayout: React.FC = () => {
                         <div className="w-16 h-16 bg-success-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
                             <Icon name="ArrowTrendingUpIcon" className="w-8 h-8" />
                         </div>
-                        <span className="font-bold text-success-700">Income</span>
+                        <span id="btn-add-income" className="font-bold text-success-700">Income</span>
                     </button>
 
                     <button
@@ -79,7 +79,7 @@ export const AppLayout: React.FC = () => {
                         <div className="w-16 h-16 bg-danger-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
                             <Icon name="ArrowTrendingDownIcon" className="w-8 h-8" />
                         </div>
-                        <span className="font-bold text-danger-700">Expense</span>
+                        <span id="btn-add-expense" className="font-bold text-danger-700">Expense</span>
                     </button>
                 </div>
             </Modal>

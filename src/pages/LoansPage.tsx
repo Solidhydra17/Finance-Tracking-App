@@ -64,9 +64,12 @@ export const LoansPage: React.FC = () => {
   }
 
   return (
-    <div className="px-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Loans</h1>
+    <div id="page-loans" className="px-4 space-y-4">
+      <header className="pt-4">
+        <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
+      </header>
+      <div id="loans-header" className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">Loans</h2>
         <Button size="sm" onClick={() => setAddLoanOpen(true)}>
           + Add Loan
         </Button>
@@ -80,7 +83,7 @@ export const LoansPage: React.FC = () => {
           <p>No loans yet</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div id="loans-list" className="space-y-3">
           {loans.map((loan) => (
             <div key={loan.id} className="bg-white rounded-2xl shadow-soft p-4">
               <div className="flex items-center justify-between mb-3">
@@ -137,8 +140,8 @@ export const LoansPage: React.FC = () => {
         onClose={() => setAddLoanOpen(false)}
         title="Add Loan"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2">
+        <form id="form-add-loan" onSubmit={handleSubmit} className="space-y-4">
+          <div id="loan-type-toggle" className="flex gap-2">
             <button
               type="button"
               onClick={() => setDirection('borrowed')}

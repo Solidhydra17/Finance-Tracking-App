@@ -65,8 +65,8 @@ export const RecurringPage: React.FC = () => {
   }
 
   return (
-    <div className="px-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div id="page-recurring" className="px-4 space-y-4">
+      <div id="recurring-header" className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Recurring</h1>
         <Button size="sm" onClick={() => setAddRecurringOpen(true)}>
           + Add Rule
@@ -81,7 +81,7 @@ export const RecurringPage: React.FC = () => {
           <p>No recurring rules yet</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div id="recurring-rules-list" className="space-y-3">
           {rules.map((rule) => (
             <div key={rule.id} className="bg-white rounded-2xl shadow-soft p-4">
               <div className="flex items-center justify-between mb-3">
@@ -127,8 +127,8 @@ export const RecurringPage: React.FC = () => {
         onClose={() => setAddRecurringOpen(false)}
         title="Add Recurring Rule"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2">
+        <form id="form-add-recurring" onSubmit={handleSubmit} className="space-y-4">
+          <div id="recurring-type-toggle" className="flex gap-2">
             <button
               type="button"
               onClick={() => setType('income')}
@@ -171,7 +171,7 @@ export const RecurringPage: React.FC = () => {
             required
           />
 
-          <div className="flex gap-2">
+          <div id="recurring-frequency-toggle" className="flex gap-2">
             <button
               type="button"
               onClick={() => setFrequency('weekly')}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Select, Input, TextArea, Button, Icon, Modal } from '@/components/ui';
+import { Input, TextArea, Button, Icon, Modal } from '@/components/ui';
 import { useCategories, useTransactions } from '@/hooks';
 import { useUIStore } from '@/store';
-import { displayToCents, centsToDisplay } from '@/lib/money';
+import { displayToCents } from '@/lib/money';
 import type { TransactionType } from '@/types';
 
 export const AddTransactionPage: React.FC = () => {
@@ -81,9 +81,9 @@ export const AddTransactionPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div id="page-add-transaction" className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white px-4 py-4 flex items-center gap-4 sticky top-0 z-10 border-b border-gray-100">
+      <header id="add-transaction-header" className="bg-white px-4 py-4 flex items-center gap-4 sticky top-0 z-10 border-b border-gray-100">
         <button
           onClick={() => navigate(-1)}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -91,12 +91,12 @@ export const AddTransactionPage: React.FC = () => {
           <Icon name="ArrowLeftIcon" className="w-6 h-6 text-gray-600" />
         </button>
         <h1 className="text-xl font-bold text-gray-900">Add {type === 'income' ? 'Income' : 'Expense'}</h1>
-      </div>
+      </header>
 
-      <div className="px-4 py-6">
+      <div id="add-transaction-content" className="px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Type Toggle */}
-          <div className="flex bg-white p-1 rounded-2xl shadow-sm">
+          <div id="section-toggle" className="flex bg-white p-1 rounded-2xl shadow-sm">
             <button
               type="button"
               onClick={() => setType('income')}
@@ -125,7 +125,7 @@ export const AddTransactionPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 shadow-soft space-y-6 border border-gray-100">
+          <div id="section-form-fields" className="bg-white rounded-3xl p-6 shadow-soft space-y-6 border border-gray-100">
             <Input
               label="Amount"
               type="number"
@@ -149,11 +149,12 @@ export const AddTransactionPage: React.FC = () => {
             />
 
             {/* Custom Category Picker Trigger */}
-            <div className="space-y-2">
+            <div id="field-category" className="space-y-2">
               <label className="text-sm font-bold text-gray-500 ml-1">Category</label>
               <button
                 type="button"
                 onClick={() => setIsCategoryPickerOpen(true)}
+                id="btn-category-picker-open"
                 className="w-full flex items-center justify-between p-4 bg-gray-50 border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all"
               >
                 <div className="flex items-center gap-3">
@@ -175,7 +176,7 @@ export const AddTransactionPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-1">
+            <div id="field-note" className="space-y-1">
               <TextArea
                 label="Note"
                 placeholder="Add a note..."
@@ -197,6 +198,7 @@ export const AddTransactionPage: React.FC = () => {
           <Button
             type="submit"
             isLoading={isSubmitting}
+            id="btn-save-transaction"
             className={`w-full py-5 text-xl font-bold rounded-2xl shadow-xl transition-all active:scale-95 ${type === 'income' ? 'bg-success-500 hover:bg-success-600' : 'bg-danger-500 hover:bg-danger-600'
               }`}
           >
@@ -213,7 +215,7 @@ export const AddTransactionPage: React.FC = () => {
         position="bottom"
         size="lg"
       >
-        <div className="space-y-4 max-h-[70vh] flex flex-col">
+        <div id="modal-category-picker-content" className="space-y-4 max-h-[70vh] flex flex-col">
           <div className="px-1">
             <Input
               placeholder="Search category..."
@@ -224,8 +226,8 @@ export const AddTransactionPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto pb-6">
-            <div className="grid grid-cols-3 py-3 mx-1 gap-3">
+          <div id="category-grid-container" className="flex-1 overflow-y-auto pb-6">
+            <div id="category-grid" className="grid grid-cols-3 py-3 mx-1 gap-3">
               {filteredCategories.map((category) => (
                 <button
                   key={category.id}

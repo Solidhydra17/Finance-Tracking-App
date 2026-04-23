@@ -58,10 +58,11 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return createPortal(
-    <div className={`fixed inset-0 z-50 flex justify-center ${position === 'bottom' ? 'items-end' : 'items-end sm:items-center'}`}>
+    <div id="ui-modal-root" className={`fixed inset-0 z-50 flex justify-center ${position === 'bottom' ? 'items-end' : 'items-end sm:items-center'}`}>
       {/* Backdrop */}
       <div
         className={`
+          ui-modal-backdrop
           absolute inset-0 bg-black/50 backdrop-blur-sm 
           ${isClosing ? 'animate-[fadeOut_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[fadeIn_0.2s_ease-out]'}
         `}
@@ -71,6 +72,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Content */}
       <div
         className={`
+          ui-modal-container
           relative bg-white rounded-t-3xl ${position === 'center' ? 'sm:rounded-2xl' : ''} shadow-hard
           w-full ${sizeClasses[size]} max-h-[90vh] overflow-auto
           ${isClosing ? 'animate-[slideOutDown_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[slideUp_0.3s_ease-out]'}

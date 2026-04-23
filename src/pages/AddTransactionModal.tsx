@@ -80,8 +80,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex gap-2">
+    <form id="form-edit-transaction" onSubmit={handleSubmit} className="space-y-4">
+      <div id="edit-transaction-type-toggle" className="flex gap-2">
         <button
           type="button"
           onClick={() => setType('income')}

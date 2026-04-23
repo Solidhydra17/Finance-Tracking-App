@@ -85,8 +85,11 @@ export const TransactionsPage: React.FC = () => {
     }
 
     return (
-        <div className="space-y-4 pb-20">
-            <div className="px-4">
+        <div id="page-transactions" className="space-y-4">
+            <header className="px-4 pt-4">
+                <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
+            </header>
+            <div id="search-container" className="px-4">
                 <Input
                     placeholder="Search transactions..."
                     value={searchTerm}
@@ -95,21 +98,21 @@ export const TransactionsPage: React.FC = () => {
                 />
             </div>
 
-            <FilterBar>
+            <FilterBar id="transactions-filter-bar">
                 <FilterChip
-                    isActive={filters.transactionType === "all"}
+                    id="filter-type-all"
                     onClick={() => handleTypeFilter("all")}
                 >
                     All
                 </FilterChip>
                 <FilterChip
-                    isActive={filters.transactionType === "income"}
+                    id="filter-type-income"
                     onClick={() => handleTypeFilter("income")}
                 >
                     Income
                 </FilterChip>
                 <FilterChip
-                    isActive={filters.transactionType === "expense"}
+                    id="filter-type-expense"
                     onClick={() => handleTypeFilter("expense")}
                 >
                     Expenses
@@ -118,8 +121,9 @@ export const TransactionsPage: React.FC = () => {
 
             {/* Monthly Navigator */}
             <div className="px-4 py-2">
-                <div className="bg-white rounded-2xl p-3 flex items-center justify-between border-2 border-gray-100 shadow-soft">
+                <div id="monthly-navigator" className="bg-white rounded-2xl p-3 flex items-center justify-between border-2 border-gray-100 shadow-soft">
                     <button
+                        id="nav-prev-month"
                         onClick={() => {
                             const current = new Date(filters.dateRange.startDate);
                             const prev = new Date(current.getFullYear(), current.getMonth() - 1, 1);
@@ -138,6 +142,7 @@ export const TransactionsPage: React.FC = () => {
                     </button>
 
                     <button 
+                        id="nav-month-picker"
                         onClick={() => setIsMonthPickerOpen(true)}
                         className="text-center px-4 py-1 rounded-xl hover:bg-gray-50 transition-colors group"
                     >
@@ -148,6 +153,7 @@ export const TransactionsPage: React.FC = () => {
                     </button>
 
                     <button
+                        id="nav-next-month"
                         disabled={(() => {
                             const current = new Date(filters.dateRange.startDate);
                             const next = new Date(current.getFullYear(), current.getMonth() + 1, 1);
@@ -182,13 +188,13 @@ export const TransactionsPage: React.FC = () => {
                 </div>
             ) : (
                 <>
-                    <div className="px-4 space-y-6">
+                    <div id="transactions-list" className="px-4 space-y-6">
                         {Object.entries(groupedTransactions).map(([date, items]) => (
                             <div key={date} className="space-y-3">
                                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 bg-gray-50 py-2 z-10">
                                     {date}
                                 </h3>
-                                <div className="space-y-2">
+                                <div id={`date-group-${date}`} className="space-y-2">
                                     {items.map((transaction) => {
                                         const category = getCategoryById(transaction.categoryId);
                                         return (
