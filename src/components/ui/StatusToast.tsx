@@ -42,7 +42,7 @@ const StatusToastContent: React.FC<{ isOnline: boolean; onExpire: () => void }> 
         flex flex-col border border-white/10 backdrop-blur-md
         transition-all duration-400
         ${isOnline ? 'bg-success-600' : 'bg-gray-800'}
-        ${isExiting ? 'animate-slide-out-down opacity-0' : 'animate-slide-up'}
+        ${isExiting ? 'animate-slide-out-down-centered opacity-0' : 'animate-slide-up-centered'}
       `}
       style={{ transform: 'translateX(-50%)' }}
     >
