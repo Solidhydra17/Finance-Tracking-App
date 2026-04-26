@@ -25,7 +25,7 @@ export const AddTransactionPage: React.FC = () => {
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurringRuleId, setRecurringRuleId] = useState<number | null>(null);
-  const [ruleFrequency, setRuleFrequency] = useState<string | null>(null);
+  // const [ruleFrequency, setRuleFrequency] = useState<string | null>(null);
   const [isConfiguringRecurring, setIsConfiguringRecurring] = useState(false);
   const [isConfirmRuleUpdateOpen, setIsConfirmRuleUpdateOpen] = useState(false);
   
@@ -60,7 +60,6 @@ export const AddTransactionPage: React.FC = () => {
               const { recurringRepository } = await import('@/storage/indexeddb');
               const rule = await recurringRepository.getById(transaction.recurringRuleId);
               if (rule) {
-                setRuleFrequency(rule.frequency);
                 setFrequency(rule.frequency);
               }
             }
@@ -85,15 +84,14 @@ export const AddTransactionPage: React.FC = () => {
           const { recurringRepository } = await import('@/storage/indexeddb');
           const rule = await recurringRepository.getById(Number(ruleIdParam));
           
-          if (rule) {
-            setType(rule.type);
-            setAmountDisplay((rule.amount / 100).toString());
-            setCategoryId(rule.categoryId);
-            setNote(rule.description);
-            setFrequency(rule.frequency);
-            setRuleFrequency(rule.frequency);
-            setIsRecurring(true);
-          }
+            if (rule) {
+              setType(rule.type);
+              setAmountDisplay((rule.amount / 100).toString());
+              setCategoryId(rule.categoryId);
+              setNote(rule.description);
+              setFrequency(rule.frequency);
+              setIsRecurring(true);
+            }
         } catch (error) {
           console.error('Failed to fetch rule for configuring:', error);
           addToast('error', 'Failed to load recurring settings');

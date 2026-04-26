@@ -40,6 +40,10 @@ interface UIState {
   setUseMockData: (use: boolean) => void;
   darkMode: boolean;
   setDarkMode: (dark: boolean) => void;
+
+  // Connectivity
+  isOnline: boolean;
+  setOnline: (online: boolean) => void;
 }
 
 const getDefaultDateRange = (): DateRange => {
@@ -122,4 +126,8 @@ export const useUIStore = create<UIState>((set) => ({
     }
     set({ darkMode: dark });
   },
+
+  // Connectivity
+  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  setOnline: (online) => set({ isOnline: online }),
 }));

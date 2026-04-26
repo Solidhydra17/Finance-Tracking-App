@@ -1,5 +1,5 @@
 import { Category, Transaction, TransactionType } from '@/types';
-import { db, clearAllData } from '@/storage/indexeddb/database';
+import { db } from '@/storage/indexeddb/database';
 import { defaultCategories } from '@/storage/indexeddb/categoryRepository';
 
 const NOTES = [

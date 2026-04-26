@@ -1,6 +1,6 @@
 import { db } from '@/storage/indexeddb/database';
 import { recurringEngine } from './recurringEngine';
-import type { RecurringRule, Transaction } from '@/types';
+// import type { RecurringRule, Transaction } from '@/types';
 import { formatDateLocal } from '@/lib/date';
 
 let isProcessing = false;

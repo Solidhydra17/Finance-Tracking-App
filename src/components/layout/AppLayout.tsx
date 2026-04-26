@@ -2,10 +2,10 @@ import React, { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { ToastContainer, Modal, Icon } from "@/components/ui";
+import { ConnectivityListener, StatusToast } from "@/components/ui/StatusToast";
 import { useUIStore } from "@/store";
 import { AddTransactionModal } from "@/pages/AddTransactionModal";
 import { useNavigate } from "react-router-dom";
-import { db } from "@/storage/indexeddb";
 
 export const AppLayout: React.FC = () => {
     const navigate = useNavigate();
@@ -40,6 +40,8 @@ export const AppLayout: React.FC = () => {
             <BottomNav onAddClick={() => setAddMenuOpen(true)} />
 
             <ToastContainer />
+            <StatusToast />
+            <ConnectivityListener />
 
             {/* Selection Menu (Bottom Sheet Style) */}
             <Modal

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '@/storage';
-import { Card, CardBody, Button, Icon, Modal } from '@/components/ui';
+import { Card, CardBody, Icon, Modal } from '@/components/ui';
 import { useCategories } from '@/hooks';
 import { centsToDisplay } from '@/lib/money';
 import type { RecurringRule } from '@/types';
@@ -12,7 +12,7 @@ export const RecurringSettings: React.FC = () => {
   const [rules, setRules] = useState<RecurringRule[]>([]);
   const { categories } = useCategories('both');
   const { addToast } = useUIStore();
-  const [editingRule, setEditingRule] = useState<RecurringRule | null>(null);
+  // const [editingRule, setEditingRule] = useState<RecurringRule | null>(null);
   const [ruleToDelete, setRuleToDelete] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 

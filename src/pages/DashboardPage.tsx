@@ -78,7 +78,7 @@ const FunnyLoadingScreen = () => {
 import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/lib/date';
 
 export const DashboardPage: React.FC = () => {
-  const { filters, setFilters, showLoans, isFirstLoad, darkMode } = useUIStore();
+  const { filters, setFilters, showLoans, isFirstLoad } = useUIStore();
   const { data, isLoading } = useDashboard(filters, showLoans);
 
   const handlePresetChange = (preset: 'week' | 'month' | 'year') => {

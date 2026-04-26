@@ -42,6 +42,7 @@ export const RecurringPage: React.FC = () => {
         startDate,
         endDate: null,
         description,
+        lastGeneratedDate: null,
       });
       setAddRecurringOpen(false);
       resetForm();

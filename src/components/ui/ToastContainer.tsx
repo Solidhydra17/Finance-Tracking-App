@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUIStore } from '@/store';
 import { getToastIcon, getToastColor } from '@/lib/toast';
 import { Icon } from './Icon';
-import type { Toast } from '@/types';
+import type { Toast } from '@/lib/toast';
 
 const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {
   const [isExiting, setIsExiting] = useState(false);

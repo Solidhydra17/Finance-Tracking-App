@@ -58,8 +58,7 @@ export class FinanceDatabase extends Dexie {
     this.version(8).stores(schemaV7);
 
     this.on('blocked', () => {
-        console.warn('Database is blocked by another tab');
-        window.location.reload();
+        console.warn('Database is blocked by another tab. Please close other tabs.');
     });
   }
 }

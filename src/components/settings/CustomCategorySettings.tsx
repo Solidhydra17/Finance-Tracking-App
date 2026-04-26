@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardBody, Button, Icon, Modal, Input } from '@/components/ui';
+import { Card, CardBody, Icon, Modal, Input } from '@/components/ui';
 import { useCategories } from '@/hooks';
 import { categoryRepository } from '@/storage/indexeddb';
 import { useUIStore } from '@/store';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { categoryRepository, seedDefaultCategories } from '@/storage/indexeddb';
+import { categoryRepository } from '@/storage/indexeddb';
 import type { Category } from '@/types';
 import { useUIStore } from '@/store';
 

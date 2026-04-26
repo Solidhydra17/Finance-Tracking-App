@@ -1,7 +1,7 @@
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { transactionRepository } from '@/storage/indexeddb';
 import { addCents, subtractCents } from '@/lib/money';
-import { recurringEngine } from '@/domain/recurring/recurringEngine';
+// import { recurringEngine } from '@/domain/recurring/recurringEngine';
 
 export interface TransactionStats {
   totalIncome: number;

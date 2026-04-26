@@ -82,11 +82,11 @@
 
   @keyframes slideUp {
     from {
-      transform: translateY(100%);
+      transform: translate(-50%, 100%);
       opacity: 0;
     }
     to {
-      transform: translateY(0);
+      transform: translate(-50%, 0);
       opacity: 1;
     }
   }
@@ -102,10 +102,12 @@
 
   @keyframes slideOutDown {
     from {
-      transform: translateY(0);
+      transform: translate(-50%, 0);
+      opacity: 1;
     }
     to {
-      transform: translateY(100%);
+      transform: translate(-50%, 100%);
+      opacity: 0;
     }
   }
 
@@ -170,5 +172,22 @@
 
   .animate-toast-out {
     animation: toastOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-slide-out-down {
+    animation: slideOutDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes shrink {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+
+  .animate-shrink {
+    animation: shrink 5s linear forwards;
   }
 }
