@@ -14,7 +14,7 @@ export const AddTransactionPage: React.FC = () => {
   const editId = searchParams.get('edit');
   const mode = searchParams.get('mode');
   const ruleIdParam = searchParams.get('ruleId');
-  const { categories } = useCategories('both');
+  const { categories, refetch: refetchCategories } = useCategories('both');
   const { createTransaction, updateTransaction } = useTransactions(useUIStore.getState().filters);
   const { addToast } = useUIStore();
 
@@ -209,7 +209,6 @@ export const AddTransactionPage: React.FC = () => {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
-  const { refetch: refetchCategories } = useCategories('both');
 
   const handleAddCategory = async () => {
     if (!newCategoryName) {

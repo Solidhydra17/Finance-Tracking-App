@@ -4,6 +4,7 @@ import { useUIStore } from '@/store';
 import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
 import { RecurringSettings } from '@/components/settings/RecurringSettings';
+import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
 
 export const SettingsPage: React.FC = () => {
   const { useMockData, setUseMockData, addToast } = useUIStore();
@@ -148,6 +149,7 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       <RecurringSettings />
+      <CustomCategorySettings />
 
       {/* Data Management */}
       <Card id="card-data-management">
