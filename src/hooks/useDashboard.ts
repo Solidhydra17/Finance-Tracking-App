@@ -15,12 +15,21 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
     
     try {
       const isFirst = useUIStore.getState().isFirstLoad;
+      const useMock = useUIStore.getState().useMockData;
       
-      // If first load, seed the data and ensure at least 2.5 seconds of loading
-      if (isFirst) {
-        await seedRandomData(60);
-        await new Promise(resolve => setTimeout(resolve, 2500));
+      // If first load and mock data is enabled, seed the data
+      if (isFirst && useMock) {
+        try {
+          await seedRandomData(60);
+          // Ensure at least 2.5 seconds of loading for the "Funny Loading Screen"
+          await new Promise(resolve => setTimeout(resolve, 2500));
+        } catch (seedError) {
+          console.warn('Seeding failed, continuing with existing data...', seedError);
+        }
       }
+
+      const { recurringMaterializer } = await import('@/domain/recurring/materializer');
+      await recurringMaterializer.materializeDueTransactions();
 
       const dashboardData = await dashboardEngine.getDashboardData(filters, showLoans);
       setData(dashboardData);

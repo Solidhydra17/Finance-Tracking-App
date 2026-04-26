@@ -51,6 +51,7 @@ export const recurringEngine = {
 
       for (const date of generatedDates) {
         transactions.push({
+          id: `recurring-${rule.id}-${date}`,
           date,
           amount: rule.amount,
           categoryId: rule.categoryId,

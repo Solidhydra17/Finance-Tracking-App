@@ -3,9 +3,10 @@ import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
+import { RecurringSettings } from '@/components/settings/RecurringSettings';
 
 export const SettingsPage: React.FC = () => {
-  const { addToast } = useUIStore();
+  const { useMockData, setUseMockData, addToast } = useUIStore();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -113,8 +114,40 @@ export const SettingsPage: React.FC = () => {
   }, [addToast]);
 
   return (
-    <div id="page-settings" className="px-4 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+    <div id="page-settings" className="px-4 space-y-6 pb-20">
+      <header className="pt-4">
+        <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Settings & Preferences</p>
+      </header>
+
+      {/* Preferences */}
+      <Card id="card-preferences">
+        <CardBody className="space-y-4">
+          <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">Preferences</h3>
+          
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="space-y-1">
+              <p className="font-bold text-gray-900">Demo Mode (Mock Data)</p>
+              <p className="text-[10px] text-gray-500 font-medium leading-tight max-w-[200px]">
+                When enabled, the app will clear and randomize data on every first load of a session.
+              </p>
+            </div>
+            <button 
+              id="toggle-mock-data"
+              onClick={() => {
+                const newValue = !useMockData;
+                setUseMockData(newValue);
+                addToast('success', `Demo mode ${newValue ? 'enabled' : 'disabled'}`);
+              }}
+              className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${useMockData ? 'bg-midblue' : 'bg-gray-300'}`}
+            >
+              <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${useMockData ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
+          </div>
+        </CardBody>
+      </Card>
+
+      <RecurringSettings />
 
       {/* Data Management */}
       <Card id="card-data-management">
@@ -158,7 +191,7 @@ export const SettingsPage: React.FC = () => {
           <h3 className="font-semibold text-danger-600">Danger Zone</h3>
           <p className="text-sm text-gray-500">
             Deleting all data will permanently remove all your transactions,
-            loans, and recurring rules. This action cannot be undone.
+            loans, and recurring rules. <span className="font-bold text-midblue">Your categories will be kept.</span>
           </p>
           <Button
             variant="danger"
@@ -200,7 +233,7 @@ export const SettingsPage: React.FC = () => {
             <div>
               <p className="font-bold text-gray-900 text-lg">Are you absolutely sure?</p>
               <p className="text-gray-500 text-sm mt-1">
-                This will permanently delete all transactions, categories, loans, and recurring rules. 
+                This will permanently delete all transactions, loans, and recurring rules. 
                 <span className="text-danger-600 font-bold block mt-1">This cannot be undone!</span>
               </p>
             </div>

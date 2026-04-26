@@ -24,6 +24,9 @@ export function useTransactions(filters: FilterState) {
     }
     
     try {
+      const { recurringMaterializer } = await import('@/domain/recurring/materializer');
+      await recurringMaterializer.materializeDueTransactions();
+
       const allTransactions = await transactionsEngine.getByFilters(filters);
       setTransactions(allTransactions);
       setTotal(allTransactions.length);

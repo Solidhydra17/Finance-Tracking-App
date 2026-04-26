@@ -12,6 +12,8 @@ export const AddTransactionPage: React.FC = () => {
   const initialType = (searchParams.get('type') as TransactionType) || 'expense';
 
   const editId = searchParams.get('edit');
+  const mode = searchParams.get('mode');
+  const ruleIdParam = searchParams.get('ruleId');
   const { categories } = useCategories('both');
   const { createTransaction, updateTransaction } = useTransactions(useUIStore.getState().filters);
   const { addToast } = useUIStore();
@@ -22,6 +24,10 @@ export const AddTransactionPage: React.FC = () => {
   const [categoryId, setCategoryId] = useState<number>(0);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recurringRuleId, setRecurringRuleId] = useState<number | null>(null);
+  const [ruleFrequency, setRuleFrequency] = useState<string | null>(null);
+  const [isConfiguringRecurring, setIsConfiguringRecurring] = useState(false);
+  const [isConfirmRuleUpdateOpen, setIsConfirmRuleUpdateOpen] = useState(false);
   
   // Ensure page starts at the top
   useEffect(() => {
@@ -32,6 +38,13 @@ export const AddTransactionPage: React.FC = () => {
   useEffect(() => {
     if (editId) {
       const fetchTransaction = async () => {
+        // Handle virtual recurring transactions
+        if (typeof editId === 'string' && editId.startsWith('recurring-')) {
+          addToast('info', 'Individual recurring transactions cannot be edited directly.');
+          navigate('/transactions');
+          return;
+        }
+
         try {
           const { transactionsEngine } = await import('@/domain/transactions/transactionsEngine');
           const transaction = await transactionsEngine.getById(Number(editId));
@@ -41,6 +54,16 @@ export const AddTransactionPage: React.FC = () => {
             setDate(transaction.date);
             setCategoryId(transaction.categoryId);
             setNote(transaction.note);
+            if (transaction.recurringRuleId) {
+              setRecurringRuleId(transaction.recurringRuleId);
+              setIsRecurring(true);
+              const { recurringRepository } = await import('@/storage/indexeddb');
+              const rule = await recurringRepository.getById(transaction.recurringRuleId);
+              if (rule) {
+                setRuleFrequency(rule.frequency);
+                setFrequency(rule.frequency);
+              }
+            }
           }
         } catch (error) {
           console.error('Failed to fetch transaction for editing:', error);
@@ -50,6 +73,35 @@ export const AddTransactionPage: React.FC = () => {
       fetchTransaction();
     }
   }, [editId, addToast]);
+
+  // Fetch recurring rule data if in config mode from settings
+  useEffect(() => {
+    if (mode === 'config' && ruleIdParam) {
+      const fetchRule = async () => {
+        try {
+          setIsConfiguringRecurring(true);
+          setRecurringRuleId(Number(ruleIdParam));
+          
+          const { recurringRepository } = await import('@/storage/indexeddb');
+          const rule = await recurringRepository.getById(Number(ruleIdParam));
+          
+          if (rule) {
+            setType(rule.type);
+            setAmountDisplay((rule.amount / 100).toString());
+            setCategoryId(rule.categoryId);
+            setNote(rule.description);
+            setFrequency(rule.frequency);
+            setRuleFrequency(rule.frequency);
+            setIsRecurring(true);
+          }
+        } catch (error) {
+          console.error('Failed to fetch rule for configuring:', error);
+          addToast('error', 'Failed to load recurring settings');
+        }
+      };
+      fetchRule();
+    }
+  }, [mode, ruleIdParam, addToast]);
 
   // Update type if query param changes (only if not in edit mode)
   useEffect(() => {
@@ -81,24 +133,32 @@ export const AddTransactionPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!amountDisplay || !categoryId) {
-      addToast('warning', 'Please fill in all required fields');
-      return;
-    }
-
-    const amount = displayToCents(amountDisplay);
-    if (amount <= 0) {
-      addToast('warning', 'Amount must be greater than zero');
-      return;
-    }
-
-    setIsSubmitting(true);
+    console.log('--- Submission Started ---');
+    console.log('Values:', { amountDisplay, categoryId, type, date, note });
 
     try {
+      if (!amountDisplay) {
+        addToast('warning', 'Please enter an amount');
+        return;
+      }
+
+      if (!categoryId || categoryId === 0) {
+        addToast('warning', 'Please select a category');
+        return;
+      }
+
+      const amount = displayToCents(amountDisplay);
+      if (amount <= 0) {
+        addToast('warning', 'Amount must be greater than zero');
+        return;
+      }
+
+      setIsSubmitting(true);
+      console.log('Creating transaction...', { type, amount, date, categoryId });
+
+      let success = false;
       if (editId) {
-        // Edit existing transaction
-        await updateTransaction(Number(editId), {
+        success = await updateTransaction(Number(editId), {
           type,
           amount,
           date,
@@ -122,8 +182,9 @@ export const AddTransactionPage: React.FC = () => {
           updatedAt: new Date().toISOString()
         } as any);
         addToast('success', 'Recurring rule created successfully');
+        success = true;
       } else {
-        await createTransaction({
+        success = await createTransaction({
           type,
           amount,
           date,
@@ -132,10 +193,14 @@ export const AddTransactionPage: React.FC = () => {
           source: 'manual',
         });
       }
-      navigate(-1);
-    } catch (error) {
-      console.error('Failed to save transaction:', error);
-      addToast('error', 'Failed to save transaction');
+
+      console.log('Submission result:', success);
+      if (success) {
+        navigate('/transactions');
+      }
+    } catch (error: any) {
+      console.error('CRITICAL: Submission failed:', error);
+      addToast('error', `Save failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -182,7 +247,10 @@ export const AddTransactionPage: React.FC = () => {
         >
           <Icon name="ArrowLeftIcon" className="w-6 h-6 text-gray-600" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">{editId ? 'Edit' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}</h1>
+        <h1 className="text-xl font-bold text-gray-900">
+          {editId ? 'Edit' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}
+          {isConfiguringRecurring && <span className="block text-[10px] text-midblue font-black uppercase tracking-widest mt-0.5">(Configuring recurring settings)</span>}
+        </h1>
       </header>
 
       <div id="add-transaction-content" className="px-4 py-6">
@@ -191,6 +259,7 @@ export const AddTransactionPage: React.FC = () => {
           <div id="section-toggle" className="flex bg-white p-1 rounded-2xl shadow-sm">
             <button
               type="button"
+              disabled={isConfiguringRecurring}
               onClick={() => setType('income')}
               className={`
                 flex-1 py-3 rounded-xl font-bold transition-all duration-300
@@ -198,12 +267,14 @@ export const AddTransactionPage: React.FC = () => {
                   ? 'bg-success-500 text-white shadow-lg'
                   : 'text-gray-400 hover:text-gray-600'
                 }
+                ${isConfiguringRecurring && type !== 'income' ? 'opacity-30' : ''}
               `}
             >
               Income
             </button>
             <button
               type="button"
+              disabled={isConfiguringRecurring}
               onClick={() => setType('expense')}
               className={`
                 flex-1 py-3 rounded-xl font-bold transition-all duration-300
@@ -211,6 +282,7 @@ export const AddTransactionPage: React.FC = () => {
                   ? 'bg-danger-500 text-white shadow-lg'
                   : 'text-gray-400 hover:text-gray-600'
                 }
+                ${isConfiguringRecurring && type !== 'expense' ? 'opacity-30' : ''}
               `}
             >
               Expense
@@ -239,17 +311,19 @@ export const AddTransactionPage: React.FC = () => {
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
                         required
-                        className="text-lg"
+                        disabled={isConfiguringRecurring}
+                        className={`text-lg ${isConfiguringRecurring ? 'opacity-50' : ''}`}
                     />
                 </div>
                 <div className="flex-1">
                     <label className="text-sm font-bold text-gray-500 ml-1">Recurring</label>
                     <button
                         type="button"
-                        onClick={() => setIsRecurring(!isRecurring)}
+                        onClick={() => !recurringRuleId && !isConfiguringRecurring && setIsRecurring(!isRecurring)}
+                        disabled={!!recurringRuleId || isConfiguringRecurring}
                         className={`w-full h-[48px] rounded-2xl flex items-center justify-center font-bold transition-all ${
                             isRecurring ? 'bg-midblue text-white shadow-md' : 'bg-gray-100 text-gray-500'
-                        }`}
+                        } ${(!!recurringRuleId || isConfiguringRecurring) ? 'opacity-70 cursor-not-allowed shadow-none' : ''}`}
                     >
                         {isRecurring ? 'YES' : 'NO'}
                     </button>
@@ -263,27 +337,30 @@ export const AddTransactionPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setFrequency('weekly')}
+                            disabled={!!recurringRuleId && !isConfiguringRecurring}
                             className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
                                 frequency === 'weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
-                            }`}
+                            } ${(!!recurringRuleId && !isConfiguringRecurring) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Weekly
                         </button>
                         <button
                             type="button"
                             onClick={() => setFrequency('bi-weekly')}
+                            disabled={!!recurringRuleId && !isConfiguringRecurring}
                             className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
                                 frequency === 'bi-weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
-                            }`}
+                            } ${(!!recurringRuleId && !isConfiguringRecurring) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Every 2 Weeks
                         </button>
                         <button
                             type="button"
                             onClick={() => setFrequency('monthly')}
+                            disabled={!!recurringRuleId && !isConfiguringRecurring}
                             className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
                                 frequency === 'monthly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
-                            }`}
+                            } ${(!!recurringRuleId && !isConfiguringRecurring) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Monthly
                         </button>
@@ -296,12 +373,13 @@ export const AddTransactionPage: React.FC = () => {
               <label className="text-sm font-bold text-gray-500 ml-1">Category</label>
               <button
                 type="button"
+                disabled={isConfiguringRecurring}
                 onClick={() => {
                     setIsAddingCategory(false);
                     setIsCategoryPickerOpen(true);
                 }}
                 id="btn-category-picker-open"
-                className="w-full flex items-center justify-between p-4 bg-gray-50 border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all"
+                className={`w-full flex items-center justify-between p-4 bg-gray-50 border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   {selectedCategory ? (
@@ -339,19 +417,110 @@ export const AddTransactionPage: React.FC = () => {
                 {note.length} / 150
               </div>
             </div>
+
+            {recurringRuleId && !isConfiguringRecurring && (
+              <div id="section-recurring-link" className="pt-2 border-t border-gray-50">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsConfiguringRecurring(true)}
+                  className="w-full text-midblue font-bold flex items-center justify-center gap-2 py-3 bg-midblue/5 rounded-2xl"
+                >
+                  Configure recurring settings
+                </Button>
+              </div>
+            )}
           </div>
 
-          <Button
-            type="submit"
-            isLoading={isSubmitting}
-            id="btn-save-transaction"
-            className={`w-full py-5 text-xl font-bold rounded-2xl shadow-xl transition-all active:scale-95 ${type === 'income' ? 'bg-success-500 hover:bg-success-600' : 'bg-danger-500 hover:bg-danger-600'
-              }`}
-          >
-            {editId ? 'Update' : 'Save'} {type === 'income' ? 'Income' : 'Expense'}
-          </Button>
+          {!isConfiguringRecurring ? (
+            <Button
+              type="submit"
+              isLoading={isSubmitting}
+              id="btn-save-transaction"
+              className={`w-full py-5 text-xl font-bold rounded-2xl shadow-xl transition-all active:scale-95 ${type === 'income' ? 'bg-success-500 hover:bg-success-600' : 'bg-danger-500 hover:bg-danger-600'
+                }`}
+            >
+              {editId ? 'Update' : 'Save'} {type === 'income' ? 'Income' : 'Expense'}
+            </Button>
+          ) : (
+            <div className="flex flex-col gap-3">
+               <Button
+                type="button"
+                onClick={() => setIsConfirmRuleUpdateOpen(true)}
+                isLoading={isSubmitting}
+                className="w-full py-4 text-lg bg-midblue text-white shadow-lg rounded-2xl"
+              >
+                Update recurring settings
+              </Button>
+              <button
+                type="button"
+                onClick={() => setIsConfiguringRecurring(false)}
+                className="w-full py-3 text-sm font-bold text-gray-400 hover:text-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </form>
       </div>
+
+      {/* Rule Update Confirmation Modal */}
+      <Modal
+        isOpen={isConfirmRuleUpdateOpen}
+        onClose={() => setIsConfirmRuleUpdateOpen(false)}
+        title="Confirm Rule Update"
+        size="sm"
+        position="bottom"
+      >
+        <div className="space-y-6 pt-2 pb-6 px-2">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="w-16 h-16 bg-midblue/10 rounded-full flex items-center justify-center">
+              <Icon name="ArrowPathIcon" className="w-8 h-8 text-midblue" />
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 text-lg">Update recurring settings?</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Your changes will only apply to future transactions. 
+                <span className="block mt-1 font-bold text-midblue">Past history will remain unchanged.</span>
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => setIsConfirmRuleUpdateOpen(false)}
+              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                setIsConfirmRuleUpdateOpen(false);
+                setIsSubmitting(true);
+                try {
+                  const { recurringRepository } = await import('@/storage/indexeddb');
+                  const amount = displayToCents(amountDisplay);
+                  await recurringRepository.update(recurringRuleId!, {
+                    amount,
+                    frequency,
+                    description: note
+                  });
+                  addToast('success', 'Recurring settings updated');
+                  setIsConfiguringRecurring(false);
+                  navigate('/settings?tab=recurring#section-recurring-settings');
+                } catch (error) {
+                  addToast('error', 'Failed to update rule');
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+              className="flex-1 py-4 rounded-2xl bg-midblue text-white font-bold hover:bg-midblue/90 shadow-lg shadow-midblue/20 transition-colors"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Category Picker Bottom Sheet */}
       <Modal

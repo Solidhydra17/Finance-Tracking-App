@@ -10,27 +10,6 @@ import { db } from "@/storage/indexeddb";
 export const AppLayout: React.FC = () => {
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const cleanupDuplicates = async () => {
-            const categories = await db.categories.toArray();
-            const seen = new Set();
-            const toDelete: number[] = [];
-
-            for (const cat of categories) {
-                const key = `${cat.name.toLowerCase()}-${cat.type}`;
-                if (seen.has(key)) {
-                    toDelete.push(cat.id!);
-                } else {
-                    seen.add(key);
-                }
-            }
-
-            if (toDelete.length > 0) {
-                await db.categories.bulkDelete(toDelete);
-            }
-        };
-        cleanupDuplicates();
-    }, []);
     const {
         isAddTransactionOpen,
         setAddTransactionOpen,

@@ -34,6 +34,10 @@ interface UIState {
   setLoading: (loading: boolean) => void;
   isFirstLoad: boolean;
   setFirstLoad: (first: boolean) => void;
+
+  // Preferences
+  useMockData: boolean;
+  setUseMockData: (use: boolean) => void;
 }
 
 const getDefaultDateRange = (): DateRange => {
@@ -102,4 +106,11 @@ export const useUIStore = create<UIState>((set) => ({
   setLoading: (loading) => set({ isLoading: loading }),
   isFirstLoad: true,
   setFirstLoad: (first) => set({ isFirstLoad: first }),
+
+  // Preferences
+  useMockData: localStorage.getItem('useMockData') !== 'false',
+  setUseMockData: (use) => {
+    localStorage.setItem('useMockData', String(use));
+    set({ useMockData: use });
+  },
 }));

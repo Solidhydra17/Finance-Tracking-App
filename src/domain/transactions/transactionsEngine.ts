@@ -1,6 +1,7 @@
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { transactionRepository } from '@/storage/indexeddb';
 import { addCents, subtractCents } from '@/lib/money';
+import { recurringEngine } from '@/domain/recurring/recurringEngine';
 
 export interface TransactionStats {
   totalIncome: number;
@@ -40,34 +41,35 @@ export const transactionsEngine = {
   },
 
   async getByFilters(filters: FilterState): Promise<Transaction[]> {
-    let transactions = await transactionRepository.getAll();
+    const realTransactions = await transactionRepository.getAll();
+    let allTransactions = [...realTransactions];
 
     if (filters.dateRange.startDate && filters.dateRange.endDate) {
       const { startDate, endDate } = filters.dateRange;
-      transactions = transactions.filter(t => t.date >= startDate && t.date <= endDate);
+      allTransactions = allTransactions.filter(t => t.date >= startDate && t.date <= endDate);
     }
 
     if (filters.categoryId) {
-      transactions = transactions.filter(t => t.categoryId === filters.categoryId);
+      allTransactions = allTransactions.filter(t => t.categoryId === filters.categoryId);
     }
 
     if (filters.transactionType !== 'all') {
-      transactions = transactions.filter(t => t.type === filters.transactionType);
+      allTransactions = allTransactions.filter(t => t.type === filters.transactionType);
     }
 
     if (filters.loanOnly) {
-      transactions = transactions.filter(t => t.source === 'loan_payment');
+      allTransactions = allTransactions.filter(t => t.source === 'loan_payment');
     }
 
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
-      transactions = transactions.filter(t =>
+      allTransactions = allTransactions.filter(t =>
         t.note.toLowerCase().includes(query) ||
         t.date.includes(query)
       );
     }
 
-    return transactions.sort((a, b) => b.date.localeCompare(a.date));
+    return allTransactions.sort((a, b) => b.date.localeCompare(a.date));
   },
 
   calculateStats(transactions: Transaction[]): TransactionStats {

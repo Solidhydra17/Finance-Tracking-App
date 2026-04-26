@@ -47,10 +47,15 @@ export const Button: React.FC<ButtonProps> = ({
       `}
       disabled={disabled || isProcessing}
       onClick={(e) => {
-        if (isProcessing) return;
-        setIsGuardActive(true);
+        if (isProcessing) {
+          e.preventDefault();
+          return;
+        }
+        if (props.type !== 'submit') {
+          setIsGuardActive(true);
+          setTimeout(() => setIsGuardActive(false), 500);
+        }
         props.onClick?.(e);
-        setTimeout(() => setIsGuardActive(false), 500);
       }}
       {...props}
     >

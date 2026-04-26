@@ -221,8 +221,20 @@ export const TransactionsPage: React.FC = () => {
                                         return (
                                             <Card 
                                                 key={transaction.id} 
-                                                className="border-0 shadow-soft transition-all cursor-pointer overflow-hidden"
+                                                className={`transition-all cursor-pointer overflow-visible relative ${
+                                                    transaction.source === 'recurring' 
+                                                    ? 'border-2 border-midblue shadow-md' 
+                                                    : 'border-0 shadow-soft'
+                                                }`}
                                             >
+                                                {transaction.source === 'recurring' && (
+                                                    <div className="absolute -top-2.5 right-4 z-10">
+                                                        <div className="bg-midblue text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1 border border-white">
+                                                            <Icon name="ArrowPathIcon" className="w-2.5 h-2.5" />
+                                                            RECURRING
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <CardBody className="flex items-center justify-between p-3">
                                                     <div 
                                                         className="flex items-center gap-3 flex-1"
@@ -238,7 +250,7 @@ export const TransactionsPage: React.FC = () => {
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-gray-900 leading-tight">
-                                                                {category?.name || "Unknown"}
+                                                                 {category?.name || "Unknown"}
                                                             </p>
                                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
                                                                 {transaction.note || "No note"}

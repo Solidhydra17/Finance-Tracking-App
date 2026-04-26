@@ -10,12 +10,56 @@ export class FinanceDatabase extends Dexie {
 
   constructor() {
     super('FinanceTrackerDB');
-    this.version(2).stores({
+    
+    const categoryCleanup = async (tx: any) => {
+      console.log('Starting category cleanup migration...');
+      try {
+        const table = tx.table('categories');
+        const allCategories = await table.toArray();
+        const seenKeys = new Map<string, number>();
+        const duplicateIds: number[] = [];
+
+        for (const cat of allCategories) {
+          const key = `${cat.name?.trim()}-${cat.type}`.toLowerCase();
+          if (seenKeys.has(key)) {
+            duplicateIds.push(cat.id!);
+          } else {
+            seenKeys.set(key, cat.id!);
+          }
+        }
+
+        if (duplicateIds.length > 0) {
+          console.log(`Deleting ${duplicateIds.length} duplicate categories...`, duplicateIds);
+          await table.bulkDelete(duplicateIds);
+        }
+        console.log('Category cleanup finished.');
+      } catch (e) {
+        console.error('Migration failed during cleanup:', e);
+      }
+    };
+
+    // Define store for all versions from 4 to 6
+    const schema = {
       transactions: '++id, type, date, categoryId, source, deletedAt',
-      categories: '++id, type, isCustom, name, [name+type]',
+      categories: '++id, type, isCustom, name, &[name+type]', // Enforce unique
       loans: '++id, direction, startDate',
       loanPayments: '++id, loanId, date',
       recurringRules: '++id, type, frequency, startDate, endDate',
+    };
+
+    const schemaV7 = {
+      ...schema,
+      transactions: '++id, type, date, categoryId, source, deletedAt, recurringRuleId',
+    };
+
+    this.version(4).stores({ ...schema, categories: '++id, type, isCustom, name, [name+type]' }).upgrade(categoryCleanup);
+    this.version(5).stores(schema).upgrade(categoryCleanup);
+    this.version(6).stores(schema).upgrade(categoryCleanup);
+    this.version(8).stores(schemaV7);
+
+    this.on('blocked', () => {
+        console.warn('Database is blocked by another tab');
+        window.location.reload();
     });
   }
 }
@@ -24,7 +68,6 @@ export const db = new FinanceDatabase();
 
 export async function clearAllData(): Promise<void> {
   await db.transactions.clear();
-  await db.categories.clear();
   await db.loans.clear();
   await db.loanPayments.clear();
   await db.recurringRules.clear();

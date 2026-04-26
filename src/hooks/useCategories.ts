@@ -11,7 +11,6 @@ export function useCategories(type?: 'income' | 'expense' | 'both') {
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
     try {
-      await seedDefaultCategories();
       const cats = type
         ? await categoryRepository.getByType(type)
         : await categoryRepository.getAll();
