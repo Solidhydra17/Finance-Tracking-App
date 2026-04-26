@@ -44,7 +44,7 @@ const FunnyLoadingScreen = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center p-8 z-50">
+    <div className="fixed inset-0 bg-[var(--bg-color)] flex flex-col items-center justify-center p-8 z-50">
       <div className="w-full max-w-xs space-y-8 text-center">
         {/* Animated Icon/Logo placeholder */}
         <div className="flex justify-center">
@@ -54,19 +54,19 @@ const FunnyLoadingScreen = () => {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xl font-black text-midblue tracking-tight">
+          <h2 className="text-xl font-black text-midblue dark:text-white tracking-tight">
             KURIPOT
           </h2>
           
           {/* Progress Bar Container */}
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-[var(--item-bg)] rounded-full overflow-hidden border border-[var(--card-border)]">
             <div 
               className="h-full bg-midblue transition-all duration-300 ease-out shadow-[0_0_10px_rgba(40,92,204,0.3)]"
               style={{ width: `${progress}%` }}
             />
           </div>
 
-          <p className="text-sm font-bold text-gray-500 animate-pulse min-h-[40px] flex items-center justify-center px-4">
+          <p className="text-sm font-bold text-[var(--text-muted)] animate-pulse min-h-[40px] flex items-center justify-center px-4">
             {LOADING_MESSAGES[messageIndex]}
           </p>
         </div>
@@ -78,7 +78,7 @@ const FunnyLoadingScreen = () => {
 import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/lib/date';
 
 export const DashboardPage: React.FC = () => {
-  const { filters, setFilters, showLoans, isFirstLoad } = useUIStore();
+  const { filters, setFilters, showLoans, isFirstLoad, darkMode } = useUIStore();
   const { data, isLoading } = useDashboard(filters, showLoans);
 
   const handlePresetChange = (preset: 'week' | 'month' | 'year') => {
@@ -116,7 +116,7 @@ export const DashboardPage: React.FC = () => {
     <div id="page-dashboard" className="px-4 space-y-6">
       {/* App Header */}
       <header id="dashboard-header" className="pt-4">
-        <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
+        <h1 className="text-3xl font-extrabold text-midblue dark:text-white tracking-wider">KURIPOT</h1>
       </header>
 
       {/* Balance Card */}
@@ -152,7 +152,9 @@ export const DashboardPage: React.FC = () => {
           id="filter-week" 
           onClick={() => handlePresetChange('week')}
           className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
-            currentPreset === 'week' ? 'bg-midblue text-white shadow-soft' : 'bg-white text-midblue hover:bg-midblue/5'
+            currentPreset === 'week' 
+            ? 'bg-midblue text-white shadow-soft scale-105' 
+            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
           }`}
         >
           Week
@@ -161,7 +163,9 @@ export const DashboardPage: React.FC = () => {
           id="filter-month" 
           onClick={() => handlePresetChange('month')}
           className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
-            currentPreset === 'month' ? 'bg-midblue text-white shadow-soft' : 'bg-white text-midblue hover:bg-midblue/5'
+            currentPreset === 'month' 
+            ? 'bg-midblue text-white shadow-soft scale-105' 
+            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
           }`}
         >
           Month
@@ -170,7 +174,9 @@ export const DashboardPage: React.FC = () => {
           id="filter-year" 
           onClick={() => handlePresetChange('year')}
           className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
-            currentPreset === 'year' ? 'bg-midblue text-white shadow-soft' : 'bg-white text-midblue hover:bg-midblue/5'
+            currentPreset === 'year' 
+            ? 'bg-midblue text-white shadow-soft scale-105' 
+            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
           }`}
         >
           Year
@@ -178,21 +184,21 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Graphs Section */}
-      <div id="section-breakdown" className="bg-white rounded-3xl p-6 border-2 border-gray-100 min-h-[300px]">
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Spending Breakdown</h3>
+      <div id="section-breakdown" className="bg-[var(--card-bg)] rounded-3xl p-6 border-2 border-[var(--card-border)] min-h-[300px]">
+        <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider mb-6">Spending Breakdown</h3>
         {chartData.length > 0 ? (
           <div className="flex flex-col items-center justify-center space-y-8">
             <DonutChart data={chartData} size={200} strokeWidth={25} />
             <div className="w-full space-y-3">
               {data.categoryBreakdown.slice(0, 4).map((cat: any) => (
-                <div key={cat.categoryId} id={`breakdown-item-${cat.categoryId}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                <div key={cat.categoryId} id={`breakdown-item-${cat.categoryId}`} className="flex items-center justify-between p-3 bg-[var(--item-bg)] border border-[var(--card-border)] rounded-2xl">
                   <div className="flex items-center gap-3">
                     <Icon name={cat.icon} className="w-6 h-6" style={{ color: cat.color }} />
-                    <span className="text-sm font-bold text-gray-700">{cat.categoryName}</span>
+                    <span className="text-sm font-bold text-[var(--text-main)]">{cat.categoryName}</span>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-midblue">{centsToDisplay(cat.total)}</p>
-                    <p className="text-[10px] font-bold text-gray-400">{cat.percentage.toFixed(0)}%</p>
+                    <p className="text-sm font-black text-midblue dark:text-white">{centsToDisplay(cat.total)}</p>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)]">{cat.percentage.toFixed(0)}%</p>
                   </div>
                 </div>
               ))}
@@ -200,7 +206,7 @@ export const DashboardPage: React.FC = () => {
                 <Link 
                   id="btn-view-all-transactions"
                   to="/transactions" 
-                  className="w-full flex items-center justify-center py-3 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-xs font-bold uppercase tracking-widest hover:border-midblue hover:text-midblue transition-all"
+                  className="w-full flex items-center justify-center py-4 rounded-2xl border-2 border-dashed border-[var(--card-border)] bg-[var(--item-bg)] text-[var(--text-muted)] text-xs font-bold uppercase tracking-widest hover:border-midblue hover:text-midblue transition-all"
                 >
                   See more
                 </Link>
@@ -208,7 +214,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400 italic">
+          <div className="flex flex-col items-center justify-center h-48 text-[var(--text-muted)] italic">
             No spending data yet
           </div>
         )}

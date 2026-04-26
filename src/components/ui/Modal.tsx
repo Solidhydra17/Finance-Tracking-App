@@ -73,17 +73,17 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         className={`
           ui-modal-container
-          relative bg-white rounded-t-3xl ${position === 'center' ? 'sm:rounded-2xl' : ''} shadow-hard
-          w-full ${sizeClasses[size]} max-h-[90dvh] overflow-auto
+          relative bg-[var(--card-bg)] rounded-t-3xl ${position === 'center' ? 'sm:rounded-2xl' : ''} shadow-hard
+          w-full ${sizeClasses[size]} max-h-[90dvh] overflow-auto border-x border-t border-[var(--card-border)]
           ${isClosing ? 'animate-[slideOutDown_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[slideUp_0.3s_ease-out]'}
         `}
       >
         {title && (
-          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--card-border)]">
+            <h2 className="text-lg font-black text-[var(--text-main)] tracking-tight">{title}</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--item-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
             >
               ✕
             </button>

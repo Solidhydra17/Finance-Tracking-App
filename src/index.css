@@ -2,24 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-color: #f9fafb;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --text-header: #285ccc;
+  --card-bg: #ffffff;
+  --card-border: #f3f4f6;
+  --item-bg: #f9fafb;
+}
+
+.dark {
+  --bg-color: #000000;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-header: #ffffff;
+  --card-bg: #0a0a0a;
+  --card-border: #1a1a1a;
+  --item-bg: #111111;
+}
+
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
+    @apply border-[var(--card-border)];
   }
 
   html {
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    @apply transition-colors duration-200;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    background-color: var(--bg-color);
+    color: var(--text-main);
     /* Improve touch responsiveness */
     touch-action: manipulation;
     -webkit-overflow-scrolling: touch;
     /* Prevent horizontal jitter */
     overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6, label, span {
+    color: var(--text-main);
+  }
+
+  p {
+    color: var(--text-muted);
   }
 
   /* Hide scrollbar but keep functionality */
@@ -103,11 +134,41 @@
   .animate-shimmer {
     background: linear-gradient(
       90deg,
-      #e5e7eb 25%,
-      #d1d5db 50%,
-      #e5e7eb 75%
+      rgba(229, 231, 235, 0.1) 25%,
+      rgba(209, 213, 223, 0.2) 50%,
+      rgba(229, 231, 235, 0.1) 75%
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite linear;
+  }
+
+  @keyframes toastIn {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes toastOut {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+  }
+
+  .animate-toast-in {
+    animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-toast-out {
+    animation: toastOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }

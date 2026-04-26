@@ -20,27 +20,27 @@ export const Pagination: React.FC<PaginationProps> = ({
   if (total === 0) return null;
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-100">
-      <span className="text-sm text-gray-500">
+    <div className="flex items-center justify-between px-4 py-3 bg-[var(--card-bg)] border-t border-[var(--card-border)] rounded-2xl shadow-soft">
+      <span className="text-sm font-bold text-[var(--text-muted)]">
         {startIndex}–{endIndex} of {total}
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="p-2 w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--item-bg)] text-[var(--text-main)] hover:bg-[var(--card-border)] disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
         >
-          ‹
+          <span className="text-xl leading-none">‹</span>
         </button>
-        <span className="text-sm font-medium text-gray-900">
-          {page} / {totalPages}
+        <span className="text-sm font-black text-[var(--text-main)] tracking-widest">
+          {page} <span className="text-[10px] text-[var(--text-muted)] font-bold">OF</span> {totalPages}
         </span>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="p-2 w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--item-bg)] text-[var(--text-main)] hover:bg-[var(--card-border)] disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
         >
-          ›
+          <span className="text-xl leading-none">›</span>
         </button>
       </div>
     </div>

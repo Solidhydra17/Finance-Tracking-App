@@ -76,15 +76,15 @@ export const DonutChart: React.FC<DonutChartProps> = ({
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-4">
         {activeCategory ? (
           <>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">
+            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter leading-none mb-1">
               {activeCategory.label}
             </p>
-            <p className="text-2xl font-black text-midblue leading-none">
+            <p className="text-2xl font-black text-midblue dark:text-white leading-none">
               {percentage}%
             </p>
           </>
         ) : (
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">
+          <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-tight">
             Tap to<br />explore
           </p>
         )}

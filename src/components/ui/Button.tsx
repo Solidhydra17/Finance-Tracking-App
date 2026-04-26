@@ -23,10 +23,10 @@ export const Button: React.FC<ButtonProps> = ({
   const isProcessing = isLoading || isGuardActive;
 
   const variantClasses = {
-    primary: 'bg-primary-500 hover:bg-primary-600 text-white',
-    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-    danger: 'bg-danger-500 hover:bg-danger-600 text-white',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700',
+    primary: 'bg-midblue hover:bg-midblue/90 text-white shadow-lg shadow-midblue/20',
+    secondary: 'bg-[var(--item-bg)] hover:bg-[var(--card-border)] text-[var(--text-main)] border border-[var(--card-border)]',
+    danger: 'bg-danger-500 hover:bg-danger-600 text-white shadow-lg shadow-danger-500/20',
+    ghost: 'bg-transparent hover:bg-[var(--item-bg)] text-[var(--text-main)]',
   };
 
   const sizeClasses = {

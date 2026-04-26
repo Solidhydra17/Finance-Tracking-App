@@ -237,25 +237,25 @@ export const AddTransactionPage: React.FC = () => {
   };
 
   return (
-    <div id="page-add-transaction" className="min-h-screen bg-gray-50">
+    <div id="page-add-transaction" className="min-h-screen bg-[var(--bg-color)]">
       {/* Header */}
-      <header id="add-transaction-header" className="bg-white px-4 py-4 flex items-center gap-4 sticky top-0 z-10 border-b border-gray-100">
+      <header id="add-transaction-header" className="bg-[var(--card-bg)] px-4 py-4 flex items-center gap-4 sticky top-0 z-10 border-b border-[var(--card-border)]">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-2 hover:bg-[var(--item-bg)] rounded-full transition-colors"
         >
-          <Icon name="ArrowLeftIcon" className="w-6 h-6 text-gray-600" />
+          <Icon name="ArrowLeftIcon" className="w-6 h-6 text-[var(--text-main)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">
+        <h1 className="text-xl font-bold text-[var(--text-main)]">
           {editId ? 'Edit' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}
-          {isConfiguringRecurring && <span className="block text-[10px] text-midblue font-black uppercase tracking-widest mt-0.5">(Configuring recurring settings)</span>}
+          {isConfiguringRecurring && <span className="block text-[10px] text-midblue dark:text-white font-black uppercase tracking-widest mt-0.5">(Configuring recurring settings)</span>}
         </h1>
       </header>
 
       <div id="add-transaction-content" className="px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Type Toggle */}
-          <div id="section-toggle" className="flex bg-white p-1 rounded-2xl shadow-sm">
+          <div id="section-toggle" className="flex bg-[var(--card-bg)] p-1 rounded-2xl shadow-sm border border-[var(--card-border)]">
             <button
               type="button"
               disabled={isConfiguringRecurring}
@@ -264,7 +264,7 @@ export const AddTransactionPage: React.FC = () => {
                 flex-1 py-3 rounded-xl font-bold transition-all duration-300
                 ${type === 'income'
                   ? 'bg-success-500 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-600'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }
                 ${isConfiguringRecurring && type !== 'income' ? 'opacity-30' : ''}
               `}
@@ -279,7 +279,7 @@ export const AddTransactionPage: React.FC = () => {
                 flex-1 py-3 rounded-xl font-bold transition-all duration-300
                 ${type === 'expense'
                   ? 'bg-danger-500 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-gray-600'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }
                 ${isConfiguringRecurring && type !== 'expense' ? 'opacity-30' : ''}
               `}
@@ -288,7 +288,7 @@ export const AddTransactionPage: React.FC = () => {
             </button>
           </div>
 
-          <div id="section-form-fields" className="bg-white rounded-3xl p-6 shadow-soft space-y-6 border border-gray-100">
+          <div id="section-form-fields" className="bg-[var(--card-bg)] rounded-3xl p-6 shadow-soft space-y-6 border border-[var(--card-border)]">
             <Input
               label="Amount"
               type="number"
@@ -297,9 +297,9 @@ export const AddTransactionPage: React.FC = () => {
               placeholder="0.00"
               value={amountDisplay}
               onChange={(e) => setAmountDisplay(e.target.value)}
-              leftIcon={<Icon name="BanknotesIcon" className="w-6 h-6 text-gray-400" />}
+              leftIcon={<Icon name="BanknotesIcon" className="w-6 h-6 text-[var(--text-muted)]" />}
               required
-              className="text-3xl font-bold text-gray-900"
+              className="text-3xl font-bold text-[var(--text-main)]"
             />
 
             <div className="flex gap-4">
@@ -315,13 +315,13 @@ export const AddTransactionPage: React.FC = () => {
                     />
                 </div>
                 <div className="flex-1">
-                    <label className="text-sm font-bold text-gray-500 ml-1">Recurring</label>
+                    <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Recurring</label>
                     <button
                         type="button"
                         onClick={() => !recurringRuleId && !isConfiguringRecurring && setIsRecurring(!isRecurring)}
                         disabled={!!recurringRuleId || isConfiguringRecurring}
                         className={`w-full h-[48px] rounded-2xl flex items-center justify-center font-bold transition-all ${
-                            isRecurring ? 'bg-midblue text-white shadow-md' : 'bg-gray-100 text-gray-500'
+                            isRecurring ? 'bg-midblue text-white shadow-md' : 'bg-[var(--item-bg)] text-[var(--text-muted)]'
                         } ${(!!recurringRuleId || isConfiguringRecurring) ? 'opacity-70 cursor-not-allowed shadow-none' : ''}`}
                     >
                         {isRecurring ? 'YES' : 'NO'}
@@ -331,14 +331,14 @@ export const AddTransactionPage: React.FC = () => {
 
             {isRecurring && (
                 <div id="field-frequency" className="space-y-2 animate-[fadeIn_0.2s_ease-out]">
-                    <label className="text-sm font-bold text-gray-500 ml-1">Frequency</label>
+                    <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Frequency</label>
                     <div className="flex flex-wrap gap-2">
                         <button
                             type="button"
                             onClick={() => setFrequency('weekly')}
                             disabled={!!recurringRuleId && !isConfiguringRecurring}
                             className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
-                                frequency === 'weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
+                                frequency === 'weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-[var(--item-bg)] text-[var(--text-muted)]'
                             } ${(!!recurringRuleId && !isConfiguringRecurring) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Weekly
@@ -348,7 +348,7 @@ export const AddTransactionPage: React.FC = () => {
                             onClick={() => setFrequency('bi-weekly')}
                             disabled={!!recurringRuleId && !isConfiguringRecurring}
                             className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
-                                frequency === 'bi-weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
+                                frequency === 'bi-weekly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-[var(--item-bg)] text-[var(--text-muted)]'
                             } ${(!!recurringRuleId && !isConfiguringRecurring) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Every 2 Weeks
@@ -358,7 +358,7 @@ export const AddTransactionPage: React.FC = () => {
                             onClick={() => setFrequency('monthly')}
                             disabled={!!recurringRuleId && !isConfiguringRecurring}
                             className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
-                                frequency === 'monthly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-gray-50 text-gray-400'
+                                frequency === 'monthly' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-[var(--item-bg)] text-[var(--text-muted)]'
                             } ${(!!recurringRuleId && !isConfiguringRecurring) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Monthly
@@ -369,7 +369,7 @@ export const AddTransactionPage: React.FC = () => {
 
             {/* Custom Category Picker Trigger */}
             <div id="field-category" className="space-y-2">
-              <label className="text-sm font-bold text-gray-500 ml-1">Category</label>
+              <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Category</label>
               <button
                 type="button"
                 disabled={isConfiguringRecurring}
@@ -378,7 +378,7 @@ export const AddTransactionPage: React.FC = () => {
                     setIsCategoryPickerOpen(true);
                 }}
                 id="btn-category-picker-open"
-                className={`w-full flex items-center justify-between p-4 bg-gray-50 border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full flex items-center justify-between p-4 bg-[var(--item-bg)] border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   {selectedCategory ? (
@@ -389,13 +389,13 @@ export const AddTransactionPage: React.FC = () => {
                       >
                         <Icon name={selectedCategory.icon} className="w-6 h-6" />
                       </div>
-                      <span className="text-lg font-bold text-gray-900">{selectedCategory.name}</span>
+                      <span className="text-lg font-bold text-[var(--text-main)]">{selectedCategory.name}</span>
                     </>
                   ) : (
-                    <span className="text-lg text-gray-400 font-medium">Select a category...</span>
+                    <span className="text-lg text-[var(--text-muted)] font-medium">Select a category...</span>
                   )}
                 </div>
-                <Icon name="ChevronRightIcon" className="w-5 h-5 text-gray-400" />
+                <Icon name="ChevronRightIcon" className="w-5 h-5 text-[var(--text-muted)]" />
               </button>
             </div>
 
@@ -477,10 +477,10 @@ export const AddTransactionPage: React.FC = () => {
               <Icon name="ArrowPathIcon" className="w-8 h-8 text-midblue" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-lg">Update recurring settings?</p>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="font-bold text-[var(--text-main)] text-lg">Update recurring settings?</p>
+              <p className="text-[var(--text-muted)] text-sm mt-1">
                 Your changes will only apply to future transactions. 
-                <span className="block mt-1 font-bold text-midblue">Past history will remain unchanged.</span>
+                <span className="block mt-1 font-bold text-midblue dark:text-white">Past history will remain unchanged.</span>
               </p>
             </div>
           </div>
@@ -488,7 +488,7 @@ export const AddTransactionPage: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setIsConfirmRuleUpdateOpen(false)}
-              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+              className="flex-1 py-4 rounded-2xl bg-[var(--item-bg)] text-[var(--text-main)] font-bold hover:bg-[var(--card-border)] transition-colors border border-[var(--card-border)]"
             >
               Cancel
             </button>
@@ -538,8 +538,8 @@ export const AddTransactionPage: React.FC = () => {
                         placeholder="Search category..."
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
-                        leftIcon={<Icon name="MagnifyingGlassIcon" className="w-5 h-5 text-gray-400" />}
-                        className="bg-gray-100 border-none"
+                        leftIcon={<Icon name="MagnifyingGlassIcon" className="w-5 h-5 text-[var(--text-muted)]" />}
+                        className="bg-[var(--item-bg)] border-none"
                     />
                 </div>
                 <button
@@ -558,7 +558,7 @@ export const AddTransactionPage: React.FC = () => {
                       onClick={() => handleCategorySelect(category.id!)}
                       className={`
                         flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-90
-                        ${categoryId === category.id ? 'bg-midblue/10 ring-2 ring-midblue' : 'hover:bg-gray-50'}
+                        ${categoryId === category.id ? 'bg-midblue/10 ring-2 ring-midblue' : 'hover:bg-[var(--item-bg)]'}
                       `}
                     >
                       <div
@@ -567,7 +567,7 @@ export const AddTransactionPage: React.FC = () => {
                       >
                         <Icon name={category.icon} className="w-8 h-8" />
                       </div>
-                      <span className={`text-[11px] font-bold text-center leading-tight ${categoryId === category.id ? 'text-midblue' : 'text-gray-600'}`}>
+                      <span className={`text-[11px] font-bold text-center leading-tight ${categoryId === category.id ? 'text-midblue dark:text-white' : 'text-[var(--text-main)]'}`}>
                         {category.name}
                       </span>
                     </button>
@@ -575,7 +575,7 @@ export const AddTransactionPage: React.FC = () => {
                 </div>
 
                 {filteredCategories.length === 0 && (
-                  <div className="py-12 text-center text-gray-400">
+                  <div className="py-12 text-center text-[var(--text-muted)] font-medium">
                     <Icon name="FaceFrownIcon" className="w-12 h-12 mx-auto mb-2 opacity-20" />
                     <p>No categories found</p>
                   </div>
@@ -594,14 +594,14 @@ export const AddTransactionPage: React.FC = () => {
                     />
                     
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-500 ml-1">Choose Color</label>
+                        <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Choose Color</label>
                         <div className="flex flex-wrap gap-3">
                             {['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#78716c'].map(color => (
                                 <button
                                     key={color}
                                     type="button"
                                     onClick={() => setNewCategoryColor(color)}
-                                    className={`w-10 h-10 rounded-full transition-all active:scale-90 ${newCategoryColor === color ? 'ring-4 ring-offset-2 ring-gray-200' : ''}`}
+                                    className={`w-10 h-10 rounded-full transition-all active:scale-90 ${newCategoryColor === color ? 'ring-4 ring-offset-2 ring-[var(--card-border)]' : ''}`}
                                     style={{ backgroundColor: color }}
                                 />
                             ))}

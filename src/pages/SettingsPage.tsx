@@ -7,7 +7,7 @@ import { RecurringSettings } from '@/components/settings/RecurringSettings';
 import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
 
 export const SettingsPage: React.FC = () => {
-  const { useMockData, setUseMockData, addToast } = useUIStore();
+  const { useMockData, setUseMockData, darkMode, setDarkMode, addToast } = useUIStore();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -117,7 +117,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div id="page-settings" className="px-4 space-y-6 pb-20">
       <header className="pt-4">
-        <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
+        <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">KURIPOT</h1>
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Settings & Preferences</p>
       </header>
 
@@ -126,24 +126,46 @@ export const SettingsPage: React.FC = () => {
         <CardBody className="space-y-4">
           <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">Preferences</h3>
           
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-            <div className="space-y-1">
-              <p className="font-bold text-gray-900">Demo Mode (Mock Data)</p>
-              <p className="text-[10px] text-gray-500 font-medium leading-tight max-w-[200px]">
-                When enabled, the app will clear and randomize data on every first load of a session.
-              </p>
+          <div className="flex flex-col gap-3">
+            {/* Demo Mode Toggle */}
+            <div className="flex items-center justify-between p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
+                <div className="space-y-1">
+                <p className="font-bold text-[var(--text-main)]">Demo Mode (Mock Data)</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight max-w-[200px]">
+                    When enabled, the app will clear and randomize data on every first load of a session.
+                </p>
+                </div>
+                <button 
+                id="toggle-mock-data"
+                onClick={() => {
+                    const newValue = !useMockData;
+                    setUseMockData(newValue);
+                    addToast('success', `Demo mode ${newValue ? 'enabled' : 'disabled'}`);
+                }}
+                className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${useMockData ? 'bg-midblue' : 'bg-gray-300'}`}
+                >
+                <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${useMockData ? 'translate-x-7' : 'translate-x-1'}`} />
+                </button>
             </div>
-            <button 
-              id="toggle-mock-data"
-              onClick={() => {
-                const newValue = !useMockData;
-                setUseMockData(newValue);
-                addToast('success', `Demo mode ${newValue ? 'enabled' : 'disabled'}`);
-              }}
-              className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${useMockData ? 'bg-midblue' : 'bg-gray-300'}`}
-            >
-              <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${useMockData ? 'translate-x-7' : 'translate-x-1'}`} />
-            </button>
+
+            {/* Dark Mode Toggle */}
+            <div className="flex items-center justify-between p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
+                <div className="space-y-1">
+                <p className="font-bold text-[var(--text-main)]">Dark Mode</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight max-w-[200px]">
+                    Switch between light and dark themes for better night viewing.
+                </p>
+                </div>
+                <button 
+                id="toggle-dark-mode"
+                onClick={() => {
+                    setDarkMode(!darkMode);
+                }}
+                className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${darkMode ? 'bg-midblue' : 'bg-gray-300'}`}
+                >
+                <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
+                </button>
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -154,7 +176,7 @@ export const SettingsPage: React.FC = () => {
       {/* Data Management */}
       <Card id="card-data-management">
         <CardBody className="space-y-4">
-          <h3 className="font-semibold text-gray-900">Data Management</h3>
+          <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Data Management</h3>
 
           <div className="space-y-3">
             <Button
@@ -190,10 +212,10 @@ export const SettingsPage: React.FC = () => {
       {/* Danger Zone */}
       <Card id="card-danger-zone">
         <CardBody className="space-y-4">
-          <h3 className="font-semibold text-danger-600">Danger Zone</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="font-bold text-danger-600 dark:text-danger-400 uppercase text-xs tracking-widest">Danger Zone</h3>
+          <p className="text-sm text-[var(--text-muted)] font-medium">
             Deleting all data will permanently remove all your transactions,
-            loans, and recurring rules. <span className="font-bold text-midblue">Your categories will be kept.</span>
+            loans, and recurring rules. <span className="font-bold text-midblue dark:text-white">Your categories will be kept.</span>
           </p>
           <Button
             variant="danger"
@@ -209,11 +231,11 @@ export const SettingsPage: React.FC = () => {
       {/* App Info */}
       <Card id="card-about">
         <CardBody>
-          <h3 className="font-semibold text-gray-900 mb-2">About</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest mb-3">About</h3>
+          <p className="text-sm text-[var(--text-main)] font-bold">
             Finance Tracker v1.0.0
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
             Offline-first personal finance management
           </p>
         </CardBody>
@@ -229,28 +251,28 @@ export const SettingsPage: React.FC = () => {
       >
         <div id="modal-confirm-clear-content" className="space-y-6 pt-2 pb-6">
           <div className="flex flex-col items-center gap-4 text-center px-4">
-            <div className="w-16 h-16 bg-danger-50 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-danger-500/10 rounded-full flex items-center justify-center">
               <Icon name="ExclamationTriangleIcon" className="w-8 h-8 text-danger-500" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-lg">Are you absolutely sure?</p>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="font-bold text-[var(--text-main)] text-lg">Are you absolutely sure?</p>
+              <p className="text-[var(--text-muted)] text-sm mt-1 leading-relaxed">
                 This will permanently delete all transactions, loans, and recurring rules. 
-                <span className="text-danger-600 font-bold block mt-1">This cannot be undone!</span>
+                <span className="text-danger-500 font-black block mt-2 uppercase tracking-tighter">This cannot be undone!</span>
               </p>
             </div>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 px-2">
             <button
               onClick={() => setIsConfirmClearOpen(false)}
-              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+              className="flex-1 py-4 rounded-2xl bg-[var(--item-bg)] text-[var(--text-main)] font-bold hover:bg-[var(--card-border)] border border-[var(--card-border)] transition-colors"
             >
               No, keep data
             </button>
             <button
               onClick={confirmClearData}
-              className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold hover:bg-danger-600 shadow-lg shadow-danger-200 transition-colors"
+              className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold hover:bg-danger-600 shadow-xl shadow-danger-500/20 transition-colors"
             >
               Yes, wipe it
             </button>

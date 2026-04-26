@@ -61,15 +61,15 @@ export const RecurringSettings: React.FC = () => {
   return (
     <div id="section-recurring-settings" className="space-y-4">
       <div className="flex items-center justify-between px-1">
-        <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">Recurring Series</h3>
-        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+        <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Recurring Series</h3>
+        <span className="text-[10px] font-black text-midblue dark:text-white bg-[var(--item-bg)] px-3 py-1 rounded-full border border-[var(--card-border)]">
           {rules.length} ACTIVE
         </span>
       </div>
 
       {rules.length === 0 ? (
-        <div className="text-center py-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">
-          <p className="text-sm text-gray-400 font-medium">No recurring transactions set up yet.</p>
+        <div className="text-center py-8 bg-[var(--item-bg)] rounded-3xl border-2 border-dashed border-[var(--card-border)]">
+          <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">No recurring transactions set up yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -90,8 +90,8 @@ export const RecurringSettings: React.FC = () => {
                       <Icon name={category?.icon || 'ArrowPathIcon'} className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="font-bold text-gray-900 text-sm leading-tight">{rule.description}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                      <p className="font-bold text-[var(--text-main)] text-sm leading-tight">{rule.description}</p>
+                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter mt-0.5">
                         {rule.frequency} • {centsToDisplay(rule.amount)}
                       </p>
                     </div>
@@ -103,7 +103,7 @@ export const RecurringSettings: React.FC = () => {
                         e.stopPropagation();
                         handleDelete(rule.id!);
                       }}
-                      className="p-2 text-gray-300 hover:text-danger-500 hover:bg-danger-50 rounded-xl transition-all"
+                      className="p-2 text-[var(--text-muted)] hover:text-danger-500 hover:bg-danger-500/10 rounded-xl transition-all"
                     >
                       <Icon name="TrashIcon" className="w-5 h-5" />
                     </button>
@@ -115,7 +115,7 @@ export const RecurringSettings: React.FC = () => {
         </div>
       )}
       
-      <p className="text-[10px] text-gray-400 px-2 leading-tight">
+      <p className="text-[10px] text-[var(--text-muted)] px-2 leading-tight">
         Recurring transactions are automatically added to your history when they are due.
         Editing or deleting a series will not affect transactions that were already recorded in the past.
       </p>
@@ -130,22 +130,22 @@ export const RecurringSettings: React.FC = () => {
       >
         <div className="space-y-6 pt-2 pb-6 px-2">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="w-16 h-16 bg-danger-50 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-danger-500/10 rounded-full flex items-center justify-center">
               <Icon name="TrashIcon" className="w-8 h-8 text-danger-500" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-lg">Delete this recurring series?</p>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="font-bold text-[var(--text-main)] text-lg">Delete this recurring series?</p>
+              <p className="text-[var(--text-muted)] text-sm mt-1 leading-relaxed">
                 Future transactions will no longer be generated. 
-                <span className="block mt-1 font-bold text-gray-400">Past transactions will remain in your history.</span>
+                <span className="block mt-1 font-bold text-[var(--text-muted)] opacity-80">Past transactions will remain in your history.</span>
               </p>
             </div>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 px-2">
             <button
               onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+              className="flex-1 py-4 rounded-2xl bg-[var(--item-bg)] text-[var(--text-main)] font-bold hover:bg-[var(--card-border)] border border-[var(--card-border)] transition-colors"
             >
               Cancel
             </button>

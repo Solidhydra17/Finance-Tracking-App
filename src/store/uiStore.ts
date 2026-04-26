@@ -38,6 +38,8 @@ interface UIState {
   // Preferences
   useMockData: boolean;
   setUseMockData: (use: boolean) => void;
+  darkMode: boolean;
+  setDarkMode: (dark: boolean) => void;
 }
 
 const getDefaultDateRange = (): DateRange => {
@@ -67,9 +69,6 @@ export const useUIStore = create<UIState>((set) => ({
     const id = `toast-${++toastId}-${Date.now()}`;
     const toast: Toast = { id, type, message, duration };
     set((state) => ({ toasts: [...state.toasts, toast] }));
-    setTimeout(() => {
-      set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, duration);
   },
   removeToast: (id) => {
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
@@ -112,5 +111,15 @@ export const useUIStore = create<UIState>((set) => ({
   setUseMockData: (use) => {
     localStorage.setItem('useMockData', String(use));
     set({ useMockData: use });
+  },
+  darkMode: localStorage.getItem('darkMode') === 'true',
+  setDarkMode: (dark) => {
+    localStorage.setItem('darkMode', String(dark));
+    if (dark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    set({ darkMode: dark });
   },
 }));

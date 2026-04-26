@@ -63,16 +63,16 @@ export const CustomCategorySettings: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
-        <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">Custom Categories</h3>
-        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+        <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Custom Categories</h3>
+        <span className="text-[10px] font-black text-midblue dark:text-white bg-[var(--item-bg)] px-3 py-1 rounded-full border border-[var(--card-border)]">
           {customCategories.length} TOTAL
         </span>
       </div>
 
       {customCategories.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">
-          <Icon name="TagIcon" className="w-12 h-12 mx-auto mb-2 text-gray-200" />
-          <p className="text-sm text-gray-400 font-medium px-8">
+        <div className="text-center py-12 bg-[var(--item-bg)] rounded-3xl border-2 border-dashed border-[var(--card-border)]">
+          <Icon name="TagIcon" className="w-12 h-12 mx-auto mb-2 text-gray-200 dark:text-gray-700" />
+          <p className="text-sm text-gray-400 dark:text-gray-500 font-medium px-8">
             You haven't added any custom categories yet. 
             You can add them while creating a transaction.
           </p>
@@ -90,8 +90,8 @@ export const CustomCategorySettings: React.FC = () => {
                     <Icon name={category.icon} className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">{category.name}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                    <p className="font-bold text-[var(--text-main)] text-sm">{category.name}</p>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter mt-0.5">
                       {category.type === 'both' ? 'Income & Expense' : category.type}
                     </p>
                   </div>
@@ -100,13 +100,13 @@ export const CustomCategorySettings: React.FC = () => {
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={() => handleEditClick(category)}
-                    className="p-2 text-gray-400 hover:text-midblue hover:bg-midblue/5 rounded-xl transition-all"
+                    className="p-2 text-[var(--text-muted)] hover:text-midblue hover:bg-midblue/10 rounded-xl transition-all"
                   >
                     <Icon name="PencilIcon" className="w-5 h-5" />
                   </button>
                   <button 
                     onClick={() => handleDeleteClick(category)}
-                    className="p-2 text-gray-400 hover:text-danger-500 hover:bg-danger-50 rounded-xl transition-all"
+                    className="p-2 text-[var(--text-muted)] hover:text-danger-500 hover:bg-danger-500/10 rounded-xl transition-all"
                   >
                     <Icon name="TrashIcon" className="w-5 h-5" />
                   </button>
@@ -135,14 +135,14 @@ export const CustomCategorySettings: React.FC = () => {
             />
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-500 ml-1">Choose Color</label>
+              <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Choose Color</label>
               <div className="flex flex-wrap gap-3">
                 {['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#78716c'].map(color => (
                   <button
                     key={color}
                     type="button"
                     onClick={() => setEditColor(color)}
-                    className={`w-10 h-10 rounded-full transition-all active:scale-90 ${editColor === color ? 'ring-4 ring-offset-2 ring-gray-200' : ''}`}
+                    className={`w-10 h-10 rounded-full transition-all active:scale-90 ${editColor === color ? 'ring-4 ring-offset-2 ring-[var(--card-border)]' : ''}`}
                     style={{ backgroundColor: color }}
                   />
                 ))}
@@ -153,7 +153,7 @@ export const CustomCategorySettings: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setIsEditModalOpen(false)}
-              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold"
+              className="flex-1 py-4 rounded-2xl bg-[var(--item-bg)] text-[var(--text-main)] font-bold border border-[var(--card-border)]"
             >
               Cancel
             </button>
@@ -177,27 +177,27 @@ export const CustomCategorySettings: React.FC = () => {
       >
         <div className="space-y-6 pt-2 pb-6 px-2">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="w-16 h-16 bg-danger-50 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-danger-500/10 rounded-full flex items-center justify-center">
               <Icon name="TrashIcon" className="w-8 h-8 text-danger-500" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-lg">Delete "{deletingCategory?.name}"?</p>
-              <p className="text-gray-500 text-sm mt-1 px-4">
+              <p className="font-bold text-[var(--text-main)] text-lg">Delete "{deletingCategory?.name}"?</p>
+              <p className="text-[var(--text-muted)] text-sm mt-1 px-4 leading-relaxed">
                 This will not delete your transactions, but they will show as "Unknown" category.
               </p>
             </div>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 px-2">
             <button
               onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold"
+              className="flex-1 py-4 rounded-2xl bg-[var(--item-bg)] text-[var(--text-main)] font-bold border border-[var(--card-border)]"
             >
               Cancel
             </button>
             <button
               onClick={confirmDelete}
-              className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold shadow-lg shadow-danger-200"
+              className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold shadow-lg shadow-danger-500/20"
             >
               Delete
             </button>

@@ -19,9 +19,9 @@ export const Card: React.FC<CardProps> = ({
     <div
       id={id}
       className={`
-        bg-white rounded-2xl shadow-soft overflow-hidden
-        ${gradient ? 'bg-gradient-to-br from-primary-50 to-primary-100' : ''}
-        ${onClick ? 'cursor-pointer hover:shadow-medium transition-shadow' : ''}
+        bg-[var(--card-bg)] rounded-2xl shadow-soft overflow-hidden
+        ${gradient ? 'bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20' : ''}
+        ${onClick ? 'cursor-pointer hover:shadow-medium transition-shadow active:scale-[0.98]' : ''}
         ${className}
       `}
       onClick={onClick}
@@ -35,7 +35,7 @@ export const CardHeader: React.FC<{ children: React.ReactNode; className?: strin
   children,
   className = '',
 }) => (
-  <div className={`px-4 py-3 border-b border-gray-100 ${className}`}>{children}</div>
+  <div className={`px-4 py-3 border-b border-[var(--card-border)] ${className}`}>{children}</div>
 );
 
 export const CardBody: React.FC<{ children: React.ReactNode; className?: string }> = ({
