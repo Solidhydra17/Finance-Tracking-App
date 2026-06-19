@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Toast, ToastType } from '@/lib/toast';
 import type { FilterState, DateRange } from '@/types';
+import type { DashboardData } from '@/domain/dashboard/types';
 import { formatDateLocal } from '@/lib/date';
 
 interface UIState {
@@ -40,6 +41,10 @@ interface UIState {
   setUseMockData: (use: boolean) => void;
   darkMode: boolean;
   setDarkMode: (dark: boolean) => void;
+
+  // Dashboard cache
+  cachedDashboardData: DashboardData | null;
+  setCachedDashboardData: (data: DashboardData) => void;
 
   // Connectivity
   isOnline: boolean;
@@ -126,6 +131,10 @@ export const useUIStore = create<UIState>((set) => ({
     }
     set({ darkMode: dark });
   },
+
+  // Dashboard cache
+  cachedDashboardData: null,
+  setCachedDashboardData: (data) => set({ cachedDashboardData: data }),
 
   // Connectivity
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,

@@ -6,12 +6,17 @@ import { useUIStore } from '@/store';
 import { seedRandomData } from '@/lib/mockDataGenerator';
 
 export function useDashboard(filters: FilterState, showLoans: boolean = false) {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { addToast, setFirstLoad } = useUIStore();
+  const { addToast, setFirstLoad, cachedDashboardData, setCachedDashboardData } = useUIStore();
+  
+  // Initialize from cache if available
+  const [data, setData] = useState<DashboardData | null>(cachedDashboardData);
+  const [isLoading, setIsLoading] = useState(!cachedDashboardData);
 
   const loadDashboard = useCallback(async () => {
-    setIsLoading(true);
+    // Only show loading state if there's no cached data to display
+    if (!cachedDashboardData) {
+      setIsLoading(true);
+    }
     
     try {
       const isFirst = useUIStore.getState().isFirstLoad;
@@ -33,6 +38,7 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
 
       const dashboardData = await dashboardEngine.getDashboardData(filters, showLoans);
       setData(dashboardData);
+      setCachedDashboardData(dashboardData);
       setFirstLoad(false);
     } catch (error) {
       console.error('Failed to load dashboard:', error);
@@ -40,7 +46,7 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, showLoans, addToast, setFirstLoad]);
+  }, [filters, showLoans, addToast, setFirstLoad, cachedDashboardData, setCachedDashboardData]);
 
   useEffect(() => {
     loadDashboard();

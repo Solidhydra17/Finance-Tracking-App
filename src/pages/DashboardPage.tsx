@@ -82,7 +82,7 @@ import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/li
 
 export const DashboardPage: React.FC = () => {
   const { filters, setFilters, showLoans, isFirstLoad } = useUIStore();
-  const { data, isLoading } = useDashboard(filters, showLoans);
+  const { data } = useDashboard(filters, showLoans);
   const { plan, items } = useBudget();
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
 
@@ -109,7 +109,8 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
-  if (isFirstLoad || (isLoading && !data)) {
+  // Show loading screen only on the very first load when no data exists yet
+  if (isFirstLoad && !data) {
     return <FunnyLoadingScreen />;
   }
 
