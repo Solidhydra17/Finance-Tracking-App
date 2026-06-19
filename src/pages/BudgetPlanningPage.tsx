@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useBudget, useCategories } from '@/hooks';
-import { Input, Select, Button, Card, Icon, Modal, ProgressBar } from '@/components/ui';
+import { Input, Select, Button, Card, Icon, Modal, ProgressBar, AVAILABLE_ICONS } from '@/components/ui';
 import { DonutChart } from '@/components/charts';
 import { centsToDisplay, displayToCents } from '@/lib/money';
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
@@ -32,6 +32,8 @@ export const BudgetPlanningPage: React.FC = () => {
   const [useWorkSchedule, setUseWorkSchedule] = useState(false);
   const [itemType, setItemType] = useState<BudgetItemType>('expense');
   const [newCategoryName, setNewCategoryName] = useState(''); 
+  const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+  const [newCategoryIcon, setNewCategoryIcon] = useState(AVAILABLE_ICONS[0]);
 
   // Expandable Cutoff States
   const [isCutoff1Expanded, setIsCutoff1Expanded] = useState(false);
@@ -115,8 +117,8 @@ export const BudgetPlanningPage: React.FC = () => {
         finalCategoryId = await categoryRepository.create({
           name: newCategoryName,
           type: 'expense',
-          color: '#3b82f6',
-          icon: 'TagIcon',
+          color: newCategoryColor,
+          icon: newCategoryIcon,
           isCustom: true
         });
         await refetchCategories();
@@ -582,12 +584,43 @@ export const BudgetPlanningPage: React.FC = () => {
                 ]}
               />
               {categoryId === 'new' && (
-                <Input 
-                  label="New Category Name" 
-                  value={newCategoryName} 
-                  onChange={(e) => setNewCategoryName(e.target.value)} 
-                  placeholder="e.g. Groceries"
-                />
+                <div className="space-y-4 p-3 bg-[var(--item-bg)] border border-[var(--card-border)] rounded-xl mt-2">
+                  <Input 
+                    label="New Category Name" 
+                    value={newCategoryName} 
+                    onChange={(e) => setNewCategoryName(e.target.value)} 
+                    placeholder="e.g. Groceries"
+                  />
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[var(--text-muted)] ml-1">Color</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#78716c'].map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setNewCategoryColor(color)}
+                          className={`w-8 h-8 rounded-full transition-all active:scale-90 ${newCategoryColor === color ? 'ring-2 ring-offset-2 ring-[var(--card-border)]' : ''}`}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[var(--text-muted)] ml-1">Icon</label>
+                    <div className="grid grid-cols-6 gap-2 max-h-[150px] overflow-y-auto p-1">
+                      {AVAILABLE_ICONS.map(iconName => (
+                        <button
+                          key={iconName}
+                          type="button"
+                          onClick={() => setNewCategoryIcon(iconName)}
+                          className={`aspect-square rounded-lg flex items-center justify-center transition-all active:scale-90 ${newCategoryIcon === iconName ? 'bg-midblue text-white shadow-md' : 'bg-[var(--card-bg)] text-[var(--text-main)] hover:bg-[var(--card-bg)]/80'}`}
+                        >
+                          <Icon name={iconName} className="w-5 h-5" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
             </>
           ) : (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Input, TextArea, Button, Icon, Modal } from '@/components/ui';
+import { Input, TextArea, Button, Icon, Modal, AVAILABLE_ICONS } from '@/components/ui';
 import { useCategories, useTransactions } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents } from '@/lib/money';
@@ -207,6 +207,7 @@ export const AddTransactionPage: React.FC = () => {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+  const [newCategoryIcon, setNewCategoryIcon] = useState(AVAILABLE_ICONS[0]);
 
   const handleAddCategory = async () => {
     if (!newCategoryName) {
@@ -220,7 +221,7 @@ export const AddTransactionPage: React.FC = () => {
         name: newCategoryName,
         type: type,
         color: newCategoryColor,
-        icon: 'TagIcon', // Default icon for custom categories
+        icon: newCategoryIcon,
         isCustom: true
       });
       
@@ -602,6 +603,22 @@ export const AddTransactionPage: React.FC = () => {
                                     className={`w-10 h-10 rounded-full transition-all active:scale-90 ${newCategoryColor === color ? 'ring-4 ring-offset-2 ring-[var(--card-border)]' : ''}`}
                                     style={{ backgroundColor: color }}
                                 />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Choose Icon</label>
+                        <div className="grid grid-cols-6 gap-3 max-h-[200px] overflow-y-auto p-1">
+                            {AVAILABLE_ICONS.map(iconName => (
+                                <button
+                                    key={iconName}
+                                    type="button"
+                                    onClick={() => setNewCategoryIcon(iconName)}
+                                    className={`aspect-square rounded-xl flex items-center justify-center transition-all active:scale-90 ${newCategoryIcon === iconName ? 'bg-midblue text-white shadow-md' : 'bg-[var(--item-bg)] text-[var(--text-main)] hover:bg-[var(--item-bg)]/80'}`}
+                                >
+                                    <Icon name={iconName} className="w-6 h-6" />
+                                </button>
                             ))}
                         </div>
                     </div>
