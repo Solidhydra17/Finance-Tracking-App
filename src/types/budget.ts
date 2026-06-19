@@ -1,6 +1,8 @@
 export type PayFrequency = 'monthly' | 'semi-monthly';
 export type BudgetItemType = 'expense' | 'savings' | 'installment';
 
+export type BudgetItemFrequency = 'day' | 'week' | 'biweekly' | 'month';
+
 export interface BudgetPlan {
   id?: number;
   grossSalaryCents: number;
@@ -8,6 +10,7 @@ export interface BudgetPlan {
   payFrequency: PayFrequency;
   firstPayDay?: number;
   secondPayDay?: number;
+  workDaysPerWeek: number; // New field
   createdAt: string;
   updatedAt: string;
 }
@@ -15,7 +18,10 @@ export interface BudgetPlan {
 export interface BudgetItem {
   id?: number;
   name: string;
+  categoryId?: number; // Optional for non-expenses
   amountCents: number;
+  frequency: BudgetItemFrequency;
+  useWorkSchedule: boolean;
   type: BudgetItemType;
   dueDay?: number;
   active: boolean;

@@ -60,11 +60,17 @@ export class FinanceDatabase extends Dexie {
       budgetItems: '++id, type, active',
     };
 
+    const schemaV10 = {
+      ...schemaV9,
+      budgetItems: '++id, type, active, categoryId',
+    };
+
     this.version(4).stores({ ...schema, categories: '++id, type, isCustom, name, [name+type]' }).upgrade(categoryCleanup);
     this.version(5).stores(schema).upgrade(categoryCleanup);
     this.version(6).stores(schema).upgrade(categoryCleanup);
     this.version(8).stores(schemaV7);
     this.version(9).stores(schemaV9);
+    this.version(10).stores(schemaV10);
 
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');

@@ -30,6 +30,7 @@ export const budgetRepository: BudgetRepository = {
         grossSalaryCents: 0,
         netSalaryCents: 0,
         payFrequency: 'monthly',
+        workDaysPerWeek: 5,
         ...data,
         createdAt: now,
         updatedAt: now,
