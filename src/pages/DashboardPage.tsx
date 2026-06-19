@@ -219,6 +219,22 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Planning Section */}
+      <div id="section-planning" className="bg-[var(--card-bg)] rounded-3xl p-6 border-2 border-[var(--card-border)]">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Plan Ahead</h3>
+          <Icon name="DocumentChartBarIcon" className="w-5 h-5 text-midblue" />
+        </div>
+        <p className="text-xs font-bold text-[var(--text-muted)] mb-4">Allocate your salary before you spend it to avoid deficits and maximize savings.</p>
+        <Link 
+          to="/budget-planning" 
+          className="w-full flex items-center justify-center py-4 rounded-2xl bg-midblue text-white text-xs font-bold uppercase tracking-widest hover:bg-midblue/90 shadow-soft hover:shadow-medium transition-all"
+        >
+          Budget Planning
+        </Link>
+      </div>
+
     </div>
   );
 };
