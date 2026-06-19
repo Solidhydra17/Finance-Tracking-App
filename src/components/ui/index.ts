@@ -7,3 +7,4 @@ export { Pagination } from './Pagination';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Badge } from './Badge';
 export { Icon } from './Icon';
+export { ProgressBar } from './ProgressBar';

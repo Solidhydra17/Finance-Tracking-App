@@ -5,6 +5,9 @@ import { useUIStore } from '@/store';
 import { Icon } from '@/components/ui';
 import { centsToDisplay } from '@/lib/money';
 import { Link } from 'react-router-dom';
+import { ProgressBar } from '@/components/ui';
+import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
+import { useBudget } from '@/hooks';
 const LOADING_MESSAGES = [
   "Nagbibilang ng natitirang barya…",
   "Fetching data… at pati utang mo",
@@ -80,6 +83,14 @@ import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/li
 export const DashboardPage: React.FC = () => {
   const { filters, setFilters, showLoans, isFirstLoad } = useUIStore();
   const { data, isLoading } = useDashboard(filters, showLoans);
+  const { plan, items } = useBudget();
+  const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
+
+  useEffect(() => {
+    if (items && items.length > 0) {
+      budgetEngine.getPlannedVsActual(items, plan?.workDaysPerWeek || 5).then(setPva);
+    }
+  }, [items, plan?.workDaysPerWeek]);
 
   const handlePresetChange = (preset: 'week' | 'month' | 'year') => {
     const now = new Date();
@@ -220,20 +231,72 @@ export const DashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Planning Section */}
-      <div id="section-planning" className="bg-[var(--card-bg)] rounded-3xl p-6 border-2 border-[var(--card-border)]">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Plan Ahead</h3>
-          <Icon name="DocumentChartBarIcon" className="w-5 h-5 text-midblue" />
+      {/* Budget Status Section */}
+      {pva.size > 0 && (
+        <div id="section-budget-status" className="bg-[var(--card-bg)] rounded-3xl p-6 border-2 border-[var(--card-border)]">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Budget Status</h3>
+          </div>
+          <div className="space-y-4">
+            {Array.from(pva.entries())
+              .map(([categoryId, status]) => {
+                const percentage = status.plannedCents > 0 ? (status.actualCents / status.plannedCents) * 100 : 0;
+                return { categoryId, status, percentage };
+              })
+              .filter(item => item.percentage >= 80) // Only Nearing (>=80%) or Over budget
+              .sort((a, b) => b.percentage - a.percentage) // Top utilization first
+              .slice(0, 3) // Limit to top 3 to avoid clutter
+              .map(item => {
+                // Find category name from data.categoryBreakdown if possible, or fallback
+                const categoryData = data.categoryBreakdown.find((c: any) => c.categoryId === item.categoryId);
+                const categoryName = categoryData ? categoryData.categoryName : 'Category';
+                return (
+                  <div key={item.categoryId} className="space-y-1">
+                    <div className="flex justify-between items-end text-sm">
+                      <span className="font-bold text-[var(--text-main)]">{categoryName}</span>
+                      <div className="text-right">
+                        <span className="font-black text-[var(--text-main)]">{centsToDisplay(item.status.actualCents)}</span>
+                        <span className="font-bold text-[var(--text-muted)] text-xs"> / {centsToDisplay(item.status.plannedCents)}</span>
+                      </div>
+                    </div>
+                    <ProgressBar percentage={item.percentage} height={10} />
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] text-right">{item.percentage.toFixed(0)}%</p>
+                  </div>
+                );
+              })}
+              {Array.from(pva.values()).filter(s => s.plannedCents > 0 && (s.actualCents / s.plannedCents) * 100 >= 80).length === 0 && (
+                <div className="text-center py-4 text-[var(--text-muted)] italic text-sm">
+                  All budget categories are under 80% utilization. Great job!
+                </div>
+              )}
+          </div>
+          <div className="pt-4 mt-2">
+            <Link 
+              to="/budget-planning" 
+              className="w-full flex items-center justify-center py-4 rounded-2xl bg-midblue text-white text-xs font-bold uppercase tracking-widest hover:bg-midblue/90 shadow-soft hover:shadow-medium transition-all"
+            >
+              View Budget Planner
+            </Link>
+          </div>
         </div>
-        <p className="text-xs font-bold text-[var(--text-muted)] mb-4">Allocate your salary before you spend it to avoid deficits and maximize savings.</p>
-        <Link 
-          to="/budget-planning" 
-          className="w-full flex items-center justify-center py-4 rounded-2xl bg-midblue text-white text-xs font-bold uppercase tracking-widest hover:bg-midblue/90 shadow-soft hover:shadow-medium transition-all"
-        >
-          Budget Planning
-        </Link>
-      </div>
+      )}
+
+      {/* Planning Section (Legacy fallback if Budget Plan is empty) */}
+      {items.length === 0 && (
+        <div id="section-planning" className="bg-[var(--card-bg)] rounded-3xl p-6 border-2 border-[var(--card-border)]">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Plan Ahead</h3>
+            <Icon name="DocumentChartBarIcon" className="w-5 h-5 text-midblue" />
+          </div>
+          <p className="text-xs font-bold text-[var(--text-muted)] mb-4">Allocate your salary before you spend it to avoid deficits and maximize savings.</p>
+          <Link 
+            to="/budget-planning" 
+            className="w-full flex items-center justify-center py-4 rounded-2xl bg-midblue text-white text-xs font-bold uppercase tracking-widest hover:bg-midblue/90 shadow-soft hover:shadow-medium transition-all"
+          >
+            Budget Planning
+          </Link>
+        </div>
+      )}
 
     </div>
   );

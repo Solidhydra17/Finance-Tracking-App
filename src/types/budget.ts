@@ -6,7 +6,9 @@ export type BudgetItemFrequency = 'day' | 'week' | 'biweekly' | 'month';
 export interface BudgetPlan {
   id?: number;
   grossSalaryCents: number;
-  netSalaryCents: number;
+  netSalaryCents: number; // Retained as first-class field
+  cutoff1AmountCents?: number;
+  cutoff2AmountCents?: number;
   payFrequency: PayFrequency;
   firstPayDay?: number;
   secondPayDay?: number;
