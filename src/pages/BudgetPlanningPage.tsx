@@ -447,8 +447,13 @@ export const BudgetPlanningPage: React.FC = () => {
                     <div className="pl-8 mt-4 pt-4 border-t border-[var(--card-border)]/50">
                       <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
                         <span className="text-[var(--text-muted)]">Actual Spent</span>
-                        <span className={`${itemPva.isOverBudget ? 'text-danger-500' : 'text-success-500'}`}>
-                          {itemPva.isOverBudget ? 'Over Budget' : 'Under Budget'}
+                        <span className={`${
+                          pvaPercentage > 100 ? 'text-danger-500' : 
+                          pvaPercentage >= 80 ? 'text-warning-500' : 'text-success-500'
+                        }`}>
+                          {pvaPercentage > 100 ? 'Over Budget' : 
+                           pvaPercentage === 100 ? 'On Budget' : 
+                           pvaPercentage >= 80 ? 'Nearing Budget' : 'Under Budget'}
                         </span>
                       </div>
                       <ProgressBar percentage={pvaPercentage} height={8} className="mb-1" />
