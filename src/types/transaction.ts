@@ -2,13 +2,14 @@ export type TransactionType = 'income' | 'expense';
 export type TransactionSource = 'manual' | 'recurring' | 'loan_payment';
 
 export interface Transaction {
-  id?: number;
+  id?: number | string;
   type: TransactionType;
   amount: number; // integer cents
   date: string; // ISO date string
   categoryId: number;
   note: string;
   source: TransactionSource;
+  recurringRuleId?: number;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

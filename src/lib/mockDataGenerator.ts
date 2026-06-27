@@ -1,5 +1,5 @@
 import { Category, Transaction, TransactionType } from '@/types';
-import { db, clearAllData } from '@/storage/indexeddb/database';
+import { db } from '@/storage/indexeddb/database';
 import { defaultCategories } from '@/storage/indexeddb/categoryRepository';
 
 const NOTES = [
@@ -22,13 +22,43 @@ const NOTES = [
 ];
 
 export async function seedRandomData(count: number = 50) {
-  await clearAllData();
+  // Check if we already have transactions to avoid overwriting user data
+  const existingCount = await db.transactions.count();
+  if (existingCount > 0) {
+    console.log('Transactions already exist, skipping random seed.');
+    return;
+  }
 
-  // 1. Seed Categories
+  // 1. Seed Categories (Using put to avoid duplicates with unique index)
   const categoryIds: Record<string, number> = {};
   for (const cat of defaultCategories) {
-    const id = await db.categories.add(cat as Category);
-    categoryIds[`${cat.name}-${cat.type}`] = id;
+    try {
+      // put() will update or ignore based on the unique &[name+type] index
+      // But Dexie needs a way to resolve conflict. If we don't provide ID, 
+      // we should find it first to get the ID if we want to update, 
+      // or just catch the error if we use add.
+      // Better: find first, then add if not exists.
+      const existing = await db.categories
+        .where('[name+type]')
+        .equals([cat.name, cat.type])
+        .first();
+      
+      if (existing) {
+        categoryIds[`${cat.name}-${cat.type}`] = existing.id!;
+      } else {
+        const id = await db.categories.add(cat as Category);
+        categoryIds[`${cat.name}-${cat.type}`] = id;
+      }
+    } catch (err) {
+      // In case of race condition despite the check
+      const existing = await db.categories
+        .where('[name+type]')
+        .equals([cat.name, cat.type])
+        .first();
+      if (existing) {
+        categoryIds[`${cat.name}-${cat.type}`] = existing.id!;
+      }
+    }
   }
 
   // 2. Seed Transactions
@@ -74,7 +104,7 @@ export async function seedRandomData(count: number = 50) {
       type: 'expense',
       amount: Math.floor(Math.random() * 100000) + 10000,
       date: date.toISOString().split('T')[0],
-      categoryId: categoryIds['Food & Dining-expense'],
+      categoryId: categoryIds['Food-expense'],
       note: 'Auto-seeded expense',
       source: 'manual',
       createdAt: new Date().toISOString(),

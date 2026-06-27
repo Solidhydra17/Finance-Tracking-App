@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { categoryRepository, seedDefaultCategories } from '@/storage/indexeddb';
+import { categoryRepository } from '@/storage/indexeddb';
 import type { Category } from '@/types';
 import { useUIStore } from '@/store';
 
@@ -11,7 +11,6 @@ export function useCategories(type?: 'income' | 'expense' | 'both') {
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
     try {
-      await seedDefaultCategories();
       const cats = type
         ? await categoryRepository.getByType(type)
         : await categoryRepository.getAll();

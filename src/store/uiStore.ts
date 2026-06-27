@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Toast, ToastType } from '@/lib/toast';
 import type { FilterState, DateRange } from '@/types';
+import type { DashboardData } from '@/domain/dashboard/types';
 import { formatDateLocal } from '@/lib/date';
 
 interface UIState {
@@ -34,6 +35,20 @@ interface UIState {
   setLoading: (loading: boolean) => void;
   isFirstLoad: boolean;
   setFirstLoad: (first: boolean) => void;
+
+  // Preferences
+  useMockData: boolean;
+  setUseMockData: (use: boolean) => void;
+  darkMode: boolean;
+  setDarkMode: (dark: boolean) => void;
+
+  // Dashboard cache
+  cachedDashboardData: DashboardData | null;
+  setCachedDashboardData: (data: DashboardData) => void;
+
+  // Connectivity
+  isOnline: boolean;
+  setOnline: (online: boolean) => void;
 }
 
 const getDefaultDateRange = (): DateRange => {
@@ -63,9 +78,6 @@ export const useUIStore = create<UIState>((set) => ({
     const id = `toast-${++toastId}-${Date.now()}`;
     const toast: Toast = { id, type, message, duration };
     set((state) => ({ toasts: [...state.toasts, toast] }));
-    setTimeout(() => {
-      set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, duration);
   },
   removeToast: (id) => {
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
@@ -102,4 +114,29 @@ export const useUIStore = create<UIState>((set) => ({
   setLoading: (loading) => set({ isLoading: loading }),
   isFirstLoad: true,
   setFirstLoad: (first) => set({ isFirstLoad: first }),
+
+  // Preferences
+  useMockData: localStorage.getItem('useMockData') !== 'false',
+  setUseMockData: (use) => {
+    localStorage.setItem('useMockData', String(use));
+    set({ useMockData: use });
+  },
+  darkMode: localStorage.getItem('darkMode') === 'true',
+  setDarkMode: (dark) => {
+    localStorage.setItem('darkMode', String(dark));
+    if (dark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    set({ darkMode: dark });
+  },
+
+  // Dashboard cache
+  cachedDashboardData: null,
+  setCachedDashboardData: (data) => set({ cachedDashboardData: data }),
+
+  // Connectivity
+  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  setOnline: (online) => set({ isOnline: online }),
 }));

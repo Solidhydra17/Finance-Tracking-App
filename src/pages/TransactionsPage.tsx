@@ -82,7 +82,7 @@ export const TransactionsPage: React.FC = () => {
     return (
         <div id="page-transactions">
             <header className="px-4 pt-4 mb-2">
-                <h1 className="text-3xl font-extrabold text-midblue tracking-wider">KURIPOT</h1>
+                <h1 className="text-3xl font-extrabold text-midblue dark:text-white tracking-wider">KURIPOT</h1>
             </header>
 
             <div id="search-container" className="px-4 mb-4">
@@ -121,7 +121,7 @@ export const TransactionsPage: React.FC = () => {
 
             {/* Monthly Navigator */}
             <div className="px-4 py-2">
-                <div id="monthly-navigator" className="bg-white rounded-2xl h-[58px] px-3 flex items-center justify-between border-2 border-gray-100 shadow-soft">
+                <div id="monthly-navigator" className="bg-[var(--card-bg)] rounded-2xl h-[58px] px-3 flex items-center justify-between border-2 border-[var(--card-border)] shadow-soft">
                     <button
                         id="nav-prev-month"
                         onClick={() => {
@@ -136,7 +136,7 @@ export const TransactionsPage: React.FC = () => {
                                 }
                             });
                         }}
-                        className="p-2 rounded-xl hover:bg-gray-50 text-midblue transition-colors"
+                        className="p-2 rounded-xl hover:bg-[var(--item-bg)] text-midblue dark:text-white transition-colors"
                     >
                         <Icon name="ChevronLeftIcon" className="w-5 h-5 stroke-[3]" />
                     </button>
@@ -144,9 +144,9 @@ export const TransactionsPage: React.FC = () => {
                     <button
                         id="nav-month-picker"
                         onClick={() => setIsMonthPickerOpen(true)}
-                        className="text-center px-4 py-1 rounded-xl hover:bg-gray-50 transition-colors group"
+                        className="text-center px-4 py-1 rounded-xl hover:bg-[var(--item-bg)] transition-colors group"
                     >
-                        <p className="text-sm font-black text-midblue uppercase tracking-widest group-hover:scale-105 transition-transform flex items-center gap-2">
+                        <p className="text-sm font-black text-midblue dark:text-white uppercase tracking-widest group-hover:scale-105 transition-transform flex items-center gap-2">
                             {parseDateLocal(filters.dateRange.startDate).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
                             <Icon name="ChevronDownIcon" className="w-4 h-4" />
                         </p>
@@ -184,7 +184,7 @@ export const TransactionsPage: React.FC = () => {
                 {/* Subtle loading overlay for updates */}
                 {isLoading && transactions.length > 0 && (
                     <div className="absolute inset-x-0 top-0 z-30 flex justify-center pt-8">
-                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2 animate-bounce">
+                        <div className="bg-[var(--card-bg)] backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-[var(--card-border)] flex items-center gap-2 animate-bounce">
                             <div className="animate-spin text-midblue">
                                 <Icon name="ArrowPathIcon" className="w-4 h-4" />
                             </div>
@@ -201,7 +201,7 @@ export const TransactionsPage: React.FC = () => {
                         <p className="text-sm font-bold text-gray-400">Fetching transactions...</p>
                     </div>
                 ) : transactions.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-[var(--text-muted)] font-medium">
                         <div className="flex justify-center mb-4">
                             <Icon name="InboxIcon" className="w-16 h-16 text-gray-300" />
                         </div>
@@ -212,7 +212,7 @@ export const TransactionsPage: React.FC = () => {
                         <div id="transactions-list" className="px-4">
                         {Object.entries(groupedTransactions).map(([date, items]) => (
                             <div key={date} className="mb-6">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 py-3 sticky top-0 z-[5]">
+                                <h3 className="text-[10px] font-black text-[var(--text-muted)] opacity-80 uppercase tracking-widest bg-[var(--bg-color)] py-3 sticky top-0 z-[5]">
                                     {date}
                                 </h3>
                                 <div id={`date-group-${date}`} className="space-y-2">
@@ -221,26 +221,38 @@ export const TransactionsPage: React.FC = () => {
                                         return (
                                             <Card 
                                                 key={transaction.id} 
-                                                className="border-0 shadow-soft transition-all cursor-pointer overflow-hidden"
+                                                className={`transition-all cursor-pointer overflow-visible relative ${
+                                                    transaction.source === 'recurring' 
+                                                    ? 'border-2 border-midblue shadow-md' 
+                                                    : 'border-0 shadow-soft'
+                                                }`}
                                             >
+                                                {transaction.source === 'recurring' && (
+                                                    <div className="absolute -top-2.5 right-4 z-10">
+                                                        <div className="bg-midblue text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1 border border-white">
+                                                            <Icon name="ArrowPathIcon" className="w-2.5 h-2.5" />
+                                                            RECURRING
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <CardBody className="flex items-center justify-between p-3">
                                                     <div 
                                                         className="flex items-center gap-3 flex-1"
                                                         onClick={() => navigate(`/add-transaction?edit=${transaction.id}`)}
                                                     >
-                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${transaction.type === "income" ? "bg-success-50" : "bg-danger-50"
+                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${transaction.type === "income" ? "bg-success-500/10" : "bg-danger-500/10"
                                                             }`}>
                                                             {category?.icon ? (
                                                                 <Icon name={category.icon} className="w-6 h-6" style={{ color: category.color }} />
                                                             ) : (
-                                                                <Icon name="BanknotesIcon" className="w-6 h-6 text-gray-400" />
+                                                                <Icon name="BanknotesIcon" className="w-6 h-6 text-[var(--text-muted)]" />
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <p className="font-bold text-gray-900 leading-tight">
-                                                                {category?.name || "Unknown"}
+                                                            <p className="font-bold text-[var(--text-main)] leading-tight">
+                                                                 {category?.name || "Unknown"}
                                                             </p>
-                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
                                                                 {transaction.note || "No note"}
                                                             </p>
                                                         </div>
@@ -248,7 +260,7 @@ export const TransactionsPage: React.FC = () => {
 
                                                     <div className="flex items-center gap-3">
                                                         <p 
-                                                            className={`font-black text-sm ${transaction.type === "income" ? "text-success-600" : "text-danger-600"}`}
+                                                            className={`font-black text-sm ${transaction.type === "income" ? "text-success-500 dark:text-success-400" : "text-danger-500 dark:text-danger-400"}`}
                                                             onClick={() => navigate(`/add-transaction?edit=${transaction.id}`)}
                                                         >
                                                             {transaction.type === "income" ? "+" : "-"}
@@ -293,7 +305,7 @@ export const TransactionsPage: React.FC = () => {
                 <div className="space-y-6 max-h-[60dvh] overflow-y-auto pr-2 scrollbar-hide">
                     {[2026, 2025, 2024].map((year) => (
                         <div key={year} className="space-y-3">
-                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                            <h4 className="text-xs font-black text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--card-border)] pb-2">
                                 {year}
                             </h4>
                             <div className="grid grid-cols-3 gap-2">
@@ -314,8 +326,8 @@ export const TransactionsPage: React.FC = () => {
                                                 ${isSelected
                                                     ? 'bg-midblue text-white shadow-soft scale-105'
                                                     : isFuture
-                                                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed opacity-50'
-                                                        : 'bg-gray-50 text-gray-500 hover:bg-midblue/10 hover:text-midblue'}
+                                                        ? 'bg-[var(--item-bg)] text-[var(--text-muted)] cursor-not-allowed opacity-30'
+                                                        : 'bg-[var(--item-bg)] text-[var(--text-main)] hover:bg-midblue/10 hover:text-midblue'}
                                             `}
                                         >
                                             {date.toLocaleDateString(undefined, { month: 'short' })}
@@ -336,20 +348,21 @@ export const TransactionsPage: React.FC = () => {
                 size="sm"
                 position="bottom"
             >
-                <div className="space-y-4 pt-2 pb-6">
-                    <p className="text-gray-600 text-center font-medium">
-                        Are you sure you want to delete this transaction? This action cannot be undone.
+                <div className="space-y-4 pt-2 pb-6 px-2">
+                    <p className="text-[var(--text-main)] text-center font-bold">
+                        Are you sure you want to delete this transaction? 
+                        <span className="block text-sm text-[var(--text-muted)] font-medium mt-1">This action cannot be undone.</span>
                     </p>
                     <div className="flex gap-3">
                         <button
                             onClick={() => setConfirmDeleteId(null)}
-                            className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+                            className="flex-1 py-4 rounded-2xl bg-[var(--item-bg)] text-[var(--text-main)] font-bold hover:bg-[var(--card-border)] border border-[var(--card-border)] transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={confirmDelete}
-                            className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold hover:bg-danger-600 shadow-lg shadow-danger-200 transition-colors"
+                            className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold hover:bg-danger-600 shadow-lg shadow-danger-500/20 transition-colors"
                         >
                             Delete
                         </button>

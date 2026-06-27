@@ -12,11 +12,11 @@ export const Badge: React.FC<BadgeProps> = ({
   size = 'sm',
 }) => {
   const variantClasses = {
-    default: 'bg-gray-100 text-gray-700',
-    success: 'bg-success-100 text-success-700',
-    warning: 'bg-warning-100 text-warning-700',
-    danger: 'bg-danger-100 text-danger-700',
-    info: 'bg-primary-100 text-primary-700',
+    default: 'bg-[var(--item-bg)] text-[var(--text-main)] border border-[var(--card-border)]',
+    success: 'bg-success-500/10 text-success-600 dark:text-success-400',
+    warning: 'bg-warning-500/10 text-warning-600 dark:text-warning-400',
+    danger: 'bg-danger-500/10 text-danger-600 dark:text-danger-400',
+    info: 'bg-midblue/10 text-midblue dark:text-white',
   };
 
   const sizeClasses = {

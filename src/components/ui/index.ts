@@ -6,4 +6,5 @@ export { Modal } from './Modal';
 export { Pagination } from './Pagination';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Badge } from './Badge';
-export { Icon } from './Icon';
+export { Icon, AVAILABLE_ICONS } from './Icon';
+export { ProgressBar } from './ProgressBar';

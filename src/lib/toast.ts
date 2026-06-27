@@ -15,10 +15,10 @@ const TOAST_ICONS: Record<ToastType, string> = {
 };
 
 const TOAST_COLORS: Record<ToastType, string> = {
-  success: 'bg-success-500',
-  error: 'bg-danger-500',
-  warning: 'bg-warning-500',
-  info: 'bg-primary-500',
+  success: 'bg-success-600',
+  error: 'bg-danger-600',
+  warning: 'bg-warning-600',
+  info: 'bg-midblue',
 };
 
 let toastCounter = 0;

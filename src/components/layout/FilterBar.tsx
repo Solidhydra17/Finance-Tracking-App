@@ -7,7 +7,7 @@ interface FilterBarProps {
 
 export const FilterBar: React.FC<FilterBarProps> = ({ children, id }) => {
   return (
-    <div id={id} className="bg-white border-b border-gray-100 px-4 py-3">
+    <div id={id} className="bg-[var(--card-bg)] border-b border-[var(--card-border)] px-4 py-3">
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
         {children}
       </div>
@@ -33,12 +33,12 @@ export const FilterChip: React.FC<FilterChipProps> = ({
       id={id}
       onClick={onClick}
       className={`
-        px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap
-        transition-colors duration-200
+        px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap
+        transition-all duration-200
         ${
           isActive
-            ? 'bg-primary-500 text-white'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ? 'bg-midblue text-white shadow-lg shadow-midblue/20 scale-105'
+            : 'bg-[var(--item-bg)] text-[var(--text-muted)] hover:bg-[var(--card-border)]'
         }
       `}
     >

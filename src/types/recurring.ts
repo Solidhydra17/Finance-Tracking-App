@@ -10,6 +10,7 @@ export interface RecurringRule {
   dayOfMonth: number | null; // 1-31 for monthly
   startDate: string; // ISO date string
   endDate: string | null; // ISO date string, null if indefinite
+  lastGeneratedDate: string | null; // Track materialization
   description: string;
   createdAt: string;
   updatedAt: string;
@@ -24,10 +25,12 @@ export interface RecurringRuleCreate {
   dayOfMonth: number | null;
   startDate: string;
   endDate: string | null;
+  lastGeneratedDate: string | null;
   description: string;
 }
 
 export interface RecurringTransaction {
+  id: string; // Virtual ID like "recurring-{ruleId}-{date}"
   date: string;
   amount: number;
   categoryId: number;
