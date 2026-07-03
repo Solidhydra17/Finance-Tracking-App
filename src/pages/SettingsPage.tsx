@@ -1,13 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
+import { useShallow } from 'zustand/react/shallow';
 import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
 import { RecurringSettings } from '@/components/settings/RecurringSettings';
 import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
 
 export const SettingsPage: React.FC = () => {
-  const { useMockData, setUseMockData, darkMode, setDarkMode, addToast } = useUIStore();
+  const { useMockData, setUseMockData, darkMode, setDarkMode, addToast } = useUIStore(useShallow(state => ({
+    useMockData: state.useMockData,
+    setUseMockData: state.setUseMockData,
+    darkMode: state.darkMode,
+    setDarkMode: state.setDarkMode,
+    addToast: state.addToast
+  })));
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -83,7 +90,7 @@ export const SettingsPage: React.FC = () => {
         const data = JSON.parse(text);
         await importData(data);
         addToast('success', 'Data imported successfully');
-        window.location.reload();
+        window.location.href = '/';
       } catch (error) {
         console.error('Import failed:', error);
         addToast('error', 'Failed to import data');
@@ -105,7 +112,7 @@ export const SettingsPage: React.FC = () => {
     try {
       await clearAllData();
       addToast('success', 'All data cleared');
-      window.location.reload();
+      window.location.href = '/';
     } catch (error) {
       console.error('Clear failed:', error);
       addToast('error', 'Failed to clear data');

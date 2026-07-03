@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import type { TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { useUIStore, useTransactionStore } from '@/store';
@@ -11,9 +12,20 @@ export function useTransactions(filters: FilterState) {
     totalTransactions, setTotal,
     currentPage, setPage,
     lastFilters, setLastFilters
-  } = useTransactionStore();
+  } = useTransactionStore(useShallow(state => ({
+    transactions: state.transactions,
+    setTransactions: state.setTransactions,
+    isLoading: state.isLoading,
+    setLoading: state.setLoading,
+    totalTransactions: state.totalTransactions,
+    setTotal: state.setTotal,
+    currentPage: state.currentPage,
+    setPage: state.setPage,
+    lastFilters: state.lastFilters,
+    setLastFilters: state.setLastFilters
+  })));
   
-  const { addToast } = useUIStore();
+  const addToast = useUIStore(state => state.addToast);
 
   const loadTransactions = useCallback(async (forceLoading = false) => {
     // Only show loading if forced or if filters changed or if we have no data

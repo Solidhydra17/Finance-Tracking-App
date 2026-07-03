@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartEvent, ActiveElement } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 
@@ -24,9 +24,9 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
 
-  const chartData = {
+  const chartData = useMemo(() => ({
     labels: data.map(d => d.label),
     datasets: [
       {
@@ -38,9 +38,9 @@ export const DonutChart: React.FC<DonutChartProps> = ({
         hoverOffset: 10,
       },
     ],
-  };
+  }), [data]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: true,
     onHover: (_event: ChartEvent, elements: ActiveElement[]) => {
@@ -62,7 +62,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     layout: {
       padding: 15, // Gives room for the hoverOffset expansion
     },
-  };
+  }), []);
 
   const activeCategory = activeIndex !== null ? data[activeIndex] : null;
   const percentage = activeCategory ? ((activeCategory.value / total) * 100).toFixed(0) : 0;
