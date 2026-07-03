@@ -115,6 +115,15 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
+  const chartData = useMemo(() => {
+    if (!data) return [];
+    return data.categoryBreakdown.map((c: any) => ({
+      label: c.categoryName,
+      value: c.total,
+      color: c.color,
+    }));
+  }, [data]);
+
   // Show loading screen only on the very first load when no data exists yet
   if (isFirstLoad && !data) {
     return <FunnyLoadingScreen />;
@@ -123,14 +132,6 @@ export const DashboardPage: React.FC = () => {
   if (!data) return null;
 
   const currentPreset = filters.dateRange.preset;
-
-  const chartData = useMemo(() => {
-    return data.categoryBreakdown.map((c: any) => ({
-      label: c.categoryName,
-      value: c.total,
-      color: c.color,
-    }));
-  }, [data.categoryBreakdown]);
 
   return (
     <div id="page-dashboard" className="px-4 space-y-6">
