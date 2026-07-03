@@ -1,4 +1,4 @@
-import type { Transaction, TransactionCreate, TransactionUpdate } from '@/types';
+import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { db } from './database';
 
 export interface TransactionRepository {
@@ -10,6 +10,7 @@ export interface TransactionRepository {
   getByDateRange(startDate: string, endDate: string): Promise<Transaction[]>;
   getByCategory(categoryId: number): Promise<Transaction[]>;
   getBySource(source: 'manual' | 'recurring' | 'loan_payment'): Promise<Transaction[]>;
+  getByFilters(filters: FilterState): Promise<Transaction[]>;
 }
 
 export const transactionRepository: TransactionRepository = {
@@ -60,5 +61,44 @@ export const transactionRepository: TransactionRepository = {
     return db.transactions
       .filter(t => !t.deletedAt && t.source === source)
       .toArray();
+  },
+
+  async getByFilters(filters: FilterState): Promise<Transaction[]> {
+    let collection = db.transactions.toCollection();
+
+    if (filters.dateRange?.startDate && filters.dateRange?.endDate) {
+      collection = db.transactions.where('date').between(
+        filters.dateRange.startDate,
+        filters.dateRange.endDate,
+        true,
+        true
+      );
+    }
+
+    if (filters.categoryId) {
+      collection = collection.and(t => t.categoryId === filters.categoryId);
+    }
+
+    if (filters.transactionType !== 'all') {
+      collection = collection.and(t => t.type === filters.transactionType);
+    }
+
+    if (filters.loanOnly) {
+      collection = collection.and(t => t.source === 'loan_payment');
+    }
+
+    collection = collection.and(t => !t.deletedAt);
+
+    let allTransactions = await collection.toArray();
+
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      allTransactions = allTransactions.filter(t =>
+        t.note.toLowerCase().includes(query) ||
+        t.date.includes(query)
+      );
+    }
+
+    return allTransactions.sort((a, b) => b.date.localeCompare(a.date));
   },
 };

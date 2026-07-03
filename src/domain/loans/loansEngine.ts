@@ -1,6 +1,7 @@
 import type { Loan, LoanCreate, LoanPayment, LoanInstallment } from '@/types';
 import { loanRepository } from '@/storage/indexeddb';
 import { addCents, subtractCents, divideCents, multiplyCents } from '@/lib/money';
+import { formatDateLocal } from '@/lib/date';
 
 export const loansEngine = {
   async getAll(): Promise<Loan[]> {
@@ -53,7 +54,7 @@ export const loansEngine = {
       balance = subtractCents(balance, principal);
 
       installments.push({
-        dueDate: dueDate.toISOString().split('T')[0],
+        dueDate: formatDateLocal(dueDate),
         amount: installmentAmount,
         principal: principal,
         interest: interest,

@@ -41,35 +41,7 @@ export const transactionsEngine = {
   },
 
   async getByFilters(filters: FilterState): Promise<Transaction[]> {
-    const realTransactions = await transactionRepository.getAll();
-    let allTransactions = [...realTransactions];
-
-    if (filters.dateRange.startDate && filters.dateRange.endDate) {
-      const { startDate, endDate } = filters.dateRange;
-      allTransactions = allTransactions.filter(t => t.date >= startDate && t.date <= endDate);
-    }
-
-    if (filters.categoryId) {
-      allTransactions = allTransactions.filter(t => t.categoryId === filters.categoryId);
-    }
-
-    if (filters.transactionType !== 'all') {
-      allTransactions = allTransactions.filter(t => t.type === filters.transactionType);
-    }
-
-    if (filters.loanOnly) {
-      allTransactions = allTransactions.filter(t => t.source === 'loan_payment');
-    }
-
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase();
-      allTransactions = allTransactions.filter(t =>
-        t.note.toLowerCase().includes(query) ||
-        t.date.includes(query)
-      );
-    }
-
-    return allTransactions.sort((a, b) => b.date.localeCompare(a.date));
+    return transactionRepository.getByFilters(filters);
   },
 
   calculateStats(transactions: Transaction[]): TransactionStats {

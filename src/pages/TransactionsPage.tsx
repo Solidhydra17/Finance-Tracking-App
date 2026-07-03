@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Card,
@@ -8,7 +8,7 @@ import {
     Modal,
 } from "@/components/ui";
 import { FilterBar, FilterChip } from "@/components/layout";
-import { useTransactions, useCategories } from "@/hooks";
+import { useTransactions, useCategories, useDebouncedValue } from "@/hooks";
 import { useUIStore } from "@/store";
 import { centsToDisplay } from "@/lib/money";
 import { Icon } from "@/components/ui";
@@ -22,8 +22,13 @@ export const TransactionsPage: React.FC = () => {
     const { transactions, pagination, isLoading, deleteTransaction, setPage } =
         useTransactions(filters);
     const [searchTerm, setSearchTerm] = useState("");
+    const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
     const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
     const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+    useEffect(() => {
+        setFilters({ searchQuery: debouncedSearchTerm });
+    }, [debouncedSearchTerm, setFilters]);
 
     const updateDateRange = (month: number, year: number) => {
         setIsMonthPickerOpen(false);
@@ -47,7 +52,6 @@ export const TransactionsPage: React.FC = () => {
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
-        setFilters({ searchQuery: e.target.value });
     };
 
     const getCategoryById = (id: number) => categories.find((c) => c.id === id);
