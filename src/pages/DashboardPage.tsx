@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DonutChart } from '@/components/charts';
 import { useShallow } from 'zustand/react/shallow';
 import { useDashboard } from '@/hooks';
@@ -124,11 +124,13 @@ export const DashboardPage: React.FC = () => {
 
   const currentPreset = filters.dateRange.preset;
 
-  const chartData = data.categoryBreakdown.map((c: any) => ({
-    label: c.categoryName,
-    value: c.total,
-    color: c.color,
-  }));
+  const chartData = useMemo(() => {
+    return data.categoryBreakdown.map((c: any) => ({
+      label: c.categoryName,
+      value: c.total,
+      color: c.color,
+    }));
+  }, [data.categoryBreakdown]);
 
   return (
     <div id="page-dashboard" className="px-4 space-y-6">
