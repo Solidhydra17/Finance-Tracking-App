@@ -46,6 +46,9 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: true,
+    // Disable the spin-in animation — it fires on every re-render and is
+    // the direct cause of the "jerky" feel. Hover offset still works.
+    animation: false as const,
     onHover: (_event: ChartEvent, elements: ActiveElement[]) => {
       if (elements.length > 0) {
         setActiveIndex(elements[0].index);
