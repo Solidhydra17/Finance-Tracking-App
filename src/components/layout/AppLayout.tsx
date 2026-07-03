@@ -4,6 +4,7 @@ import { BottomNav } from "./BottomNav";
 import { ToastContainer, Modal, Icon } from "@/components/ui";
 import { ConnectivityListener, StatusToast } from "@/components/ui/StatusToast";
 import { useUIStore } from "@/store";
+import { useShallow } from 'zustand/react/shallow';
 import { AddTransactionModal } from "@/pages/AddTransactionModal";
 import { useNavigate } from "react-router-dom";
 
@@ -16,7 +17,13 @@ export const AppLayout: React.FC = () => {
         isAddMenuOpen,
         setAddMenuOpen,
         darkMode
-    } = useUIStore();
+    } = useUIStore(useShallow(state => ({
+        isAddTransactionOpen: state.isAddTransactionOpen,
+        setAddTransactionOpen: state.setAddTransactionOpen,
+        isAddMenuOpen: state.isAddMenuOpen,
+        setAddMenuOpen: state.setAddMenuOpen,
+        darkMode: state.darkMode
+    })));
 
     useEffect(() => {
         if (darkMode) {

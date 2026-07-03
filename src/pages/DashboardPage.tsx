@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DonutChart } from '@/components/charts';
+import { useShallow } from 'zustand/react/shallow';
 import { useDashboard } from '@/hooks';
 import { useUIStore } from '@/store';
 import { Icon } from '@/components/ui';
@@ -81,7 +82,12 @@ const FunnyLoadingScreen = () => {
 import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/lib/date';
 
 export const DashboardPage: React.FC = () => {
-  const { filters, setFilters, showLoans, isFirstLoad } = useUIStore();
+  const { filters, setFilters, showLoans, isFirstLoad } = useUIStore(useShallow(state => ({
+    filters: state.filters,
+    setFilters: state.setFilters,
+    showLoans: state.showLoans,
+    isFirstLoad: state.isFirstLoad
+  })));
   const { data } = useDashboard(filters, showLoans);
   const { plan, items } = useBudget();
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
