@@ -1,5 +1,6 @@
 import type { RecurringRule, RecurringTransaction } from '@/types';
 import { recurringRepository } from '@/storage/indexeddb';
+import { formatDateLocal } from '@/lib/date';
 
 export const recurringEngine = {
   async getAll(): Promise<RecurringRule[]> {
@@ -84,7 +85,7 @@ export const recurringEngine = {
 
       const increment = frequency === 'weekly' ? 7 : 14;
       while (current <= endDate) {
-        dates.push(current.toISOString().split('T')[0]);
+        dates.push(formatDateLocal(current));
         current.setDate(current.getDate() + increment);
       }
     } else if (frequency === 'monthly' && dayOfMonth !== null) {
@@ -99,7 +100,7 @@ export const recurringEngine = {
       while (current <= endDate) {
         // Handle months with fewer days
         if (current.getDate() === dayOfMonth) {
-          dates.push(current.toISOString().split('T')[0]);
+          dates.push(formatDateLocal(current));
         }
         current.setMonth(current.getMonth() + 1);
       }

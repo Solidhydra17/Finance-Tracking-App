@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ui";
 import { AppLayout } from "@/components/layout";
@@ -11,6 +11,14 @@ import { AddTransactionPage } from "@/pages/AddTransactionPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 
 export const App: React.FC = () => {
+    useEffect(() => {
+        const materialize = async () => {
+            const { recurringMaterializer } = await import('@/domain/recurring/materializer');
+            await recurringMaterializer.materializeDueTransactions();
+        };
+        materialize();
+    }, []);
+
     return (
         <ErrorBoundary>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

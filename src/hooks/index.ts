@@ -4,3 +4,4 @@ export { useLoans, useLoanDetails } from "./useLoans";
 export { useRecurring } from "./useRecurring";
 export { useDashboard } from "./useDashboard";
 export { useBudget } from "./useBudget";
+export { useDebouncedValue } from "./useDebouncedValue";

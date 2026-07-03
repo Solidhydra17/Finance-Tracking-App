@@ -24,9 +24,6 @@ export function useTransactions(filters: FilterState) {
     }
     
     try {
-      const { recurringMaterializer } = await import('@/domain/recurring/materializer');
-      await recurringMaterializer.materializeDueTransactions();
-
       const allTransactions = await transactionsEngine.getByFilters(filters);
       setTransactions(allTransactions);
       setTotal(allTransactions.length);
@@ -37,7 +34,7 @@ export function useTransactions(filters: FilterState) {
     } finally {
       setLoading(false);
     }
-  }, [filters, lastFilters, transactions.length, setTransactions, setTotal, setLoading, setLastFilters, addToast]);
+  }, [filters, setTransactions, setTotal, setLoading, setLastFilters, addToast]);
 
   useEffect(() => {
     loadTransactions();
