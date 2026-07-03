@@ -3,10 +3,16 @@ import { dashboardEngine } from '@/domain/dashboard/dashboardEngine';
 import type { DashboardData } from '@/domain/dashboard/types';
 import type { FilterState } from '@/types';
 import { useUIStore } from '@/store';
+import { useShallow } from 'zustand/react/shallow';
 import { seedRandomData } from '@/lib/mockDataGenerator';
 
 export function useDashboard(filters: FilterState, showLoans: boolean = false) {
-  const { addToast, setFirstLoad, cachedDashboardData, setCachedDashboardData } = useUIStore();
+  const { addToast, setFirstLoad, cachedDashboardData, setCachedDashboardData } = useUIStore(useShallow(state => ({
+    addToast: state.addToast,
+    setFirstLoad: state.setFirstLoad,
+    cachedDashboardData: state.cachedDashboardData,
+    setCachedDashboardData: state.setCachedDashboardData
+  })));
   
   // Initialize from cache if available
   const [data, setData] = useState<DashboardData | null>(cachedDashboardData);

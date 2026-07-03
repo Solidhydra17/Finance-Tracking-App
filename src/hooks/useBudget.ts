@@ -2,10 +2,18 @@ import { useEffect, useCallback } from 'react';
 import { budgetRepository } from '@/storage/indexeddb/budgetRepository';
 import type { BudgetPlanUpdate, BudgetItemCreate, BudgetItemUpdate, BudgetPlan } from '@/types';
 import { useBudgetStore, useUIStore } from '@/store';
+import { useShallow } from 'zustand/react/shallow';
 
 export function useBudget() {
-  const { plan, items, isLoading, setPlan, setItems, setLoading } = useBudgetStore();
-  const { addToast } = useUIStore();
+  const { plan, items, isLoading, setPlan, setItems, setLoading } = useBudgetStore(useShallow(state => ({
+    plan: state.plan,
+    items: state.items,
+    isLoading: state.isLoading,
+    setPlan: state.setPlan,
+    setItems: state.setItems,
+    setLoading: state.setLoading
+  })));
+  const addToast = useUIStore(state => state.addToast);
 
   const loadData = useCallback(async () => {
     setLoading(true);

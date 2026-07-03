@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartEvent, ActiveElement } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import React from 'react';
+
+const MemoizedDoughnut = React.memo(Doughnut);
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -70,7 +73,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   return (
     <div style={{ width: size, height: size }} className="relative flex items-center justify-center mx-auto">
       {/* Chart */}
-      <Doughnut data={chartData} options={options} />
+      <MemoizedDoughnut data={chartData} options={options} />
 
       {/* Center Display */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-4">
