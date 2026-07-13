@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem } from '@/types';
+import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount } from '@/types';
 
 export class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction, number>;
@@ -9,6 +9,7 @@ export class FinanceDatabase extends Dexie {
   recurringRules!: Table<RecurringRule, number>;
   budgetPlans!: Table<BudgetPlan, number>;
   budgetItems!: Table<BudgetItem, number>;
+  walletAccounts!: Table<WalletAccount, number>;
 
   constructor() {
     super('FinanceTrackerDB');
@@ -65,12 +66,36 @@ export class FinanceDatabase extends Dexie {
       budgetItems: '++id, type, active, categoryId',
     };
 
+    const schemaV11 = {
+      ...schemaV10,
+      walletAccounts: '++id, type, name',
+      transactions: '++id, type, date, categoryId, source, deletedAt, recurringRuleId, walletAccountId',
+      loans: '++id, direction, personName, sourceWalletAccountId, destinationWalletAccountId, status',
+      loanPayments: '++id, loanId, walletAccountId, date',
+    };
+
     this.version(4).stores({ ...schema, categories: '++id, type, isCustom, name, [name+type]' }).upgrade(categoryCleanup);
     this.version(5).stores(schema).upgrade(categoryCleanup);
     this.version(6).stores(schema).upgrade(categoryCleanup);
     this.version(8).stores(schemaV7);
     this.version(9).stores(schemaV9);
     this.version(10).stores(schemaV10);
+    this.version(11).stores(schemaV11).upgrade(async (tx) => {
+        // 1. Wipe old loan data as requested
+        await tx.table('loans').clear();
+        await tx.table('loanPayments').clear();
+
+        // 2. Create a default Cash wallet account if it doesn't exist
+        const walletCount = await tx.table('walletAccounts').count();
+        if (walletCount === 0) {
+            await tx.table('walletAccounts').add({
+                name: 'Cash',
+                type: 'cash',
+                balance: 0,
+                createdAt: new Date().toISOString()
+            });
+        }
+    });
 
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');
@@ -87,6 +112,7 @@ export async function clearAllData(): Promise<void> {
   await db.recurringRules.clear();
   await db.budgetPlans.clear();
   await db.budgetItems.clear();
+  await db.walletAccounts.clear();
 }
 
 export async function exportAllData(): Promise<{
@@ -97,6 +123,7 @@ export async function exportAllData(): Promise<{
   recurringRules: RecurringRule[];
   budgetPlans: BudgetPlan[];
   budgetItems: BudgetItem[];
+  walletAccounts: WalletAccount[];
 }> {
   return {
     transactions: await db.transactions.toArray(),
@@ -106,6 +133,7 @@ export async function exportAllData(): Promise<{
     recurringRules: await db.recurringRules.toArray(),
     budgetPlans: await db.budgetPlans.toArray(),
     budgetItems: await db.budgetItems.toArray(),
+    walletAccounts: await db.walletAccounts.toArray(),
   };
 }
 
@@ -117,6 +145,7 @@ export async function importData(data: {
   recurringRules?: RecurringRule[];
   budgetPlans?: BudgetPlan[];
   budgetItems?: BudgetItem[];
+  walletAccounts?: WalletAccount[];
 }): Promise<void> {
   if (data.categories?.length) {
     await db.categories.bulkPut(data.categories);
@@ -138,5 +167,8 @@ export async function importData(data: {
   }
   if (data.budgetItems?.length) {
     await db.budgetItems.bulkPut(data.budgetItems);
+  }
+  if (data.walletAccounts?.length) {
+    await db.walletAccounts.bulkPut(data.walletAccounts);
   }
 }

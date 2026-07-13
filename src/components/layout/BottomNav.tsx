@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
   ArrowsRightLeftIcon, 
-  BanknotesIcon, 
+  WalletIcon, 
   Cog6ToothIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
@@ -20,7 +20,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
   const navItems = [
     { path: '/', label: 'Home', icon: HomeIcon },
     { path: '/transactions', label: 'Transactions', icon: ArrowsRightLeftIcon },
-    { path: '/loans', label: 'Loans', icon: BanknotesIcon },
+    { path: '/wallet', label: 'Wallet', icon: WalletIcon },
     { path: '/settings', label: 'Settings', icon: Cog6ToothIcon },
   ];
 

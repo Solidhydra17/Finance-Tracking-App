@@ -43,3 +43,15 @@ export function divideCents(cents: number, divisor: number): number {
 export function absCents(cents: number): number {
   return Math.abs(cents);
 }
+
+export function formatCurrency(cents: number, symbol: string = '$', position: 'prefix' | 'suffix' = 'prefix'): string {
+    const abs = Math.abs(cents);
+    const dollars = Math.floor(abs / 100);
+    const remainder = abs % 100;
+    const sign = cents < 0 ? '-' : '';
+    const numStr = `${dollars.toLocaleString()}.${remainder.toString().padStart(2, '0')}`;
+    
+    return position === 'prefix' 
+        ? `${sign}${symbol}${numStr}` 
+        : `${sign}${numStr} ${symbol}`;
+}
