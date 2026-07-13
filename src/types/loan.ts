@@ -1,41 +1,37 @@
-export type LoanDirection = 'lent' | 'borrowed';
+export type LoanDirection = 'outbound' | 'inbound';
+export type LoanStatus = 'active' | 'partially_paid' | 'paid';
 
-export interface Loan {
-  id?: number;
-  direction: LoanDirection;
-  counterpartyName: string;
-  principal: number; // integer cents
-  interestRate: number; // percentage (e.g., 5 for 5%)
-  termMonths: number;
-  startDate: string; // ISO date string
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
+export interface LoanInstallment {
+    amount: number; // integer cents
+    dueDate: string; // ISO string
+    isPaid: boolean;
 }
 
-export interface LoanCreate {
-  direction: LoanDirection;
-  counterpartyName: string;
-  principal: number;
-  interestRate: number;
-  termMonths: number;
-  startDate: string;
-  notes: string;
+export interface LoanInstallmentPlan {
+    frequency: 'weekly' | 'bi-weekly' | 'monthly';
+    installments: LoanInstallment[];
+}
+
+export interface Loan {
+    id?: number;
+    direction: LoanDirection;
+    personName: string;
+    amount: number; // integer cents
+    acquiredDate: string; // ISO string
+    dueDate: string; // ISO string
+    notes?: string;
+    sourceWalletAccountId?: number; // The account money came from (for outbound)
+    destinationWalletAccountId?: number; // The account money went to (for inbound)
+    installmentPlan?: LoanInstallmentPlan;
+    status: LoanStatus;
+    createdAt: string; // ISO string
 }
 
 export interface LoanPayment {
-  id?: number;
-  loanId: number;
-  amount: number; // integer cents
-  date: string; // ISO date string
-  createdAt: string;
-}
-
-export interface LoanInstallment {
-  dueDate: string;
-  amount: number; // integer cents
-  principal: number;
-  interest: number;
-  balance: number;
-  isPaid: boolean;
+    id?: number;
+    loanId: number;
+    amount: number; // integer cents
+    walletAccountId: number; // The account used for repayment
+    paidDate: string; // ISO string
+    notes?: string;
 }

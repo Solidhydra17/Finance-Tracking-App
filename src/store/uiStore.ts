@@ -16,6 +16,12 @@ interface UIState {
   resetFilters: () => void;
   setDateRange: (range: DateRange) => void;
 
+  // Preferences/Settings
+  currencySymbol: string;
+  currencyPosition: 'prefix' | 'suffix';
+  dateFormat: string;
+  creditWarningThreshold: number; // percentage (0-100)
+
   // Modals
   isAddTransactionOpen: boolean;
   setAddTransactionOpen: (open: boolean) => void;
@@ -41,6 +47,12 @@ interface UIState {
   setUseMockData: (use: boolean) => void;
   darkMode: boolean;
   setDarkMode: (dark: boolean) => void;
+
+  // Setters for Settings
+  setCurrencySymbol: (symbol: string) => void;
+  setCurrencyPosition: (position: 'prefix' | 'suffix') => void;
+  setDateFormat: (format: string) => void;
+  setCreditWarningThreshold: (threshold: number) => void;
 
   // Dashboard cache
   cachedDashboardData: DashboardData | null;
@@ -94,6 +106,16 @@ export const useUIStore = create<UIState>((set) => ({
   setDateRange: (range) => {
     set((state) => ({ filters: { ...state.filters, dateRange: range } }));
   },
+
+  // Settings
+  currencySymbol: '$',
+  currencyPosition: 'prefix',
+  dateFormat: 'MMM dd, yyyy',
+  creditWarningThreshold: 80,
+  setCurrencySymbol: (symbol) => set({ currencySymbol: symbol }),
+  setCurrencyPosition: (position) => set({ currencyPosition: position }),
+  setDateFormat: (format) => set({ dateFormat: format }),
+  setCreditWarningThreshold: (threshold) => set({ creditWarningThreshold: Math.max(0, Math.min(100, threshold)) }),
 
   // Modals
   isAddTransactionOpen: false,

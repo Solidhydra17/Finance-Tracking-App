@@ -8,11 +8,13 @@ import { RecurringSettings } from '@/components/settings/RecurringSettings';
 import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
 
 export const SettingsPage: React.FC = () => {
-  const { useMockData, setUseMockData, darkMode, setDarkMode, addToast } = useUIStore(useShallow(state => ({
+  const { useMockData, setUseMockData, darkMode, setDarkMode, creditWarningThreshold, setCreditWarningThreshold, addToast } = useUIStore(useShallow(state => ({
     useMockData: state.useMockData,
     setUseMockData: state.setUseMockData,
     darkMode: state.darkMode,
     setDarkMode: state.setDarkMode,
+    creditWarningThreshold: state.creditWarningThreshold,
+    setCreditWarningThreshold: state.setCreditWarningThreshold,
     addToast: state.addToast
   })));
   const [isExporting, setIsExporting] = useState(false);
@@ -172,6 +174,30 @@ export const SettingsPage: React.FC = () => {
                 >
                 <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
                 </button>
+            </div>
+
+            {/* Credit Card Warning Threshold */}
+            <div className="flex flex-col gap-2 p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                        <p className="font-bold text-[var(--text-main)]">Credit Warning Threshold</p>
+                        <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight">
+                            Alert when total credit card debt exceeds this % of debit balance.
+                        </p>
+                    </div>
+                    <span className="font-bold text-midblue dark:text-white bg-midblue/10 px-2 py-1 rounded-md text-xs">
+                        {creditWarningThreshold}%
+                    </span>
+                </div>
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={creditWarningThreshold}
+                    onChange={(e) => setCreditWarningThreshold(parseInt(e.target.value, 10))}
+                    className="w-full accent-midblue mt-2"
+                />
             </div>
           </div>
         </CardBody>

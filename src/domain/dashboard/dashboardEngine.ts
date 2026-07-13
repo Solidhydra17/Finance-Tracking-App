@@ -1,6 +1,6 @@
 import type { DashboardData } from './types';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
-import { loansEngine } from '@/domain/loans/loansEngine';
+import { loanService } from '@/domain/loans/loanService';
 import { recurringEngine } from '@/domain/recurring/recurringEngine';
 import { categoryRepository } from '@/storage';
 import { FilterState, Transaction } from '@/types';
@@ -31,9 +31,8 @@ export const dashboardEngine = {
 
     let loanExposure = 0;
     if (includeLoans) {
-      const loans = await loansEngine.getAll();
-      const exposure = loansEngine.calculateTotalExposure(loans);
-      loanExposure = exposure.net;
+      const { totalOwedToYou, totalYouOwe } = await loanService.getTotals();
+      loanExposure = totalOwedToYou - totalYouOwe;
     }
 
     return {

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Input, TextArea, Button, Icon, Modal, AVAILABLE_ICONS } from '@/components/ui';
 import { useCategories, useTransactions } from '@/hooks';
-import { useUIStore } from '@/store';
-import { displayToCents } from '@/lib/money';
+import { useUIStore, useWalletStore } from '@/store';
+import { useShallow } from 'zustand/react/shallow';
+import { displayToCents, formatCurrency } from '@/lib/money';
 import type { TransactionType } from '@/types';
 
 export const AddTransactionPage: React.FC = () => {
@@ -22,6 +23,7 @@ export const AddTransactionPage: React.FC = () => {
   const [amountDisplay, setAmountDisplay] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [categoryId, setCategoryId] = useState<number>(0);
+  const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurringRuleId, setRecurringRuleId] = useState<number | null>(null);
@@ -29,6 +31,18 @@ export const AddTransactionPage: React.FC = () => {
   const [isConfiguringRecurring, setIsConfiguringRecurring] = useState(false);
   const [isConfirmRuleUpdateOpen, setIsConfirmRuleUpdateOpen] = useState(false);
   
+  // Fetch wallet accounts
+  const { accounts, fetchAccounts } = useWalletStore(useShallow(state => ({
+      accounts: state.accounts,
+      fetchAccounts: state.fetchAccounts
+  })));
+
+  useEffect(() => {
+      fetchAccounts();
+  }, [fetchAccounts]);
+
+  const { currencySymbol, currencyPosition } = useUIStore();
+
   // Ensure page starts at the top
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -53,6 +67,7 @@ export const AddTransactionPage: React.FC = () => {
             setAmountDisplay((transaction.amount / 100).toString());
             setDate(transaction.date);
             setCategoryId(transaction.categoryId);
+            setWalletAccountId(transaction.walletAccountId || '');
             setNote(transaction.note);
             if (transaction.recurringRuleId) {
               setRecurringRuleId(transaction.recurringRuleId);
@@ -145,6 +160,11 @@ export const AddTransactionPage: React.FC = () => {
         return;
       }
 
+      if (!walletAccountId && !isRecurring) {
+        addToast('warning', 'Please select a wallet account');
+        return;
+      }
+
       const amount = displayToCents(amountDisplay);
       if (amount <= 0) {
         addToast('warning', 'Amount must be greater than zero');
@@ -161,6 +181,7 @@ export const AddTransactionPage: React.FC = () => {
           amount,
           date,
           categoryId,
+          walletAccountId: Number(walletAccountId) || undefined,
           note,
         });
       } else if (isRecurring) {
@@ -187,6 +208,7 @@ export const AddTransactionPage: React.FC = () => {
           amount,
           date,
           categoryId,
+          walletAccountId: Number(walletAccountId),
           note,
           source: 'manual',
         });
@@ -219,7 +241,7 @@ export const AddTransactionPage: React.FC = () => {
       const { categoryRepository } = await import('@/storage/indexeddb');
       await categoryRepository.create({
         name: newCategoryName,
-        type: type,
+        type: type === 'loan' ? 'expense' : type,
         color: newCategoryColor,
         icon: newCategoryIcon,
         isCustom: true
@@ -362,6 +384,34 @@ export const AddTransactionPage: React.FC = () => {
                         >
                             Monthly
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Wallet Selection */}
+            {!isRecurring && (
+                <div id="field-wallet" className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
+                        Wallet Account
+                    </label>
+                    <div className="relative">
+                        <select
+                            value={walletAccountId}
+                            onChange={(e) => setWalletAccountId(Number(e.target.value))}
+                            required
+                            disabled={isConfiguringRecurring}
+                            className={`w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <option value="" disabled>Select Wallet...</option>
+                            {accounts.map(account => (
+                                <option key={account.id} value={account.id}>
+                                    {account.name} ({formatCurrency(account.balance, currencySymbol, currencyPosition)})
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                        </div>
                     </div>
                 </div>
             )}

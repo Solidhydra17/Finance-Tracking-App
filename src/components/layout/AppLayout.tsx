@@ -34,9 +34,13 @@ export const AppLayout: React.FC = () => {
         }
     }, [darkMode]);
 
-    const handleAddSelect = (type: 'income' | 'expense') => {
+    const handleAddSelect = (type: 'income' | 'expense' | 'loan') => {
         setAddMenuOpen(false);
-        navigate(`/add-transaction?type=${type}`);
+        if (type === 'loan') {
+            navigate('/add-loan');
+        } else {
+            navigate(`/add-transaction?type=${type}`);
+        }
     };
 
     return (
@@ -60,7 +64,7 @@ export const AppLayout: React.FC = () => {
                 size="sm"
                 position="bottom"
             >
-                <div id="add-menu-options" className="grid grid-cols-2 gap-4 pt-2 pb-6">
+                <div id="add-menu-options" className="grid grid-cols-3 gap-4 pt-2 pb-6">
                     <button
                         onClick={() => handleAddSelect('income')}
                         className="flex flex-col items-center justify-center gap-3 p-6 bg-success-500/10 dark:bg-success-500/5 rounded-3xl border-2 border-transparent hover:border-success-500 transition-all active:scale-95 group"
@@ -79,6 +83,16 @@ export const AppLayout: React.FC = () => {
                             <Icon name="ArrowTrendingDownIcon" className="w-8 h-8" />
                         </div>
                         <span id="btn-add-expense" className="font-bold text-danger-600 dark:text-danger-400">Expense</span>
+                    </button>
+
+                    <button
+                        onClick={() => handleAddSelect('loan')}
+                        className="flex flex-col items-center justify-center gap-3 p-6 bg-midblue/10 dark:bg-midblue/5 rounded-3xl border-2 border-transparent hover:border-midblue transition-all active:scale-95 group"
+                    >
+                        <div className="w-16 h-16 bg-midblue rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                            <Icon name="BanknotesIcon" className="w-8 h-8" />
+                        </div>
+                        <span id="btn-add-loan" className="font-bold text-midblue dark:text-midblue">Loan</span>
                     </button>
                 </div>
             </Modal>
