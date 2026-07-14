@@ -9,7 +9,7 @@ import {
 } from "@/components/ui";
 import { FilterBar, FilterChip } from "@/components/layout";
 import { useTransactions, useCategories, useDebouncedValue } from "@/hooks";
-import { useUIStore } from "@/store";
+import { useUIStore, useWalletStore } from "@/store";
 import { centsToDisplay } from "@/lib/money";
 import { Icon } from "@/components/ui";
 import type { TransactionTypeFilter } from "@/types";
@@ -19,6 +19,7 @@ export const TransactionsPage: React.FC = () => {
     const navigate = useNavigate();
     const { filters, setFilters } = useUIStore();
     const { categories } = useCategories("both");
+    const { accounts, fetchAccounts } = useWalletStore();
     const { transactions, pagination, isLoading, deleteTransaction, setPage } =
         useTransactions(filters);
     const [searchTerm, setSearchTerm] = useState("");
@@ -29,6 +30,10 @@ export const TransactionsPage: React.FC = () => {
     useEffect(() => {
         setFilters({ searchQuery: debouncedSearchTerm });
     }, [debouncedSearchTerm, setFilters]);
+
+    useEffect(() => {
+        fetchAccounts();
+    }, [fetchAccounts]);
 
     const updateDateRange = (month: number, year: number) => {
         setIsMonthPickerOpen(false);
@@ -55,6 +60,7 @@ export const TransactionsPage: React.FC = () => {
     };
 
     const getCategoryById = (id: number) => categories.find((c) => c.id === id);
+    const getAccountName = (id?: number) => accounts.find(a => a.id === id)?.name || "Unknown";
 
     const handleDelete = async (id: number) => {
         setConfirmDeleteId(id);
@@ -119,6 +125,20 @@ export const TransactionsPage: React.FC = () => {
                         onClick={() => handleTypeFilter("expense")}
                     >
                         Expenses
+                    </FilterChip>
+                    <FilterChip
+                        id="filter-type-credit-payment"
+                        isActive={filters.transactionType === "credit_payment"}
+                        onClick={() => handleTypeFilter("credit_payment")}
+                    >
+                        Credit Payments
+                    </FilterChip>
+                    <FilterChip
+                        id="filter-type-loans"
+                        isActive={filters.transactionType === "loans"}
+                        onClick={() => handleTypeFilter("loans")}
+                    >
+                        Loans
                     </FilterChip>
             </FilterBar>
             <div className="mb-4"></div>
@@ -220,8 +240,72 @@ export const TransactionsPage: React.FC = () => {
                                     {date}
                                 </h3>
                                 <div id={`date-group-${date}`} className="space-y-2">
-                                    {items.map((transaction) => {
+                                    {items.map((transaction: any) => {
                                         const category = getCategoryById(transaction.categoryId);
+                                        
+                                        // Credit Payment specific logic
+                                        const isCreditPayment = transaction.type === 'credit_payment';
+                                        const isLoan = transaction.type === 'loan';
+                                        const isLoanPayment = transaction.type === 'loan_payment';
+                                        
+                                        let title = category?.name || "Unknown";
+                                        let subtitle = transaction.note || "No note";
+                                        let iconName = category?.icon || "BanknotesIcon";
+                                        let iconColor = category?.color || "";
+                                        let bgClass = transaction.type === "income" ? "bg-success-500/10" : "bg-danger-500/10";
+                                        let amountColor = transaction.type === "income" ? "text-success-500 dark:text-success-400" : "text-danger-500 dark:text-danger-400";
+                                        let amountPrefix = transaction.type === "income" ? "+" : "-";
+
+                                        if (isCreditPayment) {
+                                            title = `${getAccountName(transaction.targetWalletAccountId)} Payment`;
+                                            subtitle = `from ${getAccountName(transaction.walletAccountId)}`;
+                                            iconName = "CreditCardIcon";
+                                            bgClass = "bg-gray-500/10";
+                                            amountColor = "text-[var(--text-main)]";
+                                            iconColor = "gray";
+                                            amountPrefix = "";
+                                        } else if (isLoan) {
+                                            const loan = transaction.originalLoan;
+                                            iconName = "HandRaisedIcon";
+                                            bgClass = "bg-orange-500/10";
+                                            iconColor = "orange";
+                                            if (loan.direction === 'outbound') {
+                                                title = `${loan.personName} — Loan Given`;
+                                                amountColor = "text-orange-500 dark:text-orange-400";
+                                                amountPrefix = "-";
+                                            } else {
+                                                title = `${loan.personName} — Loan Received`;
+                                                amountColor = "text-[var(--text-main)]";
+                                                amountPrefix = "+";
+                                                bgClass = "bg-gray-500/10";
+                                                iconColor = "gray";
+                                            }
+                                        } else if (isLoanPayment) {
+                                            const loan = transaction.originalLoan;
+                                            iconName = "CurrencyDollarIcon";
+                                            if (loan.direction === 'outbound') {
+                                                title = `${loan.personName} — Repayment Received`;
+                                                amountColor = "text-success-500 dark:text-success-400";
+                                                amountPrefix = "+";
+                                                bgClass = "bg-success-500/10";
+                                                iconColor = "green";
+                                            } else {
+                                                title = `${loan.personName} — Repayment Made`;
+                                                amountColor = "text-danger-500 dark:text-danger-400";
+                                                amountPrefix = "-";
+                                                bgClass = "bg-danger-500/10";
+                                                iconColor = "red";
+                                            }
+                                        }
+
+                                        const handleClick = () => {
+                                            if (isLoan || isLoanPayment) {
+                                                navigate(`/wallet`);
+                                            } else {
+                                                navigate(`/add-transaction?edit=${transaction.id}`);
+                                            }
+                                        };
+
                                         return (
                                             <Card 
                                                 key={transaction.id} 
@@ -242,43 +326,44 @@ export const TransactionsPage: React.FC = () => {
                                                 <CardBody className="flex items-center justify-between p-3">
                                                     <div 
                                                         className="flex items-center gap-3 flex-1"
-                                                        onClick={() => navigate(`/add-transaction?edit=${transaction.id}`)}
+                                                        onClick={handleClick}
                                                     >
-                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${transaction.type === "income" ? "bg-success-500/10" : "bg-danger-500/10"
-                                                            }`}>
-                                                            {category?.icon ? (
-                                                                <Icon name={category.icon} className="w-6 h-6" style={{ color: category.color }} />
+                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${bgClass}`}>
+                                                            {iconColor ? (
+                                                                <Icon name={iconName as any} className="w-6 h-6" style={{ color: iconColor }} />
                                                             ) : (
-                                                                <Icon name="BanknotesIcon" className="w-6 h-6 text-[var(--text-muted)]" />
+                                                                <Icon name={iconName as any} className="w-6 h-6 text-[var(--text-muted)]" />
                                                             )}
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-[var(--text-main)] leading-tight">
-                                                                 {category?.name || "Unknown"}
+                                                                 {title}
                                                             </p>
                                                             <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
-                                                                {transaction.note || "No note"}
+                                                                {subtitle}
                                                             </p>
                                                         </div>
                                                     </div>
 
                                                     <div className="flex items-center gap-3">
                                                         <p 
-                                                            className={`font-black text-sm ${transaction.type === "income" ? "text-success-500 dark:text-success-400" : "text-danger-500 dark:text-danger-400"}`}
-                                                            onClick={() => navigate(`/add-transaction?edit=${transaction.id}`)}
+                                                            className={`font-black text-sm ${amountColor}`}
+                                                            onClick={handleClick}
                                                         >
-                                                            {transaction.type === "income" ? "+" : "-"}
+                                                            {amountPrefix}
                                                             {centsToDisplay(transaction.amount)}
                                                         </p>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDelete(transaction.id!);
-                                                            }}
-                                                            className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
-                                                        >
-                                                            <Icon name="TrashIcon" className="w-4 h-4" />
-                                                        </button>
+                                                        {!isLoan && !isLoanPayment && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDelete(transaction.id!);
+                                                                }}
+                                                                className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
+                                                            >
+                                                                <Icon name="TrashIcon" className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </CardBody>
                                             </Card>

@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount } from '@/types';
+import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount, CreditPayment } from '@/types';
 
 export class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction, number>;
@@ -10,6 +10,7 @@ export class FinanceDatabase extends Dexie {
   budgetPlans!: Table<BudgetPlan, number>;
   budgetItems!: Table<BudgetItem, number>;
   walletAccounts!: Table<WalletAccount, number>;
+  creditPayments!: Table<CreditPayment, number>;
 
   constructor() {
     super('FinanceTrackerDB');
@@ -74,6 +75,16 @@ export class FinanceDatabase extends Dexie {
       loanPayments: '++id, loanId, walletAccountId, date',
     };
 
+    const schemaV12 = {
+      ...schemaV11,
+      creditPayments: '++id, creditCardAccountId, sourceWalletAccountId, date',
+    };
+
+    const schemaV13 = {
+      ...schemaV12,
+      transactions: '++id, type, date, categoryId, source, deletedAt, recurringRuleId, walletAccountId, targetWalletAccountId',
+    };
+
     this.version(4).stores({ ...schema, categories: '++id, type, isCustom, name, [name+type]' }).upgrade(categoryCleanup);
     this.version(5).stores(schema).upgrade(categoryCleanup);
     this.version(6).stores(schema).upgrade(categoryCleanup);
@@ -96,6 +107,19 @@ export class FinanceDatabase extends Dexie {
             });
         }
     });
+    this.version(12).stores(schemaV12).upgrade(async (tx) => {
+        // Remove the stored balance from existing wallet accounts
+        const accounts = await tx.table('walletAccounts').toArray();
+        for (const acc of accounts) {
+            delete acc.balance;
+            await tx.table('walletAccounts').put(acc);
+        }
+    });
+    this.version(13).stores(schemaV13).upgrade(async () => {
+        // No explicit migration needed for targetWalletAccountId, 
+        // the index will be built automatically for existing records (which will have undefined).
+        // We will just let the creditPayments table become obsolete.
+    });
 
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');
@@ -113,6 +137,7 @@ export async function clearAllData(): Promise<void> {
   await db.budgetPlans.clear();
   await db.budgetItems.clear();
   await db.walletAccounts.clear();
+  await db.creditPayments.clear();
 }
 
 export async function exportAllData(): Promise<{
@@ -124,6 +149,7 @@ export async function exportAllData(): Promise<{
   budgetPlans: BudgetPlan[];
   budgetItems: BudgetItem[];
   walletAccounts: WalletAccount[];
+  creditPayments: CreditPayment[];
 }> {
   return {
     transactions: await db.transactions.toArray(),
@@ -134,6 +160,7 @@ export async function exportAllData(): Promise<{
     budgetPlans: await db.budgetPlans.toArray(),
     budgetItems: await db.budgetItems.toArray(),
     walletAccounts: await db.walletAccounts.toArray(),
+    creditPayments: await db.creditPayments.toArray(),
   };
 }
 
@@ -146,6 +173,7 @@ export async function importData(data: {
   budgetPlans?: BudgetPlan[];
   budgetItems?: BudgetItem[];
   walletAccounts?: WalletAccount[];
+  creditPayments?: CreditPayment[];
 }): Promise<void> {
   if (data.categories?.length) {
     await db.categories.bulkPut(data.categories);
@@ -170,5 +198,8 @@ export async function importData(data: {
   }
   if (data.walletAccounts?.length) {
     await db.walletAccounts.bulkPut(data.walletAccounts);
+  }
+  if (data.creditPayments?.length) {
+    await db.creditPayments.bulkPut(data.creditPayments);
   }
 }

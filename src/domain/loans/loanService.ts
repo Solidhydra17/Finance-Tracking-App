@@ -1,13 +1,10 @@
 import type { LoanRepository } from './loanRepository';
-import type { WalletRepository } from '@/domain/wallet/walletRepository';
 import type { Loan, LoanPayment } from '@/types';
 import { loanRepository } from '@/storage/indexeddb/loanRepository';
-import { walletRepository } from '@/storage/indexeddb/walletRepository';
 
 export class LoanService {
     constructor(
-        private loanRepo: LoanRepository,
-        private walletRepo: WalletRepository
+        private loanRepo: LoanRepository
     ) {}
 
     async getAllLoans(): Promise<Loan[]> {
@@ -23,16 +20,6 @@ export class LoanService {
 
     async createLoan(loanData: Omit<Loan, 'id' | 'createdAt'>): Promise<number> {
         const loanId = await this.loanRepo.create(loanData);
-        
-        // Immediately impact the associated wallet account
-        if (loanData.direction === 'outbound' && loanData.sourceWalletAccountId) {
-            // Money leaves your account
-            await this.walletRepo.adjustBalance(loanData.sourceWalletAccountId, -loanData.amount);
-        } else if (loanData.direction === 'inbound' && loanData.destinationWalletAccountId) {
-            // Money enters your account
-            await this.walletRepo.adjustBalance(loanData.destinationWalletAccountId, loanData.amount);
-        }
-
         return loanId;
     }
 
@@ -57,15 +44,6 @@ export class LoanService {
         const newStatus = totalPaid >= loan.amount ? 'paid' : 'partially_paid';
         if (loan.status !== newStatus) {
             await this.loanRepo.update(loanId, { status: newStatus });
-        }
-
-        // Impact the associated wallet account
-        if (loan.direction === 'outbound') {
-            // Money comes back to your account
-            await this.walletRepo.adjustBalance(walletAccountId, amount);
-        } else if (loan.direction === 'inbound') {
-            // Money leaves your account to pay back the lender
-            await this.walletRepo.adjustBalance(walletAccountId, -amount);
         }
     }
 
@@ -96,4 +74,4 @@ export class LoanService {
     }
 }
 
-export const loanService = new LoanService(loanRepository, walletRepository);
+export const loanService = new LoanService(loanRepository);

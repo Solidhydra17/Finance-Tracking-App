@@ -160,7 +160,7 @@ export const WalletLoansList: React.FC = () => {
                             <option value="" disabled>Select Wallet Account</option>
                             {accounts.filter(a => a.type !== 'credit').map(account => (
                                 <option key={account.id} value={account.id}>
-                                    {account.name} ({formatCurrency(account.balance, currencySymbol, currencyPosition)})
+                                    {account.name} ({formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})
                                 </option>
                             ))}
                         </select>
