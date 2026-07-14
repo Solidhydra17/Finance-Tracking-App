@@ -6,11 +6,12 @@ import { formatCurrency } from '@/lib/money';
 import type { WalletAccount, WalletAccountType } from '@/types';
 
 export const WalletAccountsList: React.FC = () => {
-    const { accounts, createAccount, updateAccount, deleteAccount } = useWalletStore(useShallow(state => ({
+    const { accounts, createAccount, updateAccount, deleteAccount, payCreditCard } = useWalletStore(useShallow(state => ({
         accounts: state.accounts,
         createAccount: state.createAccount,
         updateAccount: state.updateAccount,
-        deleteAccount: state.deleteAccount
+        deleteAccount: state.deleteAccount,
+        payCreditCard: state.payCreditCard
     })));
 
     const { currencySymbol, currencyPosition, addToast } = useUIStore(useShallow(state => ({
@@ -23,9 +24,15 @@ export const WalletAccountsList: React.FC = () => {
     const [editingAccount, setEditingAccount] = useState<WalletAccount | null>(null);
     const [accountType, setAccountType] = useState<WalletAccountType>('debit');
     const [name, setName] = useState('');
-    const [balance, setBalance] = useState(''); // input as string (dollars)
     const [creditLimit, setCreditLimit] = useState(''); // input as string (dollars)
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+
+    // Pay Card Modal State
+    const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+    const [payAccount, setPayAccount] = useState<WalletAccount | null>(null);
+    const [payAmount, setPayAmount] = useState('');
+    const [paySourceAccountId, setPaySourceAccountId] = useState<number | ''>('');
+    const [payNotes, setPayNotes] = useState('');
 
     const cashAccount = accounts.find(a => a.type === 'cash');
     const debitAccounts = accounts.filter(a => a.type === 'debit');
@@ -37,7 +44,6 @@ export const WalletAccountsList: React.FC = () => {
         setEditingAccount(null);
         setAccountType(type);
         setName('');
-        setBalance('');
         setCreditLimit('');
         setIsManageModalOpen(true);
     };
@@ -46,7 +52,6 @@ export const WalletAccountsList: React.FC = () => {
         setEditingAccount(account);
         setAccountType(account.type);
         setName(account.name);
-        setBalance((account.balance / 100).toString());
         setCreditLimit(account.creditLimit ? (account.creditLimit / 100).toString() : '');
         setIsManageModalOpen(true);
     };
@@ -58,14 +63,12 @@ export const WalletAccountsList: React.FC = () => {
             return;
         }
 
-        const balanceCents = Math.round(parseFloat(balance || '0') * 100);
         const limitCents = creditLimit ? Math.round(parseFloat(creditLimit) * 100) : undefined;
 
         try {
             if (editingAccount) {
                 await updateAccount(editingAccount.id!, {
                     name: accountType === 'cash' ? 'Cash' : name,
-                    balance: balanceCents,
                     creditLimit: accountType === 'credit' ? limitCents : undefined
                 });
                 addToast('success', 'Account updated');
@@ -73,7 +76,6 @@ export const WalletAccountsList: React.FC = () => {
                 await createAccount({
                     name: accountType === 'cash' ? 'Cash' : name,
                     type: accountType,
-                    balance: balanceCents,
                     creditLimit: accountType === 'credit' ? limitCents : undefined
                 });
                 addToast('success', 'Account created');
@@ -91,6 +93,42 @@ export const WalletAccountsList: React.FC = () => {
             addToast('success', 'Account deleted');
             setIsConfirmDeleteOpen(false);
             setIsManageModalOpen(false);
+        } catch (error: any) {
+            addToast('error', error.message);
+        }
+    };
+
+    const openPayModal = (account: WalletAccount) => {
+        setPayAccount(account);
+        setPayAmount((Math.max(0, account.balance) / 100).toString());
+        setPaySourceAccountId(cashAccount ? cashAccount.id! : (debitAccounts[0]?.id || ''));
+        setPayNotes('');
+        setIsPayModalOpen(true);
+    };
+
+    const handlePayCard = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!payAccount || !paySourceAccountId) {
+            addToast('error', 'Missing payment fields');
+            return;
+        }
+
+        const amountCents = Math.round(parseFloat(payAmount || '0') * 100);
+        if (amountCents <= 0) {
+            addToast('error', 'Payment amount must be greater than zero');
+            return;
+        }
+
+        try {
+            await payCreditCard({
+                creditCardAccountId: payAccount.id!,
+                sourceWalletAccountId: Number(paySourceAccountId),
+                amount: amountCents,
+                notes: payNotes,
+                date: new Date().toISOString().split('T')[0]
+            });
+            addToast('success', 'Credit card paid successfully');
+            setIsPayModalOpen(false);
         } catch (error: any) {
             addToast('error', error.message);
         }
@@ -148,12 +186,20 @@ export const WalletAccountsList: React.FC = () => {
                                 {((account.balance / totalDebitBalance) * 100 || 0).toFixed(0)}% of total funds
                             </span>
                         </div>
-                        <div className="h-1.5 bg-[var(--item-bg)] rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-[var(--item-bg)] rounded-full overflow-hidden mb-3">
                             <div 
                                 className={`h-full rounded-full ${overLimit ? 'bg-red-500' : 'bg-purple-500'}`}
                                 style={{ width: `${Math.min(100, usagePercent)}%` }}
                             />
                         </div>
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => { e.stopPropagation(); openPayModal(account); }}
+                            className="w-full text-xs py-2"
+                        >
+                            Pay Card
+                        </Button>
                     </div>
                 )}
             </div>
@@ -232,17 +278,6 @@ export const WalletAccountsList: React.FC = () => {
                             required
                         />
                     )}
-                    
-                    <Input
-                        label={accountType === 'credit' ? "Current Owed Balance" : "Current Balance"}
-                        type="number"
-                        step="0.01"
-                        value={balance}
-                        onChange={(e) => setBalance(e.target.value)}
-                        placeholder="0.00"
-                        required
-                        leftIcon={<span className="text-[var(--text-muted)] font-bold px-3">{currencySymbol}</span>}
-                    />
 
                     {accountType === 'credit' && (
                         <Input
@@ -297,6 +332,68 @@ export const WalletAccountsList: React.FC = () => {
                         </Button>
                     </div>
                 </div>
+            </Modal>
+            {/* Pay Card Modal */}
+            <Modal
+                isOpen={isPayModalOpen}
+                onClose={() => setIsPayModalOpen(false)}
+                title={`Pay ${payAccount?.name || 'Card'}`}
+                size="md"
+                position="bottom"
+            >
+                <form onSubmit={handlePayCard} className="space-y-4 p-4 pb-6">
+                    <Input
+                        label="Payment Amount"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={payAmount}
+                        onChange={(e) => setPayAmount(e.target.value)}
+                        placeholder="0.00"
+                        required
+                        leftIcon={<span className="text-[var(--text-muted)] font-bold px-3">{currencySymbol}</span>}
+                    />
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
+                            Pay From Account
+                        </label>
+                        <div className="relative">
+                            <select
+                                value={paySourceAccountId}
+                                onChange={(e) => setPaySourceAccountId(Number(e.target.value))}
+                                required
+                                className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
+                            >
+                                <option value="" disabled>Select Source...</option>
+                                {[cashAccount, ...debitAccounts].filter(Boolean).map(acc => (
+                                    <option key={acc!.id} value={acc!.id}>
+                                        {acc!.name} ({formatCurrency(acc!.balance, currencySymbol, currencyPosition)})
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <Input
+                        label="Notes (Optional)"
+                        value={payNotes}
+                        onChange={(e) => setPayNotes(e.target.value)}
+                        placeholder="e.g., Final statement payment"
+                    />
+
+                    <div className="pt-4 flex gap-3">
+                        <Button type="button" variant="secondary" onClick={() => setIsPayModalOpen(false)} className="flex-1">
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" className="flex-1 bg-midblue hover:bg-midblue/90 text-white border-none shadow-md shadow-midblue/20">
+                            Confirm Payment
+                        </Button>
+                    </div>
+                </form>
             </Modal>
         </div>
     );

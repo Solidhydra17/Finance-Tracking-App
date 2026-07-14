@@ -23,7 +23,8 @@ export const dashboardEngine = {
     const allTransactions = [
       ...transactions,
       ...recurringTransactions,
-    ].sort((a, b) => b.date.localeCompare(a.date)) as Transaction[];
+    ].filter(t => t.type !== 'credit_payment')
+     .sort((a, b) => b.date.localeCompare(a.date)) as Transaction[];
 
     const stats = transactionsEngine.calculateStats(allTransactions);
     const categoryBreakdown = transactionsEngine.getCategoryBreakdown(allTransactions, categories);

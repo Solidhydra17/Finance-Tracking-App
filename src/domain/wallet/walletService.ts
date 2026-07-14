@@ -1,20 +1,91 @@
 import type { WalletRepository } from './walletRepository';
 import type { WalletAccount } from '@/types';
 import { walletRepository } from '@/storage/indexeddb/walletRepository';
+import { db } from '@/storage/indexeddb/database';
+import type { CreditPayment } from '@/types';
 
 export class WalletService {
     constructor(private repository: WalletRepository) {}
 
     async getAllAccounts(): Promise<WalletAccount[]> {
-        return await this.repository.getAll();
+        const accounts = await this.repository.getAll();
+        for (const acc of accounts) {
+            await this.computeBalance(acc);
+        }
+        return accounts;
     }
 
     async getCashAccount(): Promise<WalletAccount | undefined> {
-        const accounts = await this.repository.getAll();
+        const accounts = await this.getAllAccounts();
         return accounts.find(a => a.type === 'cash');
     }
 
-    async createAccount(account: Omit<WalletAccount, 'id' | 'createdAt'>): Promise<number> {
+    private async computeBalance(acc: WalletAccount): Promise<void> {
+        if (!acc.id) return;
+
+        if (acc.type === 'cash' || acc.type === 'debit') {
+            let balance = 0;
+            
+            // Transactions
+            const txs = await db.transactions.where('walletAccountId').equals(acc.id).toArray();
+            for (const tx of txs) {
+                if (!tx.deletedAt) {
+                    balance += (tx.type === 'income' ? tx.amount : -tx.amount);
+                }
+            }
+            
+            // Loans
+            const loans = await db.loans.toArray();
+            for (const loan of loans) {
+                if (loan.direction === 'outbound' && loan.sourceWalletAccountId === acc.id) balance -= loan.amount;
+                if (loan.direction === 'inbound' && loan.destinationWalletAccountId === acc.id) balance += loan.amount;
+            }
+            
+            // Loan Payments
+            const loanPayments = await db.loanPayments.where('walletAccountId').equals(acc.id).toArray();
+            for (const p of loanPayments) {
+                const loan = loans.find(l => l.id === p.loanId);
+                if (loan) {
+                    if (loan.direction === 'outbound') balance += p.amount;
+                    if (loan.direction === 'inbound') balance -= p.amount;
+                }
+            }
+            
+            // Credit Payments sourced from this account
+            const creditPayments = await db.transactions
+                .where('walletAccountId').equals(acc.id)
+                .filter(tx => tx.type === 'credit_payment' && !tx.deletedAt)
+                .toArray();
+            for (const cp of creditPayments) {
+                balance -= cp.amount;
+            }
+            
+            acc.balance = balance;
+        } else if (acc.type === 'credit') {
+            let owed = 0;
+            
+            // Expenses on this card
+            const txs = await db.transactions.where('walletAccountId').equals(acc.id).toArray();
+            for (const tx of txs) {
+                if (!tx.deletedAt && tx.type === 'expense') {
+                    owed += tx.amount;
+                }
+            }
+            
+            // Minus Credit Payments to this card
+            const creditPayments = await db.transactions
+                .where('targetWalletAccountId').equals(acc.id)
+                .filter(tx => tx.type === 'credit_payment' && !tx.deletedAt)
+                .toArray();
+            for (const cp of creditPayments) {
+                owed -= cp.amount;
+            }
+            
+            acc.balance = Math.max(0, owed);
+        }
+    }
+
+    async createAccount(account: Omit<WalletAccount, 'id' | 'createdAt' | 'balance'>): Promise<number> {
         // Enforce singleton cash account
         if (account.type === 'cash') {
             const existingCash = await this.getCashAccount();
@@ -59,6 +130,22 @@ export class WalletService {
         });
 
         return { totalWalletBalance, totalCreditDebt };
+    }
+
+    async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'>): Promise<number> {
+        return await db.transactions.add({
+            type: 'credit_payment',
+            walletAccountId: paymentData.sourceWalletAccountId,
+            targetWalletAccountId: paymentData.creditCardAccountId,
+            amount: paymentData.amount,
+            date: paymentData.date,
+            note: paymentData.notes || '',
+            source: 'manual',
+            categoryId: 0, // Placeholder
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            deletedAt: null
+        });
     }
 }
 

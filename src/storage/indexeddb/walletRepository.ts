@@ -11,12 +11,12 @@ export class IndexedDBWalletRepository implements WalletRepository {
         return await db.walletAccounts.get(id);
     }
 
-    async create(account: Omit<WalletAccount, 'id' | 'createdAt'>): Promise<number> {
-        const newAccount: WalletAccount = {
+    async create(account: Omit<WalletAccount, 'id' | 'createdAt' | 'balance'>): Promise<number> {
+        const newAccount = {
             ...account,
             createdAt: new Date().toISOString()
         };
-        return await db.walletAccounts.add(newAccount);
+        return await db.walletAccounts.add(newAccount as any);
     }
 
     async update(id: number, updates: Partial<WalletAccount>): Promise<void> {
@@ -25,14 +25,6 @@ export class IndexedDBWalletRepository implements WalletRepository {
 
     async delete(id: number): Promise<void> {
         await db.walletAccounts.delete(id);
-    }
-
-    async adjustBalance(id: number, amountDeltaCents: number): Promise<void> {
-        await db.transaction('rw', db.walletAccounts, async () => {
-            const account = await db.walletAccounts.get(id);
-            if (!account) throw new Error(`Wallet account ${id} not found`);
-            await db.walletAccounts.update(id, { balance: account.balance + amountDeltaCents });
-        });
     }
 }
 

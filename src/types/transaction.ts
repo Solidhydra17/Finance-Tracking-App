@@ -1,4 +1,4 @@
-export type TransactionType = 'income' | 'expense' | 'loan';
+export type TransactionType = 'income' | 'expense' | 'loan' | 'credit_payment';
 export type TransactionSource = 'manual' | 'recurring' | 'loan_payment';
 
 export interface Transaction {
@@ -11,6 +11,7 @@ export interface Transaction {
   source: TransactionSource;
   recurringRuleId?: number;
   walletAccountId?: number;
+  targetWalletAccountId?: number;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

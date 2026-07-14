@@ -1,6 +1,5 @@
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { transactionRepository } from '@/storage/indexeddb';
-import { walletRepository } from '@/storage/indexeddb/walletRepository';
 import { addCents, subtractCents } from '@/lib/money';
 // import { recurringEngine } from '@/domain/recurring/recurringEngine';
 
@@ -31,10 +30,6 @@ export const transactionsEngine = {
 
   async create(data: TransactionCreate): Promise<number> {
     const id = await transactionRepository.create(data);
-    if (data.walletAccountId) {
-        const amountDelta = data.type === 'income' ? data.amount : -data.amount;
-        await walletRepository.adjustBalance(data.walletAccountId, amountDelta);
-    }
     return id;
   },
 
@@ -43,33 +38,10 @@ export const transactionsEngine = {
     if (!oldTransaction) throw new Error("Transaction not found");
 
     const result = await transactionRepository.update(id, data);
-    
-    // Reverse old transaction impact if it had a wallet
-    if (oldTransaction.walletAccountId) {
-        const oldDelta = oldTransaction.type === 'income' ? oldTransaction.amount : -oldTransaction.amount;
-        await walletRepository.adjustBalance(oldTransaction.walletAccountId, -oldDelta);
-    }
-
-    // Apply new transaction impact
-    const newType = data.type ?? oldTransaction.type;
-    const newAmount = data.amount ?? oldTransaction.amount;
-    const newWalletId = data.walletAccountId !== undefined ? data.walletAccountId : oldTransaction.walletAccountId;
-    
-    if (newWalletId) {
-        const newDelta = newType === 'income' ? newAmount : -newAmount;
-        await walletRepository.adjustBalance(newWalletId, newDelta);
-    }
-
     return result;
   },
 
   async softDelete(id: number): Promise<void> {
-    const oldTransaction = await transactionRepository.getById(id);
-    if (oldTransaction && !oldTransaction.deletedAt && oldTransaction.walletAccountId) {
-        // Reverse impact
-        const oldDelta = oldTransaction.type === 'income' ? oldTransaction.amount : -oldTransaction.amount;
-        await walletRepository.adjustBalance(oldTransaction.walletAccountId, -oldDelta);
-    }
     return transactionRepository.softDelete(id);
   },
 
@@ -84,7 +56,7 @@ export const transactionsEngine = {
     for (const t of transactions) {
       if (t.type === 'income') {
         totalIncome = addCents(totalIncome, t.amount);
-      } else {
+      } else if (t.type === 'expense') {
         totalExpenses = addCents(totalExpenses, t.amount);
       }
     }

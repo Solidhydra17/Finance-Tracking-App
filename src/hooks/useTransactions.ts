@@ -1,6 +1,8 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
+import { loanRepository } from '@/storage/indexeddb/loanRepository';
+import { db } from '@/storage/indexeddb/database';
 import type { TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { useUIStore, useTransactionStore } from '@/store';
 import { paginateItems, type PaginationResult } from '@/lib/pagination';
@@ -36,7 +38,46 @@ export function useTransactions(filters: FilterState) {
     }
     
     try {
-      const allTransactions = await transactionsEngine.getByFilters(filters);
+      let allTransactions: any[] = [];
+      
+      if (filters.transactionType === 'loans') {
+        const loans = await loanRepository.getAll();
+        const loanPayments = await db.loanPayments.toArray();
+        
+        const mappedLoans = loans.map(loan => ({
+            id: `loan_${loan.id}`,
+            type: 'loan',
+            amount: loan.amount,
+            date: loan.acquiredDate,
+            originalLoan: loan,
+            categoryId: -1
+        }));
+        
+        const mappedPayments = loanPayments.map(payment => {
+            const loan = loans.find(l => l.id === payment.loanId);
+            return {
+                id: `loan_payment_${payment.id}`,
+                type: 'loan_payment',
+                amount: payment.amount,
+                date: payment.paidDate,
+                originalLoanPayment: payment,
+                originalLoan: loan,
+                categoryId: -1
+            };
+        });
+        
+        allTransactions = [...mappedLoans, ...mappedPayments]
+          .filter(item => {
+            if (filters.dateRange?.startDate && filters.dateRange?.endDate) {
+              return item.date >= filters.dateRange.startDate && item.date <= filters.dateRange.endDate;
+            }
+            return true;
+          })
+          .sort((a, b) => b.date.localeCompare(a.date));
+      } else {
+        allTransactions = await transactionsEngine.getByFilters(filters);
+      }
+      
       setTransactions(allTransactions);
       setTotal(allTransactions.length);
       setLastFilters(filters);
