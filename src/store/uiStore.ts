@@ -90,9 +90,11 @@ let toastId = 0;
 export const useUIStore = create<UIState>((set) => ({
   // Toasts
   toasts: [],
-  addToast: (type, message, duration = 3000) => {
+  addToast: (type, message, duration) => {
+    const minDuration = type === 'error' ? 5000 : 3000;
+    const finalDuration = duration !== undefined ? Math.max(duration, minDuration) : minDuration;
     const id = `toast-${++toastId}-${Date.now()}`;
-    const toast: Toast = { id, type, message, duration };
+    const toast: Toast = { id, type, message, duration: finalDuration };
     set((state) => ({ toasts: [...state.toasts, toast] }));
   },
   removeToast: (id) => {

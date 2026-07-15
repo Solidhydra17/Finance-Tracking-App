@@ -215,12 +215,15 @@ export const AddTransactionPage: React.FC = () => {
 
       console.log('Submission result:', success);
       if (success) {
-        navigate('/transactions');
+        setTimeout(() => {
+          navigate('/transactions');
+        }, 3000);
+      } else {
+        setIsSubmitting(false);
       }
     } catch (error: any) {
       console.error('CRITICAL: Submission failed:', error);
       addToast('error', `Save failed: ${error.message || 'Unknown error'}`);
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -553,10 +556,11 @@ export const AddTransactionPage: React.FC = () => {
                   });
                   addToast('success', 'Recurring settings updated');
                   setIsConfiguringRecurring(false);
-                  navigate('/settings?tab=recurring#section-recurring-settings');
+                  setTimeout(() => {
+                    navigate('/settings?tab=recurring#section-recurring-settings');
+                  }, 3000);
                 } catch (error) {
                   addToast('error', 'Failed to update rule');
-                } finally {
                   setIsSubmitting(false);
                 }
               }}

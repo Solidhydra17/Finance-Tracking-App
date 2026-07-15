@@ -65,10 +65,11 @@ export const AddLoanPage: React.FC = () => {
                 notes: note,
             });
             addToast('success', 'Loan created successfully');
-            navigate('/wallet');
+            setTimeout(() => {
+                navigate('/wallet');
+            }, 3000);
         } catch (error: any) {
             addToast('error', error.message || 'Failed to create loan');
-        } finally {
             setIsSubmitting(false);
         }
     };
