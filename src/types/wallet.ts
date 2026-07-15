@@ -1,4 +1,4 @@
-export type WalletAccountType = 'cash' | 'debit' | 'credit';
+export type WalletAccountType = 'cash' | 'debit' | 'ecash' | 'credit';
 
 export interface WalletAccount {
     id?: number;

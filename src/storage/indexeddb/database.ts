@@ -120,6 +120,7 @@ export class FinanceDatabase extends Dexie {
         // the index will be built automatically for existing records (which will have undefined).
         // We will just let the creditPayments table become obsolete.
     });
+    this.version(14).stores(schemaV13); // ecash + fund_transfer — no schema index changes needed
 
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');
@@ -138,6 +139,14 @@ export async function clearAllData(): Promise<void> {
   await db.budgetItems.clear();
   await db.walletAccounts.clear();
   await db.creditPayments.clear();
+
+  // Re-add default Cash account
+  await db.walletAccounts.add({
+      name: 'Cash',
+      type: 'cash',
+      balance: 0,
+      createdAt: new Date().toISOString()
+  });
 }
 
 export async function exportAllData(): Promise<{

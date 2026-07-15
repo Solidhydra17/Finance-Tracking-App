@@ -23,7 +23,7 @@ export class WalletService {
     private async computeBalance(acc: WalletAccount): Promise<void> {
         if (!acc.id) return;
 
-        if (acc.type === 'cash' || acc.type === 'debit') {
+        if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
             let balance = 0;
             
             // Transactions
@@ -61,6 +61,24 @@ export class WalletService {
             }
             
             acc.balance = balance;
+
+            // Fund Transfers where this account is source (outgoing)
+            const outTransfers = await db.transactions
+                .where('walletAccountId').equals(acc.id)
+                .filter(tx => tx.type === 'fund_transfer' && !tx.deletedAt)
+                .toArray();
+            for (const ft of outTransfers) {
+                acc.balance -= ft.amount;
+            }
+
+            // Fund Transfers where this account is destination (incoming)
+            const inTransfers = await db.transactions
+                .where('targetWalletAccountId').equals(acc.id)
+                .filter(tx => tx.type === 'fund_transfer' && !tx.deletedAt)
+                .toArray();
+            for (const ft of inTransfers) {
+                acc.balance += ft.amount;
+            }
         } else if (acc.type === 'credit') {
             let owed = 0;
             
@@ -121,7 +139,7 @@ export class WalletService {
         let totalCreditDebt = 0;
 
         accounts.forEach(acc => {
-            if (acc.type === 'cash' || acc.type === 'debit') {
+            if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
                 totalWalletBalance += acc.balance;
             } else if (acc.type === 'credit') {
                 // If a credit card has a positive balance, it means you owe money
@@ -142,6 +160,27 @@ export class WalletService {
             note: paymentData.notes || '',
             source: 'manual',
             categoryId: 0, // Placeholder
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            deletedAt: null
+        });
+    }
+    async createFundTransfer(data: {
+        sourceAccountId: number;
+        destinationAccountId: number;
+        amount: number;
+        date: string;
+        notes?: string;
+    }): Promise<number> {
+        return await db.transactions.add({
+            type: 'fund_transfer',
+            walletAccountId: data.sourceAccountId,
+            targetWalletAccountId: data.destinationAccountId,
+            amount: data.amount,
+            date: data.date,
+            note: data.notes || '',
+            source: 'manual',
+            categoryId: 0,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             deletedAt: null

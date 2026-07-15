@@ -2,8 +2,9 @@ import React, { useEffect } from 'react';
 import { WalletSummary } from '@/components/wallet/WalletSummary';
 import { WalletAccountsList } from '@/components/wallet/WalletAccountsList';
 import { WalletLoansList } from '@/components/wallet/WalletLoansList';
-import { useWalletStore, useLoanStore } from '@/store';
+import { useWalletStore, useLoanStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
+import { Button, Icon } from '@/components/ui';
 
 export const WalletPage: React.FC = () => {
     const { fetchAccounts, isLoading: isWalletLoading } = useWalletStore(useShallow(state => ({
@@ -16,6 +17,8 @@ export const WalletPage: React.FC = () => {
         isLoading: state.isLoading
     })));
 
+    const setTransferOpen = useUIStore(state => state.setTransferOpen);
+
     useEffect(() => {
         fetchAccounts();
         fetchLoans();
@@ -25,11 +28,20 @@ export const WalletPage: React.FC = () => {
 
     return (
         <div id="page-wallet" className="px-4 space-y-6 pb-24 pt-4 animate-fade-in">
-            <header className="flex justify-between items-end">
+            <header className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">WALLET</h1>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Accounts & Loans</p>
                 </div>
+                <Button 
+                    onClick={() => setTransferOpen(true)}
+                    variant="primary"
+                    size="sm"
+                    className="flex items-center gap-1 bg-midblue text-white shadow-soft text-xs"
+                >
+                    <Icon name="ArrowsRightLeftIcon" className="w-4 h-4" />
+                    Transfer
+                </Button>
             </header>
 
             {isLoading ? (
