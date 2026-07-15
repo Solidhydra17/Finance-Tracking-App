@@ -77,15 +77,16 @@ export function useBudget() {
   const deleteItem = useCallback(async (id: number) => {
     try {
       await budgetRepository.deleteItem(id);
+      // Optimistically remove from store — no loading spinner
+      setItems(items.filter(i => i.id !== id));
       addToast('success', 'Budget item deleted');
-      await loadData();
       return true;
     } catch (error) {
       console.error('Failed to delete budget item:', error);
       addToast('error', 'Failed to delete budget item');
       return false;
     }
-  }, [addToast, loadData]);
+  }, [addToast, items, setItems]);
 
   return {
     plan,

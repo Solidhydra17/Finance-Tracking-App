@@ -78,19 +78,20 @@ export const useWalletStore = create<WalletState>((set) => ({
     },
 
     deleteAccount: async (id) => {
-        set({ isLoading: true, error: null });
         try {
             await walletService.deleteAccount(id);
-            const accounts = await walletService.getAllAccounts();
+            // Optimistically remove from store — no loading spinner
+            set((state) => ({
+                accounts: state.accounts.filter(a => a.id !== id),
+            }));
+            // Background refresh totals
             const totals = await walletService.getTotals();
             set({ 
-                accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false 
             });
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.message });
             throw error;
         }
     },

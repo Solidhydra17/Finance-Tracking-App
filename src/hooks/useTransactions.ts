@@ -133,8 +133,10 @@ export function useTransactions(filters: FilterState) {
     async (id: number) => {
       try {
         await transactionsEngine.softDelete(id);
+        // Optimistically remove from store — no loading spinner
+        setTransactions(transactions.filter(t => t.id !== id));
+        setTotal(Math.max(0, totalTransactions - 1));
         addToast('success', 'Transaction deleted');
-        await loadTransactions(true);
         return true;
       } catch (error) {
         console.error('Failed to delete transaction:', error);
@@ -142,7 +144,7 @@ export function useTransactions(filters: FilterState) {
         return false;
       }
     },
-    [addToast, loadTransactions]
+    [addToast, transactions, totalTransactions, setTransactions, setTotal]
   );
 
   return {
