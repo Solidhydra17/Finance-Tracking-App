@@ -8,13 +8,13 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    // Auto remove after 3 seconds
+    const duration = toast.duration || (toast.type === 'error' ? 5000 : 3000);
     const timer = setTimeout(() => {
       setIsExiting(true);
-    }, 3000);
+    }, duration);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [toast.duration, toast.type]);
 
   useEffect(() => {
     if (isExiting) {

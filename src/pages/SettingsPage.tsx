@@ -148,11 +148,12 @@ export const SettingsPage: React.FC = () => {
         const data = JSON.parse(text);
         await importData(data);
         addToast('success', 'Data imported successfully');
-        window.location.href = '/';
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
       } catch (error) {
         console.error('Import failed:', error);
         addToast('error', 'Failed to import data');
-      } finally {
         setIsImporting(false);
       }
     };
@@ -170,11 +171,12 @@ export const SettingsPage: React.FC = () => {
     try {
       await clearAllData();
       addToast('success', 'All data cleared');
-      window.location.href = '/';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
     } catch (error) {
       console.error('Clear failed:', error);
       addToast('error', 'Failed to clear data');
-    } finally {
       setIsClearing(false);
     }
   }, [addToast]);

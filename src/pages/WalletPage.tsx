@@ -30,10 +30,10 @@ export const WalletPage: React.FC = () => {
         <div id="page-wallet" className="px-4 space-y-6 pb-24 pt-4 animate-fade-in">
             <header className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">WALLET</h1>
+                    <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">KURIPOT</h1>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Accounts & Loans</p>
                 </div>
-                <Button 
+                <Button
                     onClick={() => setTransferOpen(true)}
                     variant="primary"
                     size="sm"
