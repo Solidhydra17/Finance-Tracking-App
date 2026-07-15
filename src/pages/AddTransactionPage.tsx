@@ -6,6 +6,8 @@ import { useUIStore, useWalletStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, formatCurrency } from '@/lib/money';
 import type { TransactionType } from '@/types';
+import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
+import { recurringRepository, categoryRepository } from '@/storage/indexeddb';
 
 export const AddTransactionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -60,7 +62,6 @@ export const AddTransactionPage: React.FC = () => {
         }
 
         try {
-          const { transactionsEngine } = await import('@/domain/transactions/transactionsEngine');
           const transaction = await transactionsEngine.getById(Number(editId));
           if (transaction) {
             setType(transaction.type);
@@ -72,7 +73,6 @@ export const AddTransactionPage: React.FC = () => {
             if (transaction.recurringRuleId) {
               setRecurringRuleId(transaction.recurringRuleId);
               setIsRecurring(true);
-              const { recurringRepository } = await import('@/storage/indexeddb');
               const rule = await recurringRepository.getById(transaction.recurringRuleId);
               if (rule) {
                 setFrequency(rule.frequency);
@@ -96,7 +96,6 @@ export const AddTransactionPage: React.FC = () => {
           setIsConfiguringRecurring(true);
           setRecurringRuleId(Number(ruleIdParam));
           
-          const { recurringRepository } = await import('@/storage/indexeddb');
           const rule = await recurringRepository.getById(Number(ruleIdParam));
           
             if (rule) {
@@ -185,7 +184,7 @@ export const AddTransactionPage: React.FC = () => {
           note,
         });
       } else if (isRecurring) {
-        const { recurringRepository } = await import('@/storage/indexeddb');
+        // const { recurringRepository } = await import('@/storage/indexeddb');
         const startDate = new Date(date);
         await recurringRepository.create({
           type,
@@ -238,10 +237,9 @@ export const AddTransactionPage: React.FC = () => {
     }
 
     try {
-      const { categoryRepository } = await import('@/storage/indexeddb');
       await categoryRepository.create({
         name: newCategoryName,
-        type: (type === 'loan' || type === 'credit_payment') ? 'expense' : type,
+        type: (type === 'loan' || type === 'credit_payment' || type === 'fund_transfer') ? 'expense' : type,
         color: newCategoryColor,
         icon: newCategoryIcon,
         isCustom: true
@@ -546,7 +544,7 @@ export const AddTransactionPage: React.FC = () => {
                 setIsConfirmRuleUpdateOpen(false);
                 setIsSubmitting(true);
                 try {
-                  const { recurringRepository } = await import('@/storage/indexeddb');
+                  // const { recurringRepository } = await import('@/storage/indexeddb');
                   const amount = displayToCents(amountDisplay);
                   await recurringRepository.update(recurringRuleId!, {
                     amount,

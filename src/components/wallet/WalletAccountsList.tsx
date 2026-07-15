@@ -6,18 +6,21 @@ import { formatCurrency } from '@/lib/money';
 import type { WalletAccount, WalletAccountType } from '@/types';
 
 export const WalletAccountsList: React.FC = () => {
-    const { accounts, createAccount, updateAccount, deleteAccount, payCreditCard } = useWalletStore(useShallow(state => ({
+    const { accounts, createAccount, updateAccount, deleteAccount, payCreditCard, createFundTransfer } = useWalletStore(useShallow(state => ({
         accounts: state.accounts,
         createAccount: state.createAccount,
         updateAccount: state.updateAccount,
         deleteAccount: state.deleteAccount,
-        payCreditCard: state.payCreditCard
+        payCreditCard: state.payCreditCard,
+        createFundTransfer: state.createFundTransfer
     })));
 
-    const { currencySymbol, currencyPosition, addToast } = useUIStore(useShallow(state => ({
+    const { currencySymbol, currencyPosition, addToast, isTransferOpen, setTransferOpen } = useUIStore(useShallow(state => ({
         currencySymbol: state.currencySymbol,
         currencyPosition: state.currencyPosition,
-        addToast: state.addToast
+        addToast: state.addToast,
+        isTransferOpen: state.isTransferOpen,
+        setTransferOpen: state.setTransferOpen
     })));
 
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
@@ -36,9 +39,18 @@ export const WalletAccountsList: React.FC = () => {
 
     const cashAccount = accounts.find(a => a.type === 'cash');
     const debitAccounts = accounts.filter(a => a.type === 'debit');
+    const ecashAccounts = accounts.filter(a => a.type === 'ecash');
     const creditAccounts = accounts.filter(a => a.type === 'credit');
+    const nonCreditAccounts = [cashAccount, ...debitAccounts, ...ecashAccounts].filter(Boolean) as WalletAccount[];
 
-    const totalDebitBalance = (cashAccount?.balance || 0) + debitAccounts.reduce((sum, a) => sum + a.balance, 0);
+    // Fund Transfer Modal State
+    const [transferFromId, setTransferFromId] = useState<number | ''>('');
+    const [transferToId, setTransferToId] = useState<number | ''>('');
+    const [transferAmount, setTransferAmount] = useState('');
+    const [transferDate, setTransferDate] = useState(new Date().toISOString().split('T')[0]);
+    const [transferNotes, setTransferNotes] = useState('');
+
+    const totalDebitBalance = (cashAccount?.balance || 0) + debitAccounts.reduce((sum, a) => sum + a.balance, 0) + ecashAccounts.reduce((sum, a) => sum + a.balance, 0);
 
     const openCreateModal = (type: WalletAccountType = 'debit') => {
         setEditingAccount(null);
@@ -141,31 +153,32 @@ export const WalletAccountsList: React.FC = () => {
         const overLimit = usagePercent > 100;
 
         return (
-            <div 
-                key={account.id} 
+            <div
+                key={account.id}
                 onClick={() => openEditModal(account)}
                 className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-3"
             >
                 <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                            account.type === 'cash' ? 'bg-emerald-500/10 text-emerald-500' :
-                            account.type === 'debit' ? 'bg-blue-500/10 text-blue-500' :
-                            'bg-purple-500/10 text-purple-500'
-                        }`}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${account.type === 'cash' ? 'bg-emerald-500/10 text-emerald-500' :
+                                account.type === 'debit' ? 'bg-blue-500/10 text-blue-500' :
+                                    account.type === 'ecash' ? 'bg-teal-500/10 text-teal-500' :
+                                        'bg-purple-500/10 text-purple-500'
+                            }`}>
                             <Icon name={
-                                account.type === 'cash' ? 'BanknotesIcon' : 
-                                account.type === 'debit' ? 'BuildingLibraryIcon' : 
-                                'CreditCardIcon'
+                                account.type === 'cash' ? 'BanknotesIcon' :
+                                    account.type === 'debit' ? 'BuildingLibraryIcon' :
+                                        account.type === 'ecash' ? 'DevicePhoneMobileIcon' :
+                                            'CreditCardIcon'
                             } className="w-5 h-5" />
                         </div>
                         <div>
                             <p className="font-bold text-[var(--text-main)] leading-tight">{account.name}</p>
-                            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{account.type}</p>
+                            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{account.type === 'ecash' ? 'E-Cash' : account.type}</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className={`font-extrabold ${isCredit ? (overLimit ? 'text-red-500' : 'text-purple-500') : 'text-[var(--text-main)]'}`}>
+                        <p className={`font-extrabold ${isCredit ? (overLimit ? 'text-red-500' : 'text-purple-500') : account.type === 'ecash' ? 'text-teal-600 dark:text-teal-400' : 'text-[var(--text-main)]'}`}>
                             {formatCurrency(account.balance, currencySymbol, currencyPosition)}
                         </p>
                         {isCredit && account.creditLimit && (
@@ -187,7 +200,7 @@ export const WalletAccountsList: React.FC = () => {
                             </span>
                         </div>
                         <div className="h-1.5 bg-[var(--item-bg)] rounded-full overflow-hidden mb-3">
-                            <div 
+                            <div
                                 className={`h-full rounded-full ${overLimit ? 'bg-red-500' : 'bg-purple-500'}`}
                                 style={{ width: `${Math.min(100, usagePercent)}%` }}
                             />
@@ -223,6 +236,24 @@ export const WalletAccountsList: React.FC = () => {
                         <p className="text-sm text-[var(--text-muted)] font-medium">No cash account setup yet.</p>
                     </div>
                 )}
+            </section>
+
+            {/* E-Cash Section */}
+            <section className="space-y-3">
+                <div className="flex justify-between items-center px-1">
+                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">E-Cash</h3>
+                    <button onClick={() => openCreateModal('ecash')} className="text-xs font-bold text-midblue">
+                        + Add E-Cash
+                    </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {ecashAccounts.map(renderCard)}
+                    {ecashAccounts.length === 0 && (
+                        <div className="col-span-full text-center p-6 border-2 border-dashed border-[var(--card-border)] rounded-2xl">
+                            <p className="text-sm text-[var(--text-muted)] font-medium">No e-cash accounts found.</p>
+                        </div>
+                    )}
+                </div>
             </section>
 
             {/* Debit Section */}
@@ -274,7 +305,11 @@ export const WalletAccountsList: React.FC = () => {
                             label="Account Name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder={accountType === 'debit' ? "e.g., Main Savings" : "e.g., BDO Visa"}
+                            placeholder={
+                                accountType === 'debit' ? "e.g., Main Savings" :
+                                    accountType === 'ecash' ? "e.g., GCash, Maya" :
+                                        "e.g., BDO Visa"
+                            }
                             required
                         />
                     )}
@@ -366,9 +401,9 @@ export const WalletAccountsList: React.FC = () => {
                                 className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
                             >
                                 <option value="" disabled>Select Source...</option>
-                                {[cashAccount, ...debitAccounts].filter(Boolean).map(acc => (
-                                    <option key={acc!.id} value={acc!.id}>
-                                        {acc!.name} ({formatCurrency(acc!.balance, currencySymbol, currencyPosition)})
+                                {nonCreditAccounts.map(acc => (
+                                    <option key={acc.id} value={acc.id}>
+                                        {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
                                     </option>
                                 ))}
                             </select>
@@ -391,6 +426,125 @@ export const WalletAccountsList: React.FC = () => {
                         </Button>
                         <Button type="submit" variant="primary" className="flex-1 bg-midblue hover:bg-midblue/90 text-white border-none shadow-md shadow-midblue/20">
                             Confirm Payment
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Fund Transfer Modal */}
+            <Modal
+                isOpen={isTransferOpen}
+                onClose={() => setTransferOpen(false)}
+                title="Fund Transfer"
+                size="md"
+                position="bottom"
+            >
+                <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!transferFromId || !transferToId) {
+                        addToast('error', 'Select both accounts');
+                        return;
+                    }
+                    if (transferFromId === transferToId) {
+                        addToast('error', 'Source and destination must be different');
+                        return;
+                    }
+                    const amountCents = Math.round(parseFloat(transferAmount || '0') * 100);
+                    if (amountCents <= 0) {
+                        addToast('error', 'Amount must be greater than zero');
+                        return;
+                    }
+                    try {
+                        await createFundTransfer({
+                            sourceAccountId: Number(transferFromId),
+                            destinationAccountId: Number(transferToId),
+                            amount: amountCents,
+                            date: transferDate,
+                            notes: transferNotes
+                        });
+                        addToast('success', 'Transfer completed');
+                        setTransferOpen(false);
+                    } catch (error: any) {
+                        addToast('error', error.message);
+                    }
+                }} className="space-y-4 p-4 pb-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-[var(--text-muted)] ml-1">From Account</label>
+                        <div className="relative">
+                            <select
+                                value={transferFromId}
+                                onChange={(e) => setTransferFromId(Number(e.target.value))}
+                                required
+                                className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
+                            >
+                                <option value="" disabled>Select Source...</option>
+                                {nonCreditAccounts.map(acc => (
+                                    <option key={acc.id} value={acc.id}>
+                                        {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-[var(--text-muted)] ml-1">To Account</label>
+                        <div className="relative">
+                            <select
+                                value={transferToId}
+                                onChange={(e) => setTransferToId(Number(e.target.value))}
+                                required
+                                className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
+                            >
+                                <option value="" disabled>Select Destination...</option>
+                                {nonCreditAccounts.filter(acc => acc.id !== transferFromId).map(acc => (
+                                    <option key={acc.id} value={acc.id}>
+                                        {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <Input
+                        label="Amount"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={transferAmount}
+                        onChange={(e) => setTransferAmount(e.target.value)}
+                        placeholder="0.00"
+                        required
+                        leftIcon={<span className="text-[var(--text-muted)] font-bold px-3">{currencySymbol}</span>}
+                    />
+
+                    <Input
+                        label="Date"
+                        type="date"
+                        value={transferDate}
+                        onChange={(e) => setTransferDate(e.target.value)}
+                        required
+                    />
+
+                    <Input
+                        label="Notes (Optional)"
+                        value={transferNotes}
+                        onChange={(e) => setTransferNotes(e.target.value)}
+                        placeholder="e.g., Moving to savings"
+                    />
+
+                    <div className="pt-4 flex gap-3">
+                        <Button type="button" variant="secondary" onClick={() => setTransferOpen(false)} className="flex-1">
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" className="flex-1 bg-midblue hover:bg-midblue/90 text-white border-none shadow-md shadow-midblue/20">
+                            Transfer
                         </Button>
                     </div>
                 </form>

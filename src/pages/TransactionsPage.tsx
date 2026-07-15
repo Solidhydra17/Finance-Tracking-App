@@ -140,6 +140,13 @@ export const TransactionsPage: React.FC = () => {
                     >
                         Loans
                     </FilterChip>
+                    <FilterChip
+                        id="filter-type-fund-transfer"
+                        isActive={filters.transactionType === "fund_transfer"}
+                        onClick={() => handleTypeFilter("fund_transfer")}
+                    >
+                        Fund Transfers
+                    </FilterChip>
             </FilterBar>
             <div className="mb-4"></div>
 
@@ -245,6 +252,7 @@ export const TransactionsPage: React.FC = () => {
                                         
                                         // Credit Payment specific logic
                                         const isCreditPayment = transaction.type === 'credit_payment';
+                                        const isFundTransfer = transaction.type === 'fund_transfer';
                                         const isLoan = transaction.type === 'loan';
                                         const isLoanPayment = transaction.type === 'loan_payment';
                                         
@@ -263,6 +271,14 @@ export const TransactionsPage: React.FC = () => {
                                             bgClass = "bg-gray-500/10";
                                             amountColor = "text-[var(--text-main)]";
                                             iconColor = "gray";
+                                            amountPrefix = "";
+                                        } else if (isFundTransfer) {
+                                            title = `${getAccountName(transaction.walletAccountId)} → ${getAccountName(transaction.targetWalletAccountId)}`;
+                                            subtitle = transaction.note || "Fund Transfer";
+                                            iconName = "ArrowsRightLeftIcon";
+                                            bgClass = "bg-blue-500/10";
+                                            amountColor = "text-[var(--text-main)]";
+                                            iconColor = "dodgerblue";
                                             amountPrefix = "";
                                         } else if (isLoan) {
                                             const loan = transaction.originalLoan;

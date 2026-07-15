@@ -14,6 +14,7 @@ interface WalletState {
     updateAccount: (id: number, updates: Partial<WalletAccount>) => Promise<void>;
     deleteAccount: (id: number) => Promise<void>;
     payCreditCard: (paymentData: Omit<CreditPayment, 'id' | 'createdAt'>) => Promise<void>;
+    createFundTransfer: (data: { sourceAccountId: number; destinationAccountId: number; amount: number; date: string; notes?: string }) => Promise<void>;
 }
 
 export const useWalletStore = create<WalletState>((set) => ({
@@ -98,6 +99,24 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.payCreditCard(paymentData);
+            const accounts = await walletService.getAllAccounts();
+            const totals = await walletService.getTotals();
+            set({ 
+                accounts,
+                totalWalletBalance: totals.totalWalletBalance,
+                totalCreditDebt: totals.totalCreditDebt,
+                isLoading: false 
+            });
+        } catch (error: any) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
+    createFundTransfer: async (data) => {
+        set({ isLoading: true, error: null });
+        try {
+            await walletService.createFundTransfer(data);
             const accounts = await walletService.getAllAccounts();
             const totals = await walletService.getTotals();
             set({ 

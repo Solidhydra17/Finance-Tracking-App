@@ -1,4 +1,4 @@
-export type TransactionType = 'income' | 'expense' | 'loan' | 'credit_payment';
+export type TransactionType = 'income' | 'expense' | 'loan' | 'credit_payment' | 'fund_transfer';
 export type TransactionSource = 'manual' | 'recurring' | 'loan_payment';
 
 export interface Transaction {

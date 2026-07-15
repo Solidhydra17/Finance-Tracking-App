@@ -31,6 +31,8 @@ interface UIState {
   setAddRecurringOpen: (open: boolean) => void;
   isAddMenuOpen: boolean;
   setAddMenuOpen: (open: boolean) => void;
+  isTransferOpen: boolean;
+  setTransferOpen: (open: boolean) => void;
 
   // Loan visibility
   showLoans: boolean;
@@ -126,6 +128,8 @@ export const useUIStore = create<UIState>((set) => ({
   setAddRecurringOpen: (open) => set({ isAddRecurringOpen: open }),
   isAddMenuOpen: false,
   setAddMenuOpen: (open) => set({ isAddMenuOpen: open }),
+  isTransferOpen: false,
+  setTransferOpen: (open) => set({ isTransferOpen: open }),
 
   // Loan visibility
   showLoans: true,

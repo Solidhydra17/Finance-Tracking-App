@@ -23,7 +23,7 @@ export const dashboardEngine = {
     const allTransactions = [
       ...transactions,
       ...recurringTransactions,
-    ].filter(t => t.type !== 'credit_payment')
+    ].filter(t => t.type !== 'credit_payment' && t.type !== 'fund_transfer')
      .sort((a, b) => b.date.localeCompare(a.date)) as Transaction[];
 
     const stats = transactionsEngine.calculateStats(allTransactions);

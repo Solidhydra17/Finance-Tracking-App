@@ -1,5 +1,5 @@
 export type DateRangePreset = 'week' | 'month' | 'year' | 'custom';
-export type TransactionTypeFilter = 'all' | 'income' | 'expense' | 'credit_payment' | 'loans';
+export type TransactionTypeFilter = 'all' | 'income' | 'expense' | 'credit_payment' | 'loans' | 'fund_transfer';
 
 export interface DateRange {
   preset: DateRangePreset;
