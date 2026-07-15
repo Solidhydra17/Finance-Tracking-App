@@ -8,8 +8,8 @@ export function useCategories(type?: 'income' | 'expense' | 'both') {
   const [isLoading, setIsLoading] = useState(true);
   const { addToast } = useUIStore();
 
-  const loadCategories = useCallback(async () => {
-    setIsLoading(true);
+  const loadCategories = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const cats = type
         ? await categoryRepository.getByType(type)

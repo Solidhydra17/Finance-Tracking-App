@@ -61,8 +61,9 @@ export function useRecurring() {
     async (id: number) => {
       try {
         await recurringEngine.delete(id);
+        // Optimistically remove from local state — no loading spinner
+        setRules(prev => prev.filter(r => r.id !== id));
         addToast('success', 'Recurring rule deleted');
-        await loadRules();
         return true;
       } catch (error) {
         console.error('Failed to delete recurring rule:', error);
@@ -70,7 +71,7 @@ export function useRecurring() {
         return false;
       }
     },
-    [addToast, loadRules]
+    [addToast]
   );
 
   const getTransactionsForDateRange = useCallback(

@@ -46,10 +46,11 @@ export const RecurringSettings: React.FC = () => {
       // 2. Delete the rule
       await db.recurringRules.delete(ruleToDelete);
       
+      // 3. Optimistically remove from local state — no loading
+      setRules(prev => prev.filter(r => r.id !== ruleToDelete));
       addToast('success', 'Recurring series deleted');
       setIsDeleteModalOpen(false);
       setRuleToDelete(null);
-      loadRules();
     } catch (error) {
       console.error('Failed to delete rule:', error);
       addToast('error', 'Failed to delete series');

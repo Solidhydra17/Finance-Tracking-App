@@ -36,7 +36,7 @@ export const CustomCategorySettings: React.FC = () => {
       });
       addToast('success', 'Category updated');
       setIsEditModalOpen(false);
-      refetch();
+      refetch(true);
     } catch (error) {
       addToast('error', 'Failed to update category');
     }
@@ -54,7 +54,7 @@ export const CustomCategorySettings: React.FC = () => {
       await categoryRepository.delete(deletingCategory.id!);
       addToast('success', 'Category deleted');
       setIsDeleteModalOpen(false);
-      refetch();
+      refetch(true);
     } catch (error) {
       addToast('error', 'Failed to delete category');
     }
