@@ -47,6 +47,8 @@ interface UIState {
   // Preferences
   useMockData: boolean;
   setUseMockData: (use: boolean) => void;
+  devOptionsVisible: boolean;
+  setDevOptionsVisible: (visible: boolean) => void;
   darkMode: boolean;
   setDarkMode: (dark: boolean) => void;
 
@@ -142,10 +144,15 @@ export const useUIStore = create<UIState>((set) => ({
   setFirstLoad: (first) => set({ isFirstLoad: first }),
 
   // Preferences
-  useMockData: localStorage.getItem('useMockData') !== 'false',
+  useMockData: localStorage.getItem('useMockData') === 'true',
   setUseMockData: (use) => {
     localStorage.setItem('useMockData', String(use));
     set({ useMockData: use });
+  },
+  devOptionsVisible: localStorage.getItem('devOptionsVisible') === 'true',
+  setDevOptionsVisible: (visible) => {
+    localStorage.setItem('devOptionsVisible', String(visible));
+    set({ devOptionsVisible: visible });
   },
   darkMode: localStorage.getItem('darkMode') === 'true',
   setDarkMode: (dark) => {

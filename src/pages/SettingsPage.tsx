@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -8,9 +8,21 @@ import { RecurringSettings } from '@/components/settings/RecurringSettings';
 import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
 
 export const SettingsPage: React.FC = () => {
-  const { useMockData, setUseMockData, darkMode, setDarkMode, creditWarningThreshold, setCreditWarningThreshold, addToast } = useUIStore(useShallow(state => ({
+  const { 
+    useMockData, 
+    setUseMockData, 
+    devOptionsVisible, 
+    setDevOptionsVisible, 
+    darkMode, 
+    setDarkMode, 
+    creditWarningThreshold, 
+    setCreditWarningThreshold, 
+    addToast 
+  } = useUIStore(useShallow(state => ({
     useMockData: state.useMockData,
     setUseMockData: state.setUseMockData,
+    devOptionsVisible: state.devOptionsVisible,
+    setDevOptionsVisible: state.setDevOptionsVisible,
     darkMode: state.darkMode,
     setDarkMode: state.setDarkMode,
     creditWarningThreshold: state.creditWarningThreshold,
@@ -21,6 +33,50 @@ export const SettingsPage: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
+
+  const tapCount = useRef(0);
+  const lastTapTime = useRef(0);
+  const resetTimer = useRef<any>(null);
+  const [devCountdown, setDevCountdown] = useState<number | null>(null);
+
+  const handleAboutTap = useCallback(() => {
+    const now = Date.now();
+    
+    if (resetTimer.current) {
+      clearTimeout(resetTimer.current);
+    }
+
+    if (now - lastTapTime.current > 2000) {
+      tapCount.current = 0;
+    }
+
+    tapCount.current += 1;
+    lastTapTime.current = now;
+
+    if (tapCount.current === 7) {
+      const nextVisible = !devOptionsVisible;
+      setDevOptionsVisible(nextVisible);
+      addToast('success', nextVisible ? 'Developer options enabled' : 'Developer options hidden');
+      tapCount.current = 0;
+      setDevCountdown(null);
+    } else {
+      const remaining = 7 - tapCount.current;
+      setDevCountdown(remaining);
+      
+      resetTimer.current = setTimeout(() => {
+        tapCount.current = 0;
+        setDevCountdown(null);
+      }, 2000);
+    }
+  }, [devOptionsVisible, setDevOptionsVisible, addToast]);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimer.current) {
+        clearTimeout(resetTimer.current);
+      }
+    };
+  }, []);
 
   const handleExportJSON = useCallback(async () => {
     setIsExporting(true);
@@ -137,25 +193,27 @@ export const SettingsPage: React.FC = () => {
           
           <div className="flex flex-col gap-3">
             {/* Demo Mode Toggle */}
-            <div className="flex items-center justify-between p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
-                <div className="space-y-1">
-                <p className="font-bold text-[var(--text-main)]">Demo Mode (Mock Data)</p>
-                <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight max-w-[200px]">
-                    When enabled, the app will clear and randomize data on every first load of a session.
-                </p>
-                </div>
-                <button 
-                id="toggle-mock-data"
-                onClick={() => {
-                    const newValue = !useMockData;
-                    setUseMockData(newValue);
-                    addToast('success', `Demo mode ${newValue ? 'enabled' : 'disabled'}`);
-                }}
-                className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${useMockData ? 'bg-midblue' : 'bg-gray-300'}`}
-                >
-                <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${useMockData ? 'translate-x-7' : 'translate-x-1'}`} />
-                </button>
-            </div>
+            {devOptionsVisible && (
+              <div className="flex items-center justify-between p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
+                  <div className="space-y-1">
+                  <p className="font-bold text-[var(--text-main)]">Demo Mode (Mock Data)</p>
+                  <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight max-w-[200px]">
+                      When enabled, the app will clear and randomize data on every first load of a session.
+                  </p>
+                  </div>
+                  <button 
+                  id="toggle-mock-data"
+                  onClick={() => {
+                      const newValue = !useMockData;
+                      setUseMockData(newValue);
+                      addToast('success', `Demo mode ${newValue ? 'enabled' : 'disabled'}`);
+                  }}
+                  className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${useMockData ? 'bg-midblue' : 'bg-gray-300'}`}
+                  >
+                  <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${useMockData ? 'translate-x-7' : 'translate-x-1'}`} />
+                  </button>
+              </div>
+            )}
 
             {/* Dark Mode Toggle */}
             <div className="flex items-center justify-between p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
@@ -262,7 +320,7 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {/* App Info */}
-      <Card id="card-about">
+      <Card id="card-about" onClick={handleAboutTap}>
         <CardBody>
           <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest mb-3">About</h3>
           <p className="text-sm text-[var(--text-main)] font-bold">
@@ -273,6 +331,13 @@ export const SettingsPage: React.FC = () => {
           </p>
         </CardBody>
       </Card>
+
+      {/* Dev options tap feedback toast */}
+      {devCountdown !== null && (
+        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900/90 dark:bg-white/90 text-white dark:text-gray-900 text-xs font-bold px-4 py-2 rounded-full shadow-lg transition-opacity duration-300">
+          {devCountdown} {devCountdown === 1 ? 'more tap' : 'more taps'}
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       <Modal

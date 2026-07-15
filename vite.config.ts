@@ -8,10 +8,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
+    define: {
+        __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "1.0.0"),
+    },
     plugins: [
         react(),
         VitePWA({
-            registerType: "autoUpdate",
+            registerType: "prompt",
             // Let the plugin inject the <link rel="manifest"> tag and register script
             injectRegister: "auto",
             // Include the existing icons in precache
