@@ -10,11 +10,10 @@ declare const __APP_VERSION__: string;
  * or auto-updates after 5 seconds with a visible countdown.
  */
 export const PWAUpdateBanner: React.FC = () => {
-    const [dismissed, setDismissed] = useState(false);
     const [countdown, setCountdown] = useState(5);
 
     const {
-        needRefresh: [needRefresh],
+        needRefresh: [needRefresh, setNeedRefresh],
         updateServiceWorker,
     } = useRegisterSW({
         onRegisteredSW(swUrl, registration) {
@@ -31,7 +30,7 @@ export const PWAUpdateBanner: React.FC = () => {
         },
     });
 
-    const isVisible = needRefresh && !dismissed;
+    const isVisible = needRefresh;
 
     useEffect(() => {
         if (!isVisible) return;
@@ -63,7 +62,7 @@ export const PWAUpdateBanner: React.FC = () => {
     };
 
     const handleLater = () => {
-        setDismissed(true);
+        setNeedRefresh(false);
     };
 
     return (

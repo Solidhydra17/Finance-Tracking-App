@@ -215,9 +215,7 @@ export const AddTransactionPage: React.FC = () => {
 
       console.log('Submission result:', success);
       if (success) {
-        setTimeout(() => {
-          navigate('/transactions');
-        }, 3000);
+        navigate('/transactions');
       } else {
         setIsSubmitting(false);
       }
@@ -556,9 +554,7 @@ export const AddTransactionPage: React.FC = () => {
                   });
                   addToast('success', 'Recurring settings updated');
                   setIsConfiguringRecurring(false);
-                  setTimeout(() => {
-                    navigate('/settings?tab=recurring#section-recurring-settings');
-                  }, 3000);
+                  navigate('/settings?tab=recurring#section-recurring-settings');
                 } catch (error) {
                   addToast('error', 'Failed to update rule');
                   setIsSubmitting(false);
