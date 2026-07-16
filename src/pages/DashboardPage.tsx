@@ -61,10 +61,10 @@ const FunnyLoadingScreen = () => {
           <h2 className="text-xl font-black text-midblue dark:text-white tracking-tight">
             KURIPOT
           </h2>
-          
+
           {/* Progress Bar Container */}
           <div className="w-full h-2 bg-[var(--item-bg)] rounded-full overflow-hidden border border-[var(--card-border)]">
-            <div 
+            <div
               className="h-full bg-midblue transition-all duration-300 ease-out shadow-[0_0_10px_rgba(40,92,204,0.3)]"
               style={{ width: `${progress}%` }}
             />
@@ -101,7 +101,7 @@ export const DashboardPage: React.FC = () => {
   const handlePresetChange = (preset: 'week' | 'month' | 'year') => {
     const now = new Date();
     let range;
-    
+
     if (preset === 'week') range = getWeekRange(now);
     else if (preset === 'month') range = getMonthRange(now);
     else range = getYearRange(now);
@@ -137,7 +137,10 @@ export const DashboardPage: React.FC = () => {
     <div id="page-dashboard" className="px-4 space-y-6">
       {/* App Header */}
       <header id="dashboard-header" className="pt-4">
-        <h1 className="text-3xl font-extrabold text-midblue dark:text-white tracking-wider">KURIPOT</h1>
+        <div>
+          <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">KURIPOT</h1>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Dashboard</p>
+        </div>
       </header>
 
       {/* Balance Card */}
@@ -145,7 +148,7 @@ export const DashboardPage: React.FC = () => {
         <div className="mb-6">
           <p className="text-xs font-bold text-white uppercase tracking-widest mb-1">Remaining Balance</p>
           <h2 className={`pt-2 font-black text-white whitespace-nowrap overflow-hidden transition-all duration-300 ${centsToDisplay(data.summary.totalBalance).length > 15 ? 'text-2xl' :
-              centsToDisplay(data.summary.totalBalance).length > 12 ? 'text-3xl' : 'text-4xl'
+            centsToDisplay(data.summary.totalBalance).length > 12 ? 'text-3xl' : 'text-4xl'
             }`}>
             {centsToDisplay(data.summary.totalBalance)}
           </h2>
@@ -169,36 +172,33 @@ export const DashboardPage: React.FC = () => {
 
       {/* Filter Section */}
       <div id="dashboard-filters" className="flex gap-2 py-2">
-        <button 
-          id="filter-week" 
+        <button
+          id="filter-week"
           onClick={() => handlePresetChange('week')}
-          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
-            currentPreset === 'week' 
-            ? 'bg-midblue text-white shadow-soft scale-105' 
-            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
-          }`}
+          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${currentPreset === 'week'
+              ? 'bg-midblue text-white shadow-soft scale-105'
+              : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
+            }`}
         >
           Week
         </button>
-        <button 
-          id="filter-month" 
+        <button
+          id="filter-month"
           onClick={() => handlePresetChange('month')}
-          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
-            currentPreset === 'month' 
-            ? 'bg-midblue text-white shadow-soft scale-105' 
-            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
-          }`}
+          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${currentPreset === 'month'
+              ? 'bg-midblue text-white shadow-soft scale-105'
+              : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
+            }`}
         >
           Month
         </button>
-        <button 
-          id="filter-year" 
+        <button
+          id="filter-year"
           onClick={() => handlePresetChange('year')}
-          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${
-            currentPreset === 'year' 
-            ? 'bg-midblue text-white shadow-soft scale-105' 
-            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
-          }`}
+          className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${currentPreset === 'year'
+              ? 'bg-midblue text-white shadow-soft scale-105'
+              : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
+            }`}
         >
           Year
         </button>
@@ -224,9 +224,9 @@ export const DashboardPage: React.FC = () => {
                 </div>
               ))}
               <div className="pt-2">
-                <Link 
+                <Link
                   id="btn-view-all-transactions"
-                  to="/transactions" 
+                  to="/transactions"
                   className="w-full flex items-center justify-center py-4 rounded-2xl border-2 border-dashed border-[var(--card-border)] bg-[var(--item-bg)] text-[var(--text-muted)] text-xs font-bold uppercase tracking-widest hover:border-midblue hover:text-midblue transition-all"
                 >
                   See more
@@ -274,15 +274,15 @@ export const DashboardPage: React.FC = () => {
                   </div>
                 );
               })}
-              {Array.from(pva.values()).filter(s => s.plannedCents > 0 && (s.actualCents / s.plannedCents) * 100 >= 80).length === 0 && (
-                <div className="text-center py-4 text-[var(--text-muted)] italic text-sm">
-                  All budget categories are under 80% utilization. Great job!
-                </div>
-              )}
+            {Array.from(pva.values()).filter(s => s.plannedCents > 0 && (s.actualCents / s.plannedCents) * 100 >= 80).length === 0 && (
+              <div className="text-center py-4 text-[var(--text-muted)] italic text-sm">
+                All budget categories are under 80% utilization. Great job!
+              </div>
+            )}
           </div>
           <div className="pt-4 mt-2">
-            <Link 
-              to="/budget-planning" 
+            <Link
+              to="/budget-planning"
               className="w-full flex items-center justify-center py-4 rounded-2xl bg-midblue text-white text-xs font-bold uppercase tracking-widest hover:bg-midblue/90 shadow-soft hover:shadow-medium transition-all"
             >
               View Budget Planner
@@ -299,8 +299,8 @@ export const DashboardPage: React.FC = () => {
             <Icon name="DocumentChartBarIcon" className="w-5 h-5 text-midblue" />
           </div>
           <p className="text-xs font-bold text-[var(--text-muted)] mb-4">Allocate your salary before you spend it to avoid deficits and maximize savings.</p>
-          <Link 
-            to="/budget-planning" 
+          <Link
+            to="/budget-planning"
             className="w-full flex items-center justify-center py-4 rounded-2xl bg-midblue text-white text-xs font-bold uppercase tracking-widest hover:bg-midblue/90 shadow-soft hover:shadow-medium transition-all"
           >
             Budget Planning

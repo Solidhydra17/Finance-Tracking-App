@@ -8,6 +8,7 @@ import { useUIStore } from "@/store";
 import { useShallow } from 'zustand/react/shallow';
 import { AddTransactionModal } from "@/pages/AddTransactionModal";
 import { useNavigate } from "react-router-dom";
+import { FundTransferModal } from "@/components/wallet/FundTransferModal";
 
 export const AppLayout: React.FC = () => {
     const navigate = useNavigate();
@@ -17,12 +18,14 @@ export const AppLayout: React.FC = () => {
         setAddTransactionOpen,
         isAddMenuOpen,
         setAddMenuOpen,
+        setTransferOpen,
         darkMode
     } = useUIStore(useShallow(state => ({
         isAddTransactionOpen: state.isAddTransactionOpen,
         setAddTransactionOpen: state.setAddTransactionOpen,
         isAddMenuOpen: state.isAddMenuOpen,
         setAddMenuOpen: state.setAddMenuOpen,
+        setTransferOpen: state.setTransferOpen,
         darkMode: state.darkMode
     })));
 
@@ -34,10 +37,12 @@ export const AppLayout: React.FC = () => {
         }
     }, [darkMode]);
 
-    const handleAddSelect = (type: 'income' | 'expense' | 'loan') => {
+    const handleAddSelect = (type: 'income' | 'expense' | 'loan' | 'transfer') => {
         setAddMenuOpen(false);
         if (type === 'loan') {
             navigate('/add-loan');
+        } else if (type === 'transfer') {
+            setTransferOpen(true);
         } else {
             navigate(`/add-transaction?type=${type}`);
         }
@@ -55,6 +60,7 @@ export const AppLayout: React.FC = () => {
             <StatusToast />
             <ConnectivityListener />
             <PWAUpdateBanner />
+            <FundTransferModal />
 
             {/* Selection Menu (Bottom Sheet Style) */}
             <Modal
@@ -64,7 +70,7 @@ export const AppLayout: React.FC = () => {
                 size="sm"
                 position="bottom"
             >
-                <div id="add-menu-options" className="grid grid-cols-3 gap-4 pt-2 pb-6">
+                <div id="add-menu-options" className="grid grid-cols-2 gap-4 pt-2 pb-6">
                     <button
                         onClick={() => handleAddSelect('income')}
                         className="flex flex-col items-center justify-center gap-3 p-6 bg-success-500/10 dark:bg-success-500/5 rounded-3xl border-2 border-transparent hover:border-success-500 transition-all active:scale-95 group"
@@ -93,6 +99,16 @@ export const AppLayout: React.FC = () => {
                             <Icon name="BanknotesIcon" className="w-8 h-8" />
                         </div>
                         <span id="btn-add-loan" className="font-bold text-midblue dark:text-midblue">Loan</span>
+                    </button>
+
+                    <button
+                        onClick={() => handleAddSelect('transfer')}
+                        className="flex flex-col items-center justify-center gap-3 p-6 bg-purple-500/10 dark:bg-purple-500/5 rounded-3xl border-2 border-transparent hover:border-purple-500 transition-all active:scale-95 group"
+                    >
+                        <div className="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                            <Icon name="ArrowsRightLeftIcon" className="w-8 h-8" />
+                        </div>
+                        <span id="btn-add-transfer" className="font-bold text-purple-600 dark:text-purple-400">Transfer</span>
                     </button>
                 </div>
             </Modal>
