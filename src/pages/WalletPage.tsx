@@ -17,12 +17,24 @@ export const WalletPage: React.FC = () => {
         isLoading: state.isLoading
     })));
 
-    const setTransferOpen = useUIStore(state => state.setTransferOpen);
+    const { isTransferOpen, setTransferOpen } = useUIStore(useShallow(state => ({
+        isTransferOpen: state.isTransferOpen,
+        setTransferOpen: state.setTransferOpen
+    })));
+    const prevTransferOpen = React.useRef(isTransferOpen);
 
     useEffect(() => {
         fetchAccounts();
         fetchLoans();
     }, [fetchAccounts, fetchLoans]);
+
+    useEffect(() => {
+        if (prevTransferOpen.current && !isTransferOpen) {
+            fetchAccounts();
+            fetchLoans();
+        }
+        prevTransferOpen.current = isTransferOpen;
+    }, [isTransferOpen, fetchAccounts, fetchLoans]);
 
     const isLoading = isWalletLoading || isLoansLoading;
 

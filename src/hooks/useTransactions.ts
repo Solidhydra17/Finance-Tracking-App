@@ -13,7 +13,8 @@ export function useTransactions(filters: FilterState) {
     isLoading, setLoading, 
     totalTransactions, setTotal,
     currentPage, setPage,
-    lastFilters, setLastFilters
+    lastFilters, setLastFilters,
+    refreshToken
   } = useTransactionStore(useShallow(state => ({
     transactions: state.transactions,
     setTransactions: state.setTransactions,
@@ -24,7 +25,8 @@ export function useTransactions(filters: FilterState) {
     currentPage: state.currentPage,
     setPage: state.setPage,
     lastFilters: state.lastFilters,
-    setLastFilters: state.setLastFilters
+    setLastFilters: state.setLastFilters,
+    refreshToken: state.refreshToken
   })));
   
   const addToast = useUIStore(state => state.addToast);
@@ -87,7 +89,7 @@ export function useTransactions(filters: FilterState) {
     } finally {
       setLoading(false);
     }
-  }, [filters, setTransactions, setTotal, setLoading, setLastFilters, addToast]);
+  }, [filters, refreshToken, setTransactions, setTotal, setLoading, setLastFilters, addToast]);
 
   useEffect(() => {
     loadTransactions();

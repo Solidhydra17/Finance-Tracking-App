@@ -10,16 +10,16 @@ import { useNavigate } from 'react-router-dom';
 import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
 
 export const SettingsPage: React.FC = () => {
-  const { 
-    useMockData, 
-    setUseMockData, 
-    devOptionsVisible, 
-    setDevOptionsVisible, 
-    darkMode, 
-    setDarkMode, 
-    creditWarningThreshold, 
-    setCreditWarningThreshold, 
-    addToast 
+  const {
+    useMockData,
+    setUseMockData,
+    devOptionsVisible,
+    setDevOptionsVisible,
+    darkMode,
+    setDarkMode,
+    creditWarningThreshold,
+    setCreditWarningThreshold,
+    addToast
   } = useUIStore(useShallow(state => ({
     useMockData: state.useMockData,
     setUseMockData: state.setUseMockData,
@@ -84,7 +84,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleAboutTap = useCallback(() => {
     const now = Date.now();
-    
+
     if (resetTimer.current) {
       clearTimeout(resetTimer.current);
     }
@@ -105,7 +105,7 @@ export const SettingsPage: React.FC = () => {
     } else {
       const remaining = 7 - tapCount.current;
       setDevCountdown(remaining);
-      
+
       resetTimer.current = setTimeout(() => {
         tapCount.current = 0;
         setDevCountdown(null);
@@ -237,72 +237,72 @@ export const SettingsPage: React.FC = () => {
       <Card id="card-preferences">
         <CardBody className="space-y-4">
           <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">Preferences</h3>
-          
+
           <div className="flex flex-col gap-3">
             {/* Demo Mode Toggle */}
             {devOptionsVisible && (
               <div className="flex items-center justify-between p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
-                  <div className="space-y-1">
+                <div className="space-y-1">
                   <p className="font-bold text-[var(--text-main)]">Demo Mode (Mock Data)</p>
                   <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight max-w-[200px]">
-                      When enabled, the app will clear and randomize data on every first load of a session.
+                    When enabled, the app will clear and randomize data on every first load of a session.
                   </p>
-                  </div>
-                  <button 
+                </div>
+                <button
                   id="toggle-mock-data"
                   onClick={() => {
-                      const newValue = !useMockData;
-                      setUseMockData(newValue);
-                      addToast('success', `Demo mode ${newValue ? 'enabled' : 'disabled'}`);
+                    const newValue = !useMockData;
+                    setUseMockData(newValue);
+                    addToast('success', `Demo mode ${newValue ? 'enabled' : 'disabled'}`);
                   }}
                   className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${useMockData ? 'bg-midblue' : 'bg-gray-300'}`}
-                  >
+                >
                   <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${useMockData ? 'translate-x-7' : 'translate-x-1'}`} />
-                  </button>
+                </button>
               </div>
             )}
 
             {/* Dark Mode Toggle */}
             <div className="flex items-center justify-between p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
-                <div className="space-y-1">
+              <div className="space-y-1">
                 <p className="font-bold text-[var(--text-main)]">Dark Mode</p>
                 <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight max-w-[200px]">
-                    Switch between light and dark themes for better night viewing.
+                  Switch between light and dark themes for better night viewing.
                 </p>
-                </div>
-                <button 
+              </div>
+              <button
                 id="toggle-dark-mode"
                 onClick={() => {
-                    setDarkMode(!darkMode);
+                  setDarkMode(!darkMode);
                 }}
                 className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${darkMode ? 'bg-midblue' : 'bg-gray-300'}`}
-                >
+              >
                 <div className={`w-4 h-4 bg-white rounded-full absolute transition-transform shadow-sm ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
-                </button>
+              </button>
             </div>
 
             {/* Credit Card Warning Threshold */}
             <div className="flex flex-col gap-2 p-4 bg-[var(--item-bg)] dark:bg-gray-800/50 rounded-2xl border border-[var(--card-border)]">
-                <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="font-bold text-[var(--text-main)]">Credit Warning Threshold</p>
-                        <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight">
-                            Alert when total credit card debt exceeds this % of debit balance.
-                        </p>
-                    </div>
-                    <span className="font-bold text-midblue dark:text-white bg-midblue/10 px-2 py-1 rounded-md text-xs">
-                        {creditWarningThreshold}%
-                    </span>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="font-bold text-[var(--text-main)]">Credit Warning Threshold</p>
+                  <p className="text-[10px] text-[var(--text-muted)] font-medium leading-tight">
+                    Alert when total credit card debt exceeds this % of debit balance.
+                  </p>
                 </div>
-                <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={creditWarningThreshold}
-                    onChange={(e) => setCreditWarningThreshold(parseInt(e.target.value, 10))}
-                    className="w-full accent-midblue mt-2"
-                />
+                <span className="font-bold text-midblue dark:text-white bg-midblue/10 px-2 py-1 rounded-md text-xs">
+                  {creditWarningThreshold}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={creditWarningThreshold}
+                onChange={(e) => setCreditWarningThreshold(parseInt(e.target.value, 10))}
+                className="w-full accent-midblue mt-2"
+              />
             </div>
           </div>
         </CardBody>
@@ -371,7 +371,7 @@ export const SettingsPage: React.FC = () => {
         <CardBody>
           <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest mb-3">About</h3>
           <p className="text-sm text-[var(--text-main)] font-bold">
-            Finance Tracker v1.0.0
+            Finance Tracker v1.0.1
           </p>
           <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
             Offline-first personal finance management
@@ -402,12 +402,12 @@ export const SettingsPage: React.FC = () => {
             <div>
               <p className="font-bold text-[var(--text-main)] text-lg">Are you absolutely sure?</p>
               <p className="text-[var(--text-muted)] text-sm mt-1 leading-relaxed">
-                This will permanently delete all transactions, loans, and recurring rules. 
+                This will permanently delete all transactions, loans, and recurring rules.
                 <span className="text-danger-500 font-black block mt-2 uppercase tracking-tighter">This cannot be undone!</span>
               </p>
             </div>
           </div>
-          
+
           <div className="flex gap-3 px-2">
             <button
               onClick={() => setIsConfirmClearOpen(false)}

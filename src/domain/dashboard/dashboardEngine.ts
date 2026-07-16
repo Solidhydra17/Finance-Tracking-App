@@ -5,6 +5,7 @@ import { recurringEngine } from '@/domain/recurring/recurringEngine';
 import { categoryRepository } from '@/storage';
 import { FilterState, Transaction } from '@/types';
 import { addCents } from '@/lib/money';
+import { walletService } from '@/domain/wallet/walletService';
 
 export const dashboardEngine = {
   async getDashboardData(filters: FilterState, includeLoans: boolean = false): Promise<DashboardData> {
@@ -36,9 +37,12 @@ export const dashboardEngine = {
       loanExposure = totalOwedToYou - totalYouOwe;
     }
 
+    const { totalWalletBalance } = await walletService.getTotals();
+
     return {
       summary: {
         totalBalance: addCents(stats.netBalance, loanExposure),
+        walletBalance: totalWalletBalance,
         income: stats.totalIncome,
         expenses: stats.totalExpenses,
         loanExposure,

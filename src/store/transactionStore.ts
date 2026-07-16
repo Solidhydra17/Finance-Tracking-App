@@ -13,6 +13,8 @@ interface TransactionState {
   setTotal: (total: number) => void;
   setPage: (page: number) => void;
   setLastFilters: (filters: FilterState) => void;
+  invalidateCache: () => void;
+  refreshToken: number;
 }
 
 export const useTransactionStore = create<TransactionState>((set) => ({
@@ -21,10 +23,12 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   totalTransactions: 0,
   currentPage: 1,
   lastFilters: null,
+  refreshToken: 0,
 
   setTransactions: (transactions) => set({ transactions }),
   setLoading: (isLoading) => set({ isLoading }),
   setTotal: (totalTransactions) => set({ totalTransactions }),
   setPage: (currentPage) => set({ currentPage }),
   setLastFilters: (lastFilters) => set({ lastFilters }),
+  invalidateCache: () => set(state => ({ lastFilters: null, refreshToken: state.refreshToken + 1 })),
 }));
