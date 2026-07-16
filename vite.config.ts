@@ -32,9 +32,6 @@ export default defineConfig({
                 ],
                 // Clean up old caches from the previous manual SW
                 cleanupOutdatedCaches: true,
-                // Skip waiting to activate new SW immediately
-                skipWaiting: true,
-                clientsClaim: true,
             },
             // Manifest — replaces public/manifest.json
             manifest: {

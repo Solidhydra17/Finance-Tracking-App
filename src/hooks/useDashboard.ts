@@ -36,8 +36,6 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
       if (isFirst && useMock) {
         try {
           await seedRandomData(60);
-          // Ensure at least 2.5 seconds of loading for the "Funny Loading Screen"
-          await new Promise(resolve => setTimeout(resolve, 2500));
         } catch (seedError) {
           console.warn('Seeding failed, continuing with existing data...', seedError);
         }

@@ -6,6 +6,8 @@ import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
 import { RecurringSettings } from '@/components/settings/RecurringSettings';
 import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
+import { useNavigate } from 'react-router-dom';
+import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
 
 export const SettingsPage: React.FC = () => {
   const { 
@@ -29,6 +31,7 @@ export const SettingsPage: React.FC = () => {
     setCreditWarningThreshold: state.setCreditWarningThreshold,
     addToast: state.addToast
   })));
+  const navigate = useNavigate();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -38,6 +41,46 @@ export const SettingsPage: React.FC = () => {
   const lastTapTime = useRef(0);
   const resetTimer = useRef<any>(null);
   const [devCountdown, setDevCountdown] = useState<number | null>(null);
+
+  const resetAllStores = () => {
+    useTransactionStore.setState({
+      transactions: [],
+      isLoading: false,
+      totalTransactions: 0,
+      currentPage: 1,
+      lastFilters: null
+    });
+    useBudgetStore.setState({
+      plan: null,
+      items: [],
+      isLoading: false
+    });
+    useWalletStore.setState({
+      accounts: [],
+      totalWalletBalance: 0,
+      totalCreditDebt: 0,
+      isLoading: false,
+      error: null
+    });
+    useLoanStore.setState({
+      loans: [],
+      totalOwedToYou: 0,
+      totalYouOwe: 0,
+      isLoading: false,
+      error: null
+    });
+    useUIStore.setState({
+      isAddTransactionOpen: false,
+      isAddLoanOpen: false,
+      isAddRecurringOpen: false,
+      isAddMenuOpen: false,
+      isTransferOpen: false,
+      isLoading: false,
+      isFirstLoad: true,
+      cachedDashboardData: null
+    });
+    useUIStore.getState().resetFilters();
+  };
 
   const handleAboutTap = useCallback(() => {
     const now = Date.now();
@@ -147,9 +190,10 @@ export const SettingsPage: React.FC = () => {
         const text = await file.text();
         const data = JSON.parse(text);
         await importData(data);
+        resetAllStores();
         addToast('success', 'Data imported successfully');
         setTimeout(() => {
-          window.location.href = '/';
+          navigate('/');
         }, 3000);
       } catch (error) {
         console.error('Import failed:', error);
@@ -158,7 +202,7 @@ export const SettingsPage: React.FC = () => {
       }
     };
     input.click();
-  }, [addToast]);
+  }, [addToast, navigate]);
 
   const handleClearData = useCallback(async () => {
     setIsConfirmClearOpen(true);
@@ -170,16 +214,17 @@ export const SettingsPage: React.FC = () => {
     setIsClearing(true);
     try {
       await clearAllData();
+      resetAllStores();
       addToast('success', 'All data cleared');
       setTimeout(() => {
-        window.location.href = '/';
+        navigate('/');
       }, 3000);
     } catch (error) {
       console.error('Clear failed:', error);
       addToast('error', 'Failed to clear data');
       setIsClearing(false);
     }
-  }, [addToast]);
+  }, [addToast, navigate]);
 
   return (
     <div id="page-settings" className="px-4 space-y-6 pb-20">
