@@ -91,8 +91,11 @@ export const TransactionsPage: React.FC = () => {
 
     return (
         <div id="page-transactions">
-            <header className="px-4 pt-4 mb-2">
-                <h1 className="text-3xl font-extrabold text-midblue dark:text-white tracking-wider">KURIPOT</h1>
+            <header className="px-4 pt-4 mb-6">
+                <div>
+                    <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">KURIPOT</h1>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Transactions</p>
+                </div>
             </header>
 
             <div id="search-container" className="px-4 mb-4">
@@ -105,48 +108,48 @@ export const TransactionsPage: React.FC = () => {
             </div>
 
             <FilterBar id="transactions-filter-bar">
-                    <FilterChip
-                        id="filter-type-all"
-                        isActive={filters.transactionType === "all"}
-                        onClick={() => handleTypeFilter("all")}
-                    >
-                        All
-                    </FilterChip>
-                    <FilterChip
-                        id="filter-type-income"
-                        isActive={filters.transactionType === "income"}
-                        onClick={() => handleTypeFilter("income")}
-                    >
-                        Income
-                    </FilterChip>
-                    <FilterChip
-                        id="filter-type-expense"
-                        isActive={filters.transactionType === "expense"}
-                        onClick={() => handleTypeFilter("expense")}
-                    >
-                        Expenses
-                    </FilterChip>
-                    <FilterChip
-                        id="filter-type-credit-payment"
-                        isActive={filters.transactionType === "credit_payment"}
-                        onClick={() => handleTypeFilter("credit_payment")}
-                    >
-                        Credit Payments
-                    </FilterChip>
-                    <FilterChip
-                        id="filter-type-loans"
-                        isActive={filters.transactionType === "loans"}
-                        onClick={() => handleTypeFilter("loans")}
-                    >
-                        Loans
-                    </FilterChip>
-                    <FilterChip
-                        id="filter-type-fund-transfer"
-                        isActive={filters.transactionType === "fund_transfer"}
-                        onClick={() => handleTypeFilter("fund_transfer")}
-                    >
-                        Fund Transfers
-                    </FilterChip>
+                <FilterChip
+                    id="filter-type-all"
+                    isActive={filters.transactionType === "all"}
+                    onClick={() => handleTypeFilter("all")}
+                >
+                    All
+                </FilterChip>
+                <FilterChip
+                    id="filter-type-income"
+                    isActive={filters.transactionType === "income"}
+                    onClick={() => handleTypeFilter("income")}
+                >
+                    Income
+                </FilterChip>
+                <FilterChip
+                    id="filter-type-expense"
+                    isActive={filters.transactionType === "expense"}
+                    onClick={() => handleTypeFilter("expense")}
+                >
+                    Expenses
+                </FilterChip>
+                <FilterChip
+                    id="filter-type-credit-payment"
+                    isActive={filters.transactionType === "credit_payment"}
+                    onClick={() => handleTypeFilter("credit_payment")}
+                >
+                    Credit Payments
+                </FilterChip>
+                <FilterChip
+                    id="filter-type-loans"
+                    isActive={filters.transactionType === "loans"}
+                    onClick={() => handleTypeFilter("loans")}
+                >
+                    Loans
+                </FilterChip>
+                <FilterChip
+                    id="filter-type-fund-transfer"
+                    isActive={filters.transactionType === "fund_transfer"}
+                    onClick={() => handleTypeFilter("fund_transfer")}
+                >
+                    Fund Transfers
+                </FilterChip>
             </FilterBar>
             <div className="mb-4"></div>
 
@@ -241,165 +244,164 @@ export const TransactionsPage: React.FC = () => {
                 ) : (
                     <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
                         <div id="transactions-list" className="px-4">
-                        {Object.entries(groupedTransactions).map(([date, items]) => (
-                            <div key={date} className="mb-6">
-                                <h3 className="text-[10px] font-black text-[var(--text-muted)] opacity-80 uppercase tracking-widest bg-[var(--bg-color)] py-3 sticky top-0 z-[5]">
-                                    {date}
-                                </h3>
-                                <div id={`date-group-${date}`} className="space-y-2">
-                                    {items.map((transaction: any) => {
-                                        const category = getCategoryById(transaction.categoryId);
-                                        
-                                        // Credit Payment specific logic
-                                        const isCreditPayment = transaction.type === 'credit_payment';
-                                        const isFundTransfer = transaction.type === 'fund_transfer';
-                                        const isLoan = transaction.type === 'loan';
-                                        const isLoanPayment = transaction.type === 'loan_payment';
-                                        
-                                        let title = category?.name || "Unknown";
-                                        let subtitle = transaction.note || "No note";
-                                        let iconName = category?.icon || "BanknotesIcon";
-                                        let iconColor = category?.color || "";
-                                        let bgClass = transaction.type === "income" ? "bg-success-500/10" : "bg-danger-500/10";
-                                        let amountColor = transaction.type === "income" ? "text-success-500 dark:text-success-400" : "text-danger-500 dark:text-danger-400";
-                                        let amountPrefix = transaction.type === "income" ? "+" : "-";
+                            {Object.entries(groupedTransactions).map(([date, items]) => (
+                                <div key={date} className="mb-6">
+                                    <h3 className="text-[10px] font-black text-[var(--text-muted)] opacity-80 uppercase tracking-widest bg-[var(--bg-color)] py-3 sticky top-0 z-[5]">
+                                        {date}
+                                    </h3>
+                                    <div id={`date-group-${date}`} className="space-y-2">
+                                        {items.map((transaction: any) => {
+                                            const category = getCategoryById(transaction.categoryId);
 
-                                        if (isCreditPayment) {
-                                            title = `${getAccountName(transaction.targetWalletAccountId)} Payment`;
-                                            subtitle = `from ${getAccountName(transaction.walletAccountId)}`;
-                                            iconName = "CreditCardIcon";
-                                            bgClass = "bg-gray-500/10";
-                                            amountColor = "text-[var(--text-main)]";
-                                            iconColor = "gray";
-                                            amountPrefix = "";
-                                        } else if (isFundTransfer) {
-                                            title = `${getAccountName(transaction.walletAccountId)} → ${getAccountName(transaction.targetWalletAccountId)}`;
-                                            subtitle = transaction.note || "Fund Transfer";
-                                            iconName = "ArrowsRightLeftIcon";
-                                            bgClass = "bg-blue-500/10";
-                                            amountColor = "text-[var(--text-main)]";
-                                            iconColor = "dodgerblue";
-                                            amountPrefix = "";
-                                        } else if (isLoan) {
-                                            const loan = transaction.originalLoan;
-                                            iconName = "HandRaisedIcon";
-                                            bgClass = "bg-orange-500/10";
-                                            iconColor = "orange";
-                                            if (loan.direction === 'outbound') {
-                                                title = `${loan.personName} — Loan Given`;
-                                                amountColor = "text-orange-500 dark:text-orange-400";
-                                                amountPrefix = "-";
-                                            } else {
-                                                title = `${loan.personName} — Loan Received`;
-                                                amountColor = "text-[var(--text-main)]";
-                                                amountPrefix = "+";
+                                            // Credit Payment specific logic
+                                            const isCreditPayment = transaction.type === 'credit_payment';
+                                            const isFundTransfer = transaction.type === 'fund_transfer';
+                                            const isLoan = transaction.type === 'loan';
+                                            const isLoanPayment = transaction.type === 'loan_payment';
+
+                                            let title = category?.name || "Unknown";
+                                            let subtitle = transaction.note || "No note";
+                                            let iconName = category?.icon || "BanknotesIcon";
+                                            let iconColor = category?.color || "";
+                                            let bgClass = transaction.type === "income" ? "bg-success-500/10" : "bg-danger-500/10";
+                                            let amountColor = transaction.type === "income" ? "text-success-500 dark:text-success-400" : "text-danger-500 dark:text-danger-400";
+                                            let amountPrefix = transaction.type === "income" ? "+" : "-";
+
+                                            if (isCreditPayment) {
+                                                title = `${getAccountName(transaction.targetWalletAccountId)} Payment`;
+                                                subtitle = `from ${getAccountName(transaction.walletAccountId)}`;
+                                                iconName = "CreditCardIcon";
                                                 bgClass = "bg-gray-500/10";
+                                                amountColor = "text-[var(--text-main)]";
                                                 iconColor = "gray";
+                                                amountPrefix = "";
+                                            } else if (isFundTransfer) {
+                                                title = `${getAccountName(transaction.walletAccountId)} → ${getAccountName(transaction.targetWalletAccountId)}`;
+                                                subtitle = transaction.note || "Fund Transfer";
+                                                iconName = "ArrowsRightLeftIcon";
+                                                bgClass = "bg-blue-500/10";
+                                                amountColor = "text-[var(--text-main)]";
+                                                iconColor = "dodgerblue";
+                                                amountPrefix = "";
+                                            } else if (isLoan) {
+                                                const loan = transaction.originalLoan;
+                                                iconName = "HandRaisedIcon";
+                                                bgClass = "bg-orange-500/10";
+                                                iconColor = "orange";
+                                                if (loan.direction === 'outbound') {
+                                                    title = `${loan.personName} — Loan Given`;
+                                                    amountColor = "text-orange-500 dark:text-orange-400";
+                                                    amountPrefix = "-";
+                                                } else {
+                                                    title = `${loan.personName} — Loan Received`;
+                                                    amountColor = "text-[var(--text-main)]";
+                                                    amountPrefix = "+";
+                                                    bgClass = "bg-gray-500/10";
+                                                    iconColor = "gray";
+                                                }
+                                            } else if (isLoanPayment) {
+                                                const loan = transaction.originalLoan;
+                                                iconName = "CurrencyDollarIcon";
+                                                if (loan.direction === 'outbound') {
+                                                    title = `${loan.personName} — Repayment Received`;
+                                                    amountColor = "text-success-500 dark:text-success-400";
+                                                    amountPrefix = "+";
+                                                    bgClass = "bg-success-500/10";
+                                                    iconColor = "green";
+                                                } else {
+                                                    title = `${loan.personName} — Repayment Made`;
+                                                    amountColor = "text-danger-500 dark:text-danger-400";
+                                                    amountPrefix = "-";
+                                                    bgClass = "bg-danger-500/10";
+                                                    iconColor = "red";
+                                                }
                                             }
-                                        } else if (isLoanPayment) {
-                                            const loan = transaction.originalLoan;
-                                            iconName = "CurrencyDollarIcon";
-                                            if (loan.direction === 'outbound') {
-                                                title = `${loan.personName} — Repayment Received`;
-                                                amountColor = "text-success-500 dark:text-success-400";
-                                                amountPrefix = "+";
-                                                bgClass = "bg-success-500/10";
-                                                iconColor = "green";
-                                            } else {
-                                                title = `${loan.personName} — Repayment Made`;
-                                                amountColor = "text-danger-500 dark:text-danger-400";
-                                                amountPrefix = "-";
-                                                bgClass = "bg-danger-500/10";
-                                                iconColor = "red";
-                                            }
-                                        }
 
-                                        const handleClick = () => {
-                                            if (isLoan || isLoanPayment) {
-                                                navigate(`/wallet`);
-                                            } else {
-                                                navigate(`/add-transaction?edit=${transaction.id}`);
-                                            }
-                                        };
+                                            const handleClick = () => {
+                                                if (isLoan || isLoanPayment) {
+                                                    navigate(`/wallet`);
+                                                } else {
+                                                    navigate(`/add-transaction?edit=${transaction.id}`);
+                                                }
+                                            };
 
-                                        return (
-                                            <Card 
-                                                key={transaction.id} 
-                                                className={`transition-all cursor-pointer overflow-visible relative ${
-                                                    transaction.source === 'recurring' 
-                                                    ? 'border-2 border-midblue shadow-md' 
-                                                    : 'border-0 shadow-soft'
-                                                }`}
-                                            >
-                                                {transaction.source === 'recurring' && (
-                                                    <div className="absolute -top-2.5 right-4 z-10">
-                                                        <div className="bg-midblue text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1 border border-white">
-                                                            <Icon name="ArrowPathIcon" className="w-2.5 h-2.5" />
-                                                            RECURRING
+                                            return (
+                                                <Card
+                                                    key={transaction.id}
+                                                    className={`transition-all cursor-pointer overflow-visible relative ${transaction.source === 'recurring'
+                                                        ? 'border-2 border-midblue shadow-md'
+                                                        : 'border-0 shadow-soft'
+                                                        }`}
+                                                >
+                                                    {transaction.source === 'recurring' && (
+                                                        <div className="absolute -top-2.5 right-4 z-10">
+                                                            <div className="bg-midblue text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1 border border-white">
+                                                                <Icon name="ArrowPathIcon" className="w-2.5 h-2.5" />
+                                                                RECURRING
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                                <CardBody className="flex items-center justify-between p-3">
-                                                    <div 
-                                                        className="flex items-center gap-3 flex-1"
-                                                        onClick={handleClick}
-                                                    >
-                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${bgClass}`}>
-                                                            {iconColor ? (
-                                                                <Icon name={iconName as any} className="w-6 h-6" style={{ color: iconColor }} />
-                                                            ) : (
-                                                                <Icon name={iconName as any} className="w-6 h-6 text-[var(--text-muted)]" />
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-[var(--text-main)] leading-tight">
-                                                                 {title}
-                                                            </p>
-                                                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
-                                                                {subtitle}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-3">
-                                                        <p 
-                                                            className={`font-black text-sm ${amountColor}`}
+                                                    )}
+                                                    <CardBody className="flex items-center justify-between p-3">
+                                                        <div
+                                                            className="flex items-center gap-3 flex-1"
                                                             onClick={handleClick}
                                                         >
-                                                            {amountPrefix}
-                                                            {centsToDisplay(transaction.amount)}
-                                                        </p>
-                                                        {!isLoan && !isLoanPayment && (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDelete(transaction.id!);
-                                                                }}
-                                                                className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
-                                                            >
-                                                                <Icon name="TrashIcon" className="w-4 h-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </CardBody>
-                                            </Card>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${bgClass}`}>
+                                                                {iconColor ? (
+                                                                    <Icon name={iconName as any} className="w-6 h-6" style={{ color: iconColor }} />
+                                                                ) : (
+                                                                    <Icon name={iconName as any} className="w-6 h-6 text-[var(--text-muted)]" />
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-[var(--text-main)] leading-tight">
+                                                                    {title}
+                                                                </p>
+                                                                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
+                                                                    {subtitle}
+                                                                </p>
+                                                            </div>
+                                                        </div>
 
-                    <div className="py-6">
-                        <Pagination
-                            page={pagination.page}
-                            pageSize={pagination.pageSize}
-                            total={pagination.total}
-                            onPageChange={setPage}
-                        />
+                                                        <div className="flex items-center gap-3">
+                                                            <p
+                                                                className={`font-black text-sm ${amountColor}`}
+                                                                onClick={handleClick}
+                                                            >
+                                                                {amountPrefix}
+                                                                {centsToDisplay(transaction.amount)}
+                                                            </p>
+                                                            {!isLoan && !isLoanPayment && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDelete(transaction.id!);
+                                                                    }}
+                                                                    className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
+                                                                >
+                                                                    <Icon name="TrashIcon" className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </CardBody>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="py-6">
+                            <Pagination
+                                page={pagination.page}
+                                pageSize={pagination.pageSize}
+                                total={pagination.total}
+                                onPageChange={setPage}
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
             </div>
             {/* Month Picker Modal */}
             <Modal
@@ -455,7 +457,7 @@ export const TransactionsPage: React.FC = () => {
             >
                 <div className="space-y-4 pt-2 pb-6 px-2">
                     <p className="text-[var(--text-main)] text-center font-bold">
-                        Are you sure you want to delete this transaction? 
+                        Are you sure you want to delete this transaction?
                         <span className="block text-sm text-[var(--text-muted)] font-medium mt-1">This action cannot be undone.</span>
                     </p>
                     <div className="flex gap-3">
