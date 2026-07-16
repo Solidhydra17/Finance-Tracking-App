@@ -22,6 +22,9 @@ export const WalletSummary: React.FC = () => {
         creditWarningThreshold: state.creditWarningThreshold
     })));
 
+    // Net Worth = Physical balance + money owed TO user (outbound loans) - money user owes (inbound loans)
+    const netWorth = totalWalletBalance + totalOwedToYou - totalYouOwe;
+
     // Projected Balance = Total Wallet Balance - Unpaid Credit - Unpaid Inbound Loans
     const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
     
@@ -42,7 +45,7 @@ export const WalletSummary: React.FC = () => {
                     <div>
                         <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">Total Wallet Balance</p>
                         <h2 className="text-4xl font-extrabold tracking-tight">
-                            {formatCurrency(totalWalletBalance, currencySymbol, currencyPosition)}
+                            {formatCurrency(netWorth, currencySymbol, currencyPosition)}
                         </h2>
                     </div>
                     <Link to="/settings" className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">

@@ -145,8 +145,10 @@ export const WalletAccountsList: React.FC = () => {
         return (
             <div
                 key={account.id}
-                onClick={() => openEditModal(account)}
-                className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-3"
+                onClick={account.type !== 'cash' ? () => openEditModal(account) : undefined}
+                className={`bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm transition-shadow flex flex-col gap-3 ${
+                    account.type !== 'cash' ? 'hover:shadow-md cursor-pointer' : ''
+                }`}
             >
                 <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">

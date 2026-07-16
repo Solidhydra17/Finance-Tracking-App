@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useWalletStore, useUIStore } from '@/store';
+import { useWalletStore, useUIStore, useTransactionStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Modal, Input, Button, Icon } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
 import type { WalletAccount } from '@/types';
 
 export const FundTransferModal: React.FC = () => {
-    const { accounts, createFundTransfer } = useWalletStore(useShallow(state => ({
+    const { accounts, createFundTransfer, fetchAccounts } = useWalletStore(useShallow(state => ({
         accounts: state.accounts,
-        createFundTransfer: state.createFundTransfer
+        createFundTransfer: state.createFundTransfer,
+        fetchAccounts: state.fetchAccounts
     })));
+
+    const invalidateCache = useTransactionStore(state => state.invalidateCache);
 
     const { currencySymbol, currencyPosition, addToast, isTransferOpen, setTransferOpen } = useUIStore(useShallow(state => ({
         currencySymbol: state.currencySymbol,
@@ -64,6 +67,8 @@ export const FundTransferModal: React.FC = () => {
                 date: transferDate,
                 notes: transferNotes
             });
+            await fetchAccounts();
+            invalidateCache(); // Force TransactionsPage to refetch
             addToast('success', 'Transfer completed');
             setTransferOpen(false);
         } catch (error: any) {

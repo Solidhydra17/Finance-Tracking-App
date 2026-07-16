@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { DonutChart } from '@/components/charts';
 import { useShallow } from 'zustand/react/shallow';
 import { useDashboard } from '@/hooks';
-import { useUIStore } from '@/store';
+import { useUIStore, useWalletStore, useLoanStore } from '@/store';
 import { Icon } from '@/components/ui';
 import { centsToDisplay } from '@/lib/money';
 import { Link } from 'react-router-dom';
@@ -90,7 +90,24 @@ export const DashboardPage: React.FC = () => {
   })));
   const { data } = useDashboard(filters, showLoans);
   const { plan, items } = useBudget();
+  const { totalWalletBalance, totalCreditDebt, fetchAccounts } = useWalletStore(useShallow(state => ({
+    totalWalletBalance: state.totalWalletBalance,
+    totalCreditDebt: state.totalCreditDebt,
+    fetchAccounts: state.fetchAccounts,
+  })));
+  const { totalOwedToYou, totalYouOwe, fetchLoans } = useLoanStore(useShallow(state => ({
+    totalOwedToYou: state.totalOwedToYou,
+    totalYouOwe: state.totalYouOwe,
+    fetchLoans: state.fetchLoans,
+  })));
+  const netWorth = totalWalletBalance + totalOwedToYou - totalYouOwe;
+  const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
+
+  useEffect(() => {
+    fetchAccounts();
+    fetchLoans();
+  }, [fetchAccounts, fetchLoans]);
 
   useEffect(() => {
     if (items && items.length > 0) {
@@ -146,23 +163,30 @@ export const DashboardPage: React.FC = () => {
       {/* Balance Card */}
       <div id="card-balance" className="bg-midblue rounded-3xl p-6 shadow-medium border-2 border-midblue">
         <div className="mb-6">
-          <p className="text-xs font-bold text-white uppercase tracking-widest mb-1">Remaining Balance</p>
-          <h2 className={`pt-2 font-black text-white whitespace-nowrap overflow-hidden transition-all duration-300 ${centsToDisplay(data.summary.totalBalance).length > 15 ? 'text-2xl' :
-            centsToDisplay(data.summary.totalBalance).length > 12 ? 'text-3xl' : 'text-4xl'
-            }`}>
-            {centsToDisplay(data.summary.totalBalance)}
-          </h2>
+          <p className="text-xs font-bold text-white uppercase tracking-widest mb-1">Projected Balance</p>
+          {(() => {
+            const projStr = centsToDisplay(projectedBalance);
+            return (
+              <h2 className={`pt-2 font-black text-white whitespace-nowrap overflow-hidden transition-all duration-300 ${projStr.length > 15 ? 'text-2xl' : projStr.length > 12 ? 'text-3xl' : 'text-4xl'
+                }`}>
+                {projStr}
+              </h2>
+            );
+          })()}
+          <p className="text-xs text-blue-200/70 font-medium mt-1">
+            Total Wallet Balance: {centsToDisplay(netWorth)}
+          </p>
         </div>
 
         <div id="balance-details" className="flex justify-between items-center pt-4 border-t border-white/20">
           <div id="balance-income">
-            <p className="text-[10px] font-bold text-success-400 uppercase mb-0.5">Income</p>
+            <p className="text-[10px] font-bold text-success-400 uppercase mb-0.5">This Period Income</p>
             <p className="text-lg font-bold text-success-400">
               {centsToDisplay(data.summary.income)}
             </p>
           </div>
           <div id="balance-expense" className="text-right">
-            <p className="text-[10px] font-bold text-danger-400 uppercase mb-0.5">Expense</p>
+            <p className="text-[10px] font-bold text-danger-400 uppercase mb-0.5">This Period Expenses</p>
             <p className="text-lg font-bold text-danger-400">
               {centsToDisplay(data.summary.expenses)}
             </p>
@@ -176,8 +200,8 @@ export const DashboardPage: React.FC = () => {
           id="filter-week"
           onClick={() => handlePresetChange('week')}
           className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${currentPreset === 'week'
-              ? 'bg-midblue text-white shadow-soft scale-105'
-              : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
+            ? 'bg-midblue text-white shadow-soft scale-105'
+            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
             }`}
         >
           Week
@@ -186,8 +210,8 @@ export const DashboardPage: React.FC = () => {
           id="filter-month"
           onClick={() => handlePresetChange('month')}
           className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${currentPreset === 'month'
-              ? 'bg-midblue text-white shadow-soft scale-105'
-              : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
+            ? 'bg-midblue text-white shadow-soft scale-105'
+            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
             }`}
         >
           Month
@@ -196,8 +220,8 @@ export const DashboardPage: React.FC = () => {
           id="filter-year"
           onClick={() => handlePresetChange('year')}
           className={`flex-1 py-2 px-4 rounded-xl border-2 border-midblue font-bold text-sm transition-all ${currentPreset === 'year'
-              ? 'bg-midblue text-white shadow-soft scale-105'
-              : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
+            ? 'bg-midblue text-white shadow-soft scale-105'
+            : 'bg-[var(--card-bg)] text-midblue dark:text-gray-400 hover:bg-midblue/5'
             }`}
         >
           Year

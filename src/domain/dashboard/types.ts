@@ -6,6 +6,7 @@ export interface DashboardSummary {
   income: number;
   expenses: number;
   loanExposure: number;
+  walletBalance?: number;
 }
 
 export interface DashboardData {

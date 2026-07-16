@@ -29,7 +29,7 @@ export class WalletService {
             // Transactions
             const txs = await db.transactions.where('walletAccountId').equals(acc.id).toArray();
             for (const tx of txs) {
-                if (!tx.deletedAt) {
+                if (!tx.deletedAt && tx.type !== 'fund_transfer' && tx.type !== 'credit_payment') {
                     balance += (tx.type === 'income' ? tx.amount : -tx.amount);
                 }
             }
