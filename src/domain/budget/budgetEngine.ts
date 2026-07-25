@@ -14,11 +14,11 @@ export const budgetEngine = {
     switch (item.frequency) {
       case 'day':
         if (item.useWorkSchedule) {
-          return Math.round(amount * workDaysPerWeek * 4.33);
+          return Math.round(amount * workDaysPerWeek * 4);
         }
-        return Math.round(amount * 30.4);
+        return Math.round(amount * 30);
       case 'week':
-        return Math.round(amount * 4.33);
+        return Math.round(amount * 4);
       case 'biweekly':
         return Math.round((amount * 26) / 12);
       case 'month':
