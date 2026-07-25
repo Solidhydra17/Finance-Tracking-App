@@ -6,6 +6,7 @@ import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
 import { RecurringSettings } from '@/components/settings/RecurringSettings';
 import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
+import { ReminderSettings } from '@/components/settings/ReminderSettings';
 import { useNavigate } from 'react-router-dom';
 import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
 
@@ -308,6 +309,7 @@ export const SettingsPage: React.FC = () => {
         </CardBody>
       </Card>
 
+      <ReminderSettings />
       <RecurringSettings />
       <CustomCategorySettings />
 
@@ -372,7 +374,7 @@ export const SettingsPage: React.FC = () => {
           <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest mb-3">About</h3>
           {/* Change version for any update - CHANGE VERSION HERE!!! */}
           <p className="text-sm text-[var(--text-main)] font-bold">
-            Finance Tracker v1.0.6
+            Finance Tracker v1.0.7
           </p>
           <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
             Offline-first personal finance management

@@ -18,6 +18,19 @@ export const App: React.FC = () => {
             await recurringMaterializer.materializeDueTransactions();
         };
         materialize();
+
+        // Sync stored reminders to the service worker on every app startup
+        const syncReminders = async () => {
+            try {
+                const { sendRemindersToSW } = await import('@/lib/notifications');
+                const stored = JSON.parse(localStorage.getItem('kuripot_reminders') || '[]');
+                await sendRemindersToSW(stored);
+            } catch (err) {
+                // SW may not be active yet on first load — this is safe to ignore
+                console.debug('[App] Could not sync reminders to SW on startup:', err);
+            }
+        };
+        syncReminders();
     }, []);
 
     return (
