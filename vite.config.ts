@@ -33,7 +33,9 @@ export default defineConfig({
                 ],
             },
             // Manifest — replaces public/manifest.json
-            manifest: {
+            // Cast to 'any' to allow the experimental 'widgets' field
+            // which is not yet part of vite-plugin-pwa's ManifestOptions type.
+            manifest: ({
                 name: "KURIPOT - Finance Tracker",
                 short_name: "KURIPOT",
                 description:
@@ -90,7 +92,7 @@ export default defineConfig({
                         update: "3600"
                     }
                 ]
-            },
+            } as any),
             // Don't generate SW inside Capacitor native builds
             devOptions: {
                 enabled: false,
