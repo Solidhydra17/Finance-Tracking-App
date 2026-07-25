@@ -3,13 +3,16 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const pkg = require("./package.json");
 
 export default defineConfig({
     define: {
-        __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "1.0.0"),
+        __APP_VERSION__: JSON.stringify(pkg.version),
     },
     plugins: [
         react(),
