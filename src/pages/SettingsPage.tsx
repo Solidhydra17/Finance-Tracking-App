@@ -6,6 +6,7 @@ import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
 import { RecurringSettings } from '@/components/settings/RecurringSettings';
 import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
+import { ReminderSettings } from '@/components/settings/ReminderSettings';
 import { useNavigate } from 'react-router-dom';
 import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
 
@@ -308,6 +309,7 @@ export const SettingsPage: React.FC = () => {
         </CardBody>
       </Card>
 
+      <ReminderSettings />
       <RecurringSettings />
       <CustomCategorySettings />
 

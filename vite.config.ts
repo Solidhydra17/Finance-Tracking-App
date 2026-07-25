@@ -19,19 +19,15 @@ export default defineConfig({
             injectRegister: "auto",
             // Include the existing icons in precache
             includeAssets: ["logo192.png", "logo512.png", "vite.svg"],
-            workbox: {
+            // Use injectManifest so we can run custom SW logic (reminder scheduling)
+            strategies: "injectManifest",
+            srcDir: "src",
+            filename: "sw.ts",
+            injectManifest: {
                 // Precache all built assets
                 globPatterns: [
                     "**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}",
                 ],
-                // SPA fallback for client-side routing
-                navigateFallback: "index.html",
-                navigateFallbackDenylist: [
-                    // Don't fallback for API calls or static assets
-                    /^\/api\//,
-                ],
-                // Clean up old caches from the previous manual SW
-                cleanupOutdatedCaches: true,
             },
             // Manifest — replaces public/manifest.json
             manifest: {
