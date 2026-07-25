@@ -6,6 +6,10 @@ declare const self: ServiceWorkerGlobalScope;
 // Workbox precache injection point
 precacheAndRoute(self.__WB_MANIFEST);
 
+// ─── Declarations for Experimental APIs ───────────────────────────────────────
+declare var TimestampTrigger: any;
+
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Reminder {
@@ -60,6 +64,31 @@ function checkAndFireDueReminders() {
   }
 }
 
+/**
+ * Calculates the exact next timestamp (ms) a reminder should fire.
+ */
+function getNextOccurrence(reminder: Reminder): number | null {
+  if (!reminder.enabled || reminder.days.length === 0) return null;
+
+  const now = new Date();
+  const [hh, mm] = reminder.time.split(':').map(Number);
+  
+  let nextDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+  
+  // If the time has already passed today, or today is not a selected day, start looking from tomorrow
+  if (nextDate.getTime() <= now.getTime() || !reminder.days.includes(nextDate.getDay())) {
+    // Find the next day
+    for (let i = 1; i <= 7; i++) {
+      nextDate.setDate(nextDate.getDate() + 1);
+      if (reminder.days.includes(nextDate.getDay())) {
+        break;
+      }
+    }
+  }
+
+  return nextDate.getTime();
+}
+
 // ─── Message handler (receives reminders from the app) ───────────────────────
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
@@ -72,6 +101,30 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
   if (event.data?.type === 'SCHEDULE_REMINDERS') {
     scheduledReminders = (event.data.reminders as Reminder[]) || [];
     console.log(`[SW] Scheduled ${scheduledReminders.length} reminders`);
+
+    // ─── Experimental Notification Triggers API (Android Chrome) ────────────
+    // This allows scheduling notifications when the app is completely closed.
+    if ('TimestampTrigger' in self) {
+      for (const reminder of scheduledReminders) {
+        if (!reminder.enabled) continue;
+        
+        const nextTime = getNextOccurrence(reminder);
+        if (nextTime) {
+          const title = 'KURIPOT Reminder';
+          const body = reminder.label?.trim() || 'Time to log your finances!';
+          
+          self.registration.showNotification(title, {
+            body,
+            icon: '/logo192.png',
+            badge: '/logo192.png',
+            tag: `reminder-${reminder.id}`, // Same tag overwrites previous schedule
+            data: { url: '/' },
+            // @ts-ignore - TS doesn't know about this experimental API yet
+            showTrigger: new TimestampTrigger(nextTime)
+          } as NotificationOptions).catch(console.error);
+        }
+      }
+    }
   }
 });
 
