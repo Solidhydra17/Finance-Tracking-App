@@ -370,6 +370,7 @@ export const SettingsPage: React.FC = () => {
       <Card id="card-about" onClick={handleAboutTap}>
         <CardBody>
           <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest mb-3">About</h3>
+          {/* Change version for any update - CHANGE VERSION HERE!!! */}
           <p className="text-sm text-[var(--text-main)] font-bold">
             Finance Tracker v1.0.2
           </p>
