@@ -1,4 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+
+declare const __APP_VERSION__: string;
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -418,9 +421,8 @@ export const SettingsPage: React.FC = () => {
       <Card id="card-about" onClick={handleAboutTap}>
         <CardBody>
           <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest mb-3">About</h3>
-          {/* Change version for any update - CHANGE VERSION HERE!!! */}
           <p className="text-sm text-[var(--text-main)] font-bold">
-            Finance Tracker v1.0.8
+            Finance Tracker v{APP_VERSION}
           </p>
           <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
             Offline-first personal finance management
