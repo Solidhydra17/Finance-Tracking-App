@@ -43,6 +43,8 @@ export const SettingsPage: React.FC = () => {
   const resetTimer = useRef<any>(null);
   const [devCountdown, setDevCountdown] = useState<number | null>(null);
 
+  const widgetsSupported = typeof navigator !== 'undefined' && 'widgets' in navigator;
+
   const resetAllStores = () => {
     useTransactionStore.setState({
       transactions: [],
@@ -312,6 +314,50 @@ export const SettingsPage: React.FC = () => {
       <ReminderSettings />
       <RecurringSettings />
       <CustomCategorySettings />
+
+      {/* Home Screen Widget */}
+      <Card id="card-widget">
+        <CardBody className="space-y-3">
+          <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">
+            Home Screen Widget
+          </h3>
+          {widgetsSupported ? (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-midblue/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Icon name="DevicePhoneMobileIcon" className="w-5 h-5 text-midblue" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[var(--text-main)]">
+                  Widget Support Detected
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
+                  Add KURIPOT to your home screen to use the Wallet Balance widget
+                  and Quick Add widget directly from your home screen.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[var(--item-bg)] flex items-center justify-center shrink-0 mt-0.5">
+                <Icon name="DevicePhoneMobileIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[var(--text-main)]">
+                  Home Screen Widgets
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
+                  Widgets are available on Chrome for Android with experimental
+                  web features enabled. This will appear automatically when your
+                  browser supports it.
+                </p>
+                <p className="text-[10px] text-midblue font-bold mt-2">
+                  COMING TO YOUR BROWSER SOON
+                </p>
+              </div>
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       {/* Data Management */}
       <Card id="card-data-management">

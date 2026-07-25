@@ -1,0 +1,21 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "KURIPOT · Total Balance",
+      "size": "Small",
+      "weight": "Bolder",
+      "color": "Accent"
+    },
+    {
+      "type": "TextBlock",
+      "text": "{{currency}}{{totalBalance}}",
+      "size": "ExtraLarge",
+      "weight": "Bolder",
+      "color": "Light"
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json"
+}
