@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useBudget, useCategories } from '@/hooks';
-import { Input, Select, Button, Card, Icon, Modal, ProgressBar, AVAILABLE_ICONS } from '@/components/ui';
+import { Input, Select, Button, Card, Icon, Modal, ProgressBar, AVAILABLE_ICONS, CalcInput, DayPicker } from '@/components/ui';
 import { DonutChart } from '@/components/charts';
 import { centsToDisplay, displayToCents } from '@/lib/money';
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
@@ -30,6 +30,7 @@ export const BudgetPlanningPage: React.FC = () => {
   const [itemFrequency, setItemFrequency] = useState<BudgetItemFrequency>('month');
   const [itemDueDay, setItemDueDay] = useState('');
   const [useWorkSchedule, setUseWorkSchedule] = useState(false);
+  const [workDaySelection, setWorkDaySelection] = useState<number[]>([1, 2, 3, 4, 5]); // Mon–Fri
   const [itemType, setItemType] = useState<BudgetItemType>('expense');
   const [newCategoryName, setNewCategoryName] = useState(''); 
   const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
@@ -90,6 +91,7 @@ export const BudgetPlanningPage: React.FC = () => {
       setItemFrequency(item.frequency || 'month');
       setItemDueDay(item.dueDay ? item.dueDay.toString() : '');
       setUseWorkSchedule(item.useWorkSchedule || false);
+      setWorkDaySelection(item.workDays && item.workDays.length > 0 ? item.workDays : [1, 2, 3, 4, 5]);
       setItemType(item.type || 'expense');
     } else {
       setEditingItem(null);
@@ -99,6 +101,7 @@ export const BudgetPlanningPage: React.FC = () => {
       setItemFrequency('month');
       setItemDueDay('');
       setUseWorkSchedule(false);
+      setWorkDaySelection([1, 2, 3, 4, 5]);
       setItemType('expense');
     }
     setNewCategoryName('');
@@ -138,6 +141,7 @@ export const BudgetPlanningPage: React.FC = () => {
       frequency: itemFrequency,
       dueDay: itemDueDay ? parseInt(itemDueDay, 10) : undefined,
       useWorkSchedule: useWorkSchedule,
+      workDays: (useWorkSchedule && itemFrequency === 'day') ? workDaySelection : undefined,
       type: itemType,
       active: editingItem ? editingItem.active : true,
     };
@@ -638,13 +642,12 @@ export const BudgetPlanningPage: React.FC = () => {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <Input 
+            <CalcInput 
               label="Amount" 
-              type="number" 
               value={itemAmount} 
-              onChange={(e) => setItemAmount(e.target.value)} 
+              onChange={setItemAmount} 
+              currencySymbol="₱"
               placeholder="0.00"
-              leftIcon={<span className="font-bold text-[var(--text-muted)]">₱</span>}
             />
             <Select 
               label="Frequency" 
@@ -672,17 +675,30 @@ export const BudgetPlanningPage: React.FC = () => {
           )}
 
           {itemFrequency === 'day' && (
-            <div className="flex items-center gap-3 mt-2 p-3 bg-[var(--item-bg)] rounded-xl border border-[var(--card-border)]">
-              <button 
-                onClick={() => setUseWorkSchedule(!useWorkSchedule)}
-                className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${useWorkSchedule ? 'bg-midblue border-midblue text-white' : 'border-[var(--text-muted)]'}`}
-              >
-                {useWorkSchedule && <Icon name="CheckIcon" className="w-3 h-3" />}
-              </button>
-              <div className="text-xs">
-                <p className="font-bold text-[var(--text-main)]">Use Work Schedule</p>
-                <p className="text-[var(--text-muted)]">Only calculate for {workDays} days per week instead of every day.</p>
+            <div className="space-y-3 mt-2 p-3 bg-[var(--item-bg)] rounded-xl border border-[var(--card-border)]">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUseWorkSchedule(!useWorkSchedule)}
+                  className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${useWorkSchedule ? 'bg-midblue border-midblue text-white' : 'border-[var(--text-muted)]'}`}
+                >
+                  {useWorkSchedule && <Icon name="CheckIcon" className="w-3 h-3" />}
+                </button>
+                <div className="text-xs">
+                  <p className="font-bold text-[var(--text-main)]">Use Work Schedule</p>
+                  <p className="text-[var(--text-muted)]">
+                    {useWorkSchedule
+                      ? `Calculate for ${workDaySelection.length} selected day${workDaySelection.length !== 1 ? 's' : ''} per week.`
+                      : 'Calculate for every day instead of work days only.'}
+                  </p>
+                </div>
               </div>
+              {useWorkSchedule && (
+                <DayPicker
+                  selected={workDaySelection}
+                  onChange={setWorkDaySelection}
+                />
+              )}
             </div>
           )}
 

@@ -14,7 +14,10 @@ export const budgetEngine = {
     switch (item.frequency) {
       case 'day':
         if (item.useWorkSchedule) {
-          return Math.round(amount * workDaysPerWeek * 4);
+          const daysCount = (item.workDays && item.workDays.length > 0)
+            ? item.workDays.length
+            : workDaysPerWeek;
+          return Math.round(amount * daysCount * 4);
         }
         return Math.round(amount * 30);
       case 'week':

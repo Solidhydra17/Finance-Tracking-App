@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWalletStore, useUIStore, useTransactionStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
-import { Modal, Input, Button, Icon } from '@/components/ui';
+import { Modal, Input, CalcInput, Button, Icon } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
 import type { WalletAccount } from '@/types';
 
@@ -129,16 +129,13 @@ export const FundTransferModal: React.FC = () => {
                     </div>
                 </div>
 
-                <Input
+                <CalcInput
                     label="Amount"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
                     value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
+                    onChange={setTransferAmount}
+                    currencySymbol={currencySymbol}
                     placeholder="0.00"
                     required
-                    leftIcon={<span className="text-[var(--text-muted)] font-bold px-3">{currencySymbol}</span>}
                 />
 
                 <Input

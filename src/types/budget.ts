@@ -24,6 +24,7 @@ export interface BudgetItem {
   amountCents: number;
   frequency: BudgetItemFrequency;
   useWorkSchedule: boolean;
+  workDays?: number[];
   type: BudgetItemType;
   dueDay?: number;
   active: boolean;

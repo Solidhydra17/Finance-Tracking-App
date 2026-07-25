@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input, TextArea, Button, Icon } from '@/components/ui';
+import { CalcInput, Input, TextArea, Button, Icon } from '@/components/ui';
 import { useLoanStore, useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, formatCurrency } from '@/lib/money';
@@ -117,15 +117,11 @@ export const AddLoanPage: React.FC = () => {
                     </div>
 
                     <div className="bg-[var(--card-bg)] rounded-3xl p-6 shadow-soft space-y-6 border border-[var(--card-border)]">
-                        <Input
+                        <CalcInput
                             label="Amount"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
                             value={amountDisplay}
-                            onChange={(e) => setAmountDisplay(e.target.value)}
-                            leftIcon={<Icon name="BanknotesIcon" className="w-6 h-6 text-[var(--text-muted)]" />}
+                            onChange={setAmountDisplay}
+                            placeholder="0.00"
                             required
                             className="text-3xl font-bold text-[var(--text-main)]"
                         />
