@@ -371,7 +371,7 @@ export const SettingsPage: React.FC = () => {
         <CardBody>
           <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest mb-3">About</h3>
           <p className="text-sm text-[var(--text-main)] font-bold">
-            Finance Tracker v1.0.1
+            Finance Tracker v1.0.2
           </p>
           <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
             Offline-first personal finance management
