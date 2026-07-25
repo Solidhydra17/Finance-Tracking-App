@@ -98,9 +98,16 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
     self.skipWaiting();
   }
 
+  if (event.data?.type === 'CHECK_REMINDERS') {
+    checkAndFireDueReminders();
+  }
+
   if (event.data?.type === 'SCHEDULE_REMINDERS') {
     scheduledReminders = (event.data.reminders as Reminder[]) || [];
     console.log(`[SW] Scheduled ${scheduledReminders.length} reminders`);
+
+    // Run a check immediately just in case a reminder is due exactly now
+    checkAndFireDueReminders();
 
     // ─── Experimental Notification Triggers API (Android Chrome) ────────────
     // This allows scheduling notifications when the app is completely closed.
