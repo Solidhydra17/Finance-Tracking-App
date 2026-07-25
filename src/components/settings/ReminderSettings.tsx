@@ -7,11 +7,13 @@ import {
   requestNotificationPermission,
   sendRemindersToSW,
 } from '@/lib/notifications';
+import { useUIStore } from '@/store';
 
 const DAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function PermissionRow() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const devOptionsVisible = useUIStore((state) => state.devOptionsVisible);
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -67,12 +69,14 @@ function PermissionRow() {
             Notifications are enabled
           </p>
         </div>
-        <button
-          onClick={handleTest}
-          className="text-xs font-bold text-success-600 dark:text-success-400 bg-success-500/20 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-        >
-          Test
-        </button>
+        {devOptionsVisible && (
+          <button
+            onClick={handleTest}
+            className="text-xs font-bold text-success-600 dark:text-success-400 bg-success-500/20 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+          >
+            Test
+          </button>
+        )}
       </div>
     );
   }
