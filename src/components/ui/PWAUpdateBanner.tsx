@@ -1,14 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 declare const __APP_VERSION__: string;
 
-/**
- * PWA Update Banner (Bottom Sheet Style)
- * Appears when a new service worker is available.
- * Displays current app version, and gives options to update immediately, later,
- * or auto-updates after 5 seconds with a visible countdown.
- */
 export const PWAUpdateBanner: React.FC = () => {
     const [countdown, setCountdown] = useState(5);
 
@@ -17,53 +11,69 @@ export const PWAUpdateBanner: React.FC = () => {
         updateServiceWorker,
     } = useRegisterSW({
         onRegisteredSW(swUrl, registration) {
-            // Periodically check for SW updates every 60 minutes
-            if (registration) {
-                setInterval(() => {
-                    registration.update();
-                }, 60 * 60 * 1000);
-            }
+            if (!registration) return;
             console.log(`[PWA] SW registered: ${swUrl}`);
+
+            // Check for updates every 15 minutes (instead of 60)
+            setInterval(() => {
+                registration.update();
+            }, 15 * 60 * 1000);
+
+            // Check for updates every time the user comes back to the tab
+            const handleVisibilityChange = () => {
+                if (document.visibilityState === 'visible') {
+                    registration.update();
+                }
+            };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+
+            // Also check when the window regains focus (e.g. switching back from another app)
+            const handleFocus = () => {
+                registration.update();
+            };
+            window.addEventListener('focus', handleFocus);
         },
         onRegisterError(error) {
             console.error("[PWA] SW registration error:", error);
         },
     });
 
+    // When the user clicks Update Now or the countdown hits 0,
+    // call skipWaiting then force a hard reload so the new SW takes control
+    const applyUpdate = useCallback(() => {
+        updateServiceWorker(true);
+        // Force reload after a short delay to ensure the SW has activated
+        setTimeout(() => {
+            window.location.reload();
+        }, 400);
+    }, [updateServiceWorker]);
+
     const isVisible = needRefresh;
 
+    // Auto-update countdown
     useEffect(() => {
         if (!isVisible) return;
 
-        setCountdown(5); // Reset countdown whenever it becomes visible
+        setCountdown(5);
 
         const timer = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    updateServiceWorker(true);
+                    applyUpdate();
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
 
-        return () => {
-            clearInterval(timer);
-        };
-    }, [isVisible, updateServiceWorker]);
+        return () => clearInterval(timer);
+    }, [isVisible, applyUpdate]);
 
     if (!isVisible) return null;
 
-    const currentVersion = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.0.0";
-
-    const handleUpdateNow = () => {
-        updateServiceWorker(true);
-    };
-
-    const handleLater = () => {
-        setNeedRefresh(false);
-    };
+    const currentVersion =
+        typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.0.0";
 
     return (
         <div
@@ -72,13 +82,12 @@ export const PWAUpdateBanner: React.FC = () => {
         >
             <div className="flex flex-col gap-3 p-4 rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
                 <div className="flex items-start gap-3">
-                    {/* Refresh icon */}
-                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-500/10 dark:bg-primary-500/20 flex items-center justify-center mt-0.5">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-midblue/10 flex items-center justify-center mt-0.5">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20"
                             fill="currentColor"
-                            className="w-5 h-5 text-primary-500 animate-spin-slow"
+                            className="w-5 h-5 text-midblue animate-spin-slow"
                         >
                             <path
                                 fillRule="evenodd"
@@ -88,33 +97,31 @@ export const PWAUpdateBanner: React.FC = () => {
                         </svg>
                     </div>
 
-                    {/* Text */}
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-[var(--text-main)]">
                             Update Available
                         </p>
                         <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">
-                            A new version is available. You are currently on v{currentVersion}.
+                            A new version of KURIPOT is ready. You are on v{currentVersion}.
                         </p>
-                        <p className="text-[10px] text-primary-500 font-bold mt-1.5">
-                            Updating in {countdown}...
+                        <p className="text-[10px] text-midblue font-bold mt-1.5">
+                            Updating in {countdown}s...
                         </p>
                     </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2 justify-end pt-1 border-t border-[var(--card-border)]/50 mt-1">
                     <button
                         id="pwa-dismiss-btn"
-                        onClick={handleLater}
+                        onClick={() => setNeedRefresh(false)}
                         className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors px-4 py-2 rounded-xl bg-transparent active:scale-95"
                     >
                         Later
                     </button>
                     <button
                         id="pwa-reload-btn"
-                        onClick={handleUpdateNow}
-                        className="text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 active:scale-95 px-5 py-2.5 rounded-xl transition-all shadow-md shadow-primary-500/10"
+                        onClick={applyUpdate}
+                        className="text-xs font-bold text-white bg-midblue hover:bg-midblue/90 active:scale-95 px-5 py-2.5 rounded-xl transition-all shadow-md shadow-midblue/20"
                     >
                         Update Now
                     </button>
