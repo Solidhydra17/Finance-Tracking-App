@@ -163,7 +163,7 @@ export const AddTransactionPage: React.FC = () => {
         return;
       }
 
-      if (!walletAccountId && !isRecurring) {
+      if (!walletAccountId) {
         addToast('warning', 'Please select a wallet account');
         return;
       }
@@ -190,6 +190,7 @@ export const AddTransactionPage: React.FC = () => {
       } else if (isRecurring) {
         // const { recurringRepository } = await import('@/storage/indexeddb');
         const startDate = new Date(date);
+        // TODO: recurring rules do not store a wallet; wallet is set when the transaction is materialized
         await recurringRepository.create({
           type,
           amount,
@@ -410,32 +411,30 @@ export const AddTransactionPage: React.FC = () => {
             )}
 
             {/* Wallet Selection */}
-            {!isRecurring && (
-                <div id="field-wallet" className="space-y-2">
-                    <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
-                        Wallet Account
-                    </label>
-                    <div className="relative">
-                        <select
-                            value={walletAccountId}
-                            onChange={(e) => setWalletAccountId(Number(e.target.value))}
-                            required
-                            disabled={isConfiguringRecurring}
-                            className={`w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            <option value="" disabled>Select Wallet...</option>
-                            {accounts.map(account => (
-                                <option key={account.id} value={account.id}>
-                                    {account.name} ({formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
-                        </div>
+            <div id="field-wallet" className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
+                    Wallet Account
+                </label>
+                <div className="relative">
+                    <select
+                        value={walletAccountId}
+                        onChange={(e) => setWalletAccountId(Number(e.target.value))}
+                        required
+                        disabled={isConfiguringRecurring}
+                        className={`w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <option value="" disabled>Select Wallet...</option>
+                        {accounts.map(account => (
+                            <option key={account.id} value={account.id}>
+                                {account.name} ({formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})
+                            </option>
+                        ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* Custom Category Picker Trigger */}
             <div id="field-category" className="space-y-2">
