@@ -46,7 +46,29 @@ export const SettingsPage: React.FC = () => {
   const resetTimer = useRef<any>(null);
   const [devCountdown, setDevCountdown] = useState<number | null>(null);
 
-  const widgetsSupported = typeof navigator !== 'undefined' && 'widgets' in navigator;
+  // Widget support is detected asynchronously via a message from the Service Worker.
+  // 'widgets' in self (SW scope) is the correct check — NOT 'widgets' in navigator.
+  // Currently only Microsoft Edge on Windows 11 supports this API.
+  const [widgetsSupported, setWidgetsSupported] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) {
+      setWidgetsSupported(false);
+      return;
+    }
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'WIDGET_SUPPORT') {
+        setWidgetsSupported(event.data.supported as boolean);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    // Ask the currently active SW directly
+    const sw = navigator.serviceWorker.controller;
+    if (sw) {
+      sw.postMessage({ type: 'CHECK_WIDGET_SUPPORT' });
+    }
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, []);
 
   const resetAllStores = () => {
     useTransactionStore.setState({
@@ -324,7 +346,9 @@ export const SettingsPage: React.FC = () => {
           <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">
             Home Screen Widget
           </h3>
-          {widgetsSupported ? (
+          {widgetsSupported === null ? (
+            <p className="text-xs text-[var(--text-muted)]">Checking widget support...</p>
+          ) : widgetsSupported ? (
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-midblue/10 flex items-center justify-center shrink-0 mt-0.5">
                 <Icon name="DevicePhoneMobileIcon" className="w-5 h-5 text-midblue" />
@@ -349,9 +373,12 @@ export const SettingsPage: React.FC = () => {
                   Home Screen Widgets
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
-                  Widgets are available on Chrome for Android with experimental
-                  web features enabled. This will appear automatically when your
-                  browser supports it.
+                  Widget support requires Microsoft Edge on Windows 11.
+                  This card will update automatically if your browser gains support.
+                </p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                  Currently supported in Microsoft Edge on Windows 11 only.
+                  Chrome and Android support is not yet available.
                 </p>
                 <p className="text-[10px] text-midblue font-bold mt-2">
                   COMING TO YOUR BROWSER SOON

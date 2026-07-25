@@ -1,6 +1,7 @@
 {
   "type": "AdaptiveCard",
   "version": "1.5",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
   "body": [
     {
       "type": "TextBlock",
@@ -11,11 +12,17 @@
     },
     {
       "type": "TextBlock",
-      "text": "{{currency}}{{totalBalance}}",
+      "text": "${currency}${totalBalance}",
       "size": "ExtraLarge",
       "weight": "Bolder",
-      "color": "Light"
+      "spacing": "None"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Tap to open KURIPOT",
+      "size": "Small",
+      "color": "Good",
+      "spacing": "Small"
     }
-  ],
-  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json"
+  ]
 }

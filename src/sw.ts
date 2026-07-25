@@ -33,12 +33,31 @@ self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event: any) => {
   // claim() makes this SW take control of all tabs immediately after activation.
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      // Update any already-installed widgets after SW update
+      (async () => {
+        const widgetsApi = (self as any).widgets;
+        if (!widgetsApi) return;
+        const walletWidget = await widgetsApi.getByTag('kuripot-wallet-widget');
+        if (walletWidget) await renderWidget(walletWidget);
+        const quickWidget = await widgetsApi.getByTag('kuripot-quickadd-widget');
+        if (quickWidget) await renderWidget(quickWidget);
+      })()
+    ]).then(() => {
+      // Notify all open clients whether widgets are supported in this SW context
+      self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'WIDGET_SUPPORT', supported: 'widgets' in self });
+        });
+      });
+    })
+  );
 
   // Check reminders every minute while the SW is active.
-  // Moved here from the fetch handler to avoid unnecessary overhead on every request.
   setInterval(() => {
     checkAndFireDueReminders();
   }, 60 * 1000);
@@ -168,25 +187,38 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
     }
   }
 
-  // Receive wallet data from the app and push it to the widget
+  // Reply to CHECK_WIDGET_SUPPORT — lets the Settings page know whether
+  // the Widgets API (self.widgets) exists in this SW context.
+  // NOTE: self.widgets exists only in Microsoft Edge on Windows 11 (2026).
+  // It does NOT exist in Chrome on any platform.
+  if (event.data?.type === 'CHECK_WIDGET_SUPPORT') {
+    const client = event.source as WindowClient;
+    if (client) {
+      client.postMessage({ type: 'WIDGET_SUPPORT', supported: 'widgets' in self });
+    }
+  }
+
+  // Receive wallet data from the app and push it to the widget with correct payload
   if (event.data?.type === 'WIDGET_DATA_RESPONSE') {
     const { widgetTag, data } = event.data as {
       widgetTag: string;
       data: Record<string, unknown>;
     };
-    const widgetsApi = (self as unknown as Record<string, unknown>)['widgets'];
-    if (widgetsApi && typeof widgetsApi === 'object') {
-      const api = widgetsApi as {
-        getByTag: (tag: string) => Promise<WidgetInstance | null>;
-        updateByTag: (tag: string, payload: { data: string }) => Promise<void>;
-      };
-      event.waitUntil(
-        api.getByTag(widgetTag).then((widget) => {
-          if (widget) {
-            return api.updateByTag(widgetTag, { data: JSON.stringify(data) });
-          }
-        })
-      );
+    const widgetsApi = (self as any).widgets;
+    if (widgetsApi) {
+      event.waitUntil((async () => {
+        const widget = await widgetsApi.getByTag(widgetTag);
+        if (widget) {
+          const templateUrl = widget.definition?.msAcTemplate;
+          const template = templateUrl
+            ? await fetch(templateUrl).then((r: Response) => r.text())
+            : '{"type":"AdaptiveCard","version":"1.5","body":[]}';
+          await widgetsApi.updateByTag(widgetTag, {
+            template,
+            data: JSON.stringify(data)
+          });
+        }
+      })());
     }
   }
 });
@@ -223,39 +255,40 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // WIDGET API — experimental / progressive
-// iOS (Safari) does not support the Web Widgets API as of 2026.
+// The Widgets API (self.widgets) is implemented ONLY in Microsoft Edge on Windows 11.
+// It does NOT exist in Chrome on any platform.
+// iOS (Safari) does not support it either.
 // This implementation is progressive: the app works fully without it.
-// For production widget support on Android, the manifest widgets key
-// needs to be served over HTTPS (already satisfied by kuripot.onrender.com).
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-interface WidgetInstance {
-  tag: string;
-  id: string;
-}
+/**
+ * Renders a widget by fetching its Adaptive Card template and current data,
+ * then calling widgets.updateByTag with both template + data.
+ * The payload must include BOTH strings — data alone is not sufficient.
+ */
+async function renderWidget(widget: any) {
+  const templateUrl = widget.definition?.msAcTemplate;
+  const dataUrl = widget.definition?.data;
 
-interface WidgetEvent extends ExtendableEvent {
-  widget: WidgetInstance;
-}
+  if (!templateUrl) return;
 
-async function updateWidgetData(widget: WidgetInstance) {
-  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-  for (const client of clients) {
-    client.postMessage({
-      type: 'WIDGET_DATA_REQUEST',
-      widgetTag: widget.tag,
-    });
+  const template = await fetch(templateUrl).then((r: Response) => r.text());
+  const data = dataUrl
+    ? await fetch(dataUrl).then((r: Response) => r.text())
+    : JSON.stringify({ totalBalance: '0.00', currency: '₱', accounts: [] });
+
+  const widgetsApi = (self as any).widgets;
+  if (widgetsApi) {
+    await widgetsApi.updateByTag(widget.definition.tag, { template, data });
   }
 }
 
-self.addEventListener('widgetinstall', (event: Event) => {
-  const e = event as unknown as WidgetEvent;
-  e.waitUntil(updateWidgetData(e.widget));
+self.addEventListener('widgetinstall', (event: any) => {
+  event.waitUntil(renderWidget(event.widget));
 });
 
-self.addEventListener('widgetresume', (event: Event) => {
-  const e = event as unknown as WidgetEvent;
-  e.waitUntil(updateWidgetData(e.widget));
+self.addEventListener('widgetresume', (event: any) => {
+  event.waitUntil(renderWidget(event.widget));
 });
 
 self.addEventListener('widgetuninstall', (_event: Event) => {
