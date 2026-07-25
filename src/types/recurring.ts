@@ -1,4 +1,4 @@
-export type RecurringFrequency = 'weekly' | 'bi-weekly' | 'monthly';
+export type RecurringFrequency = 'weekly' | 'bi-weekly' | 'monthly' | 'custom-days';
 
 export interface RecurringRule {
   id?: number;
@@ -8,6 +8,7 @@ export interface RecurringRule {
   frequency: RecurringFrequency;
   dayOfWeek: number | null; // 0-6 for weekly
   dayOfMonth: number | null; // 1-31 for monthly
+  selectedDays?: number[];
   startDate: string; // ISO date string
   endDate: string | null; // ISO date string, null if indefinite
   lastGeneratedDate: string | null; // Track materialization
@@ -23,6 +24,7 @@ export interface RecurringRuleCreate {
   frequency: RecurringFrequency;
   dayOfWeek: number | null;
   dayOfMonth: number | null;
+  selectedDays?: number[];
   startDate: string;
   endDate: string | null;
   lastGeneratedDate: string | null;

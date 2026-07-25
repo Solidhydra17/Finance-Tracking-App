@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Input, TextArea, Button, Icon, Modal, AVAILABLE_ICONS } from '@/components/ui';
+import { CalcInput, Input, DayPicker, TextArea, Button, Icon, Modal, AVAILABLE_ICONS } from '@/components/ui';
 import { useCategories, useTransactions } from '@/hooks';
 import { useUIStore, useWalletStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -104,6 +104,9 @@ export const AddTransactionPage: React.FC = () => {
               setCategoryId(rule.categoryId);
               setNote(rule.description);
               setFrequency(rule.frequency);
+              if (rule.selectedDays && rule.selectedDays.length > 0) {
+                setCustomDaySelection(rule.selectedDays);
+              }
               setIsRecurring(true);
             }
         } catch (error) {
@@ -141,7 +144,8 @@ export const AddTransactionPage: React.FC = () => {
   };
 
   const [isRecurring, setIsRecurring] = useState(false);
-  const [frequency, setFrequency] = useState<'weekly' | 'bi-weekly' | 'monthly'>('monthly');
+  const [frequency, setFrequency] = useState<'weekly' | 'bi-weekly' | 'monthly' | 'custom-days'>('monthly');
+  const [customDaySelection, setCustomDaySelection] = useState<number[]>([1, 2, 3, 4, 5]); // Mon–Fri default
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,6 +197,7 @@ export const AddTransactionPage: React.FC = () => {
           frequency,
           dayOfWeek: (frequency === 'weekly' || frequency === 'bi-weekly') ? startDate.getDay() : null,
           dayOfMonth: frequency === 'monthly' ? startDate.getDate() : null,
+          selectedDays: frequency === 'custom-days' ? customDaySelection : undefined,
           startDate: date,
           endDate: null,
           description: note || 'Recurring Transaction',
@@ -309,15 +314,12 @@ export const AddTransactionPage: React.FC = () => {
           </div>
 
           <div id="section-form-fields" className="bg-[var(--card-bg)] rounded-3xl p-6 shadow-soft space-y-6 border border-[var(--card-border)]">
-            <Input
+            <CalcInput
               label="Amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
               value={amountDisplay}
-              onChange={(e) => setAmountDisplay(e.target.value)}
-              leftIcon={<Icon name="BanknotesIcon" className="w-6 h-6 text-[var(--text-muted)]" />}
+              onChange={setAmountDisplay}
+              currencySymbol={currencySymbol}
+              placeholder="0.00"
               required
               className="text-3xl font-bold text-[var(--text-main)]"
             />
@@ -383,7 +385,27 @@ export const AddTransactionPage: React.FC = () => {
                         >
                             Monthly
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setFrequency('custom-days')}
+                          disabled={!!recurringRuleId && !isConfiguringRecurring}
+                          className={`flex-1 min-w-[100px] py-3 rounded-xl font-bold border-2 transition-all ${
+                            frequency === 'custom-days' ? 'border-midblue bg-midblue/5 text-midblue' : 'border-transparent bg-[var(--item-bg)] text-[var(--text-muted)]'
+                          } ${(!!recurringRuleId && !isConfiguringRecurring) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          Custom Days
+                        </button>
                     </div>
+                    
+                    {frequency === 'custom-days' && (
+                      <div className="pt-2">
+                        <DayPicker
+                          label="Select Days"
+                          selected={customDaySelection}
+                          onChange={setCustomDaySelection}
+                        />
+                      </div>
+                    )}
                 </div>
             )}
 
@@ -550,7 +572,8 @@ export const AddTransactionPage: React.FC = () => {
                   await recurringRepository.update(recurringRuleId!, {
                     amount,
                     frequency,
-                    description: note
+                    description: note,
+                    selectedDays: frequency === 'custom-days' ? customDaySelection : undefined,
                   });
                   addToast('success', 'Recurring settings updated');
                   setIsConfiguringRecurring(false);

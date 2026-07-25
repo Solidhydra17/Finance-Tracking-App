@@ -32,7 +32,8 @@ export const recurringMaterializer = {
         rule.dayOfWeek,
         rule.dayOfMonth,
         new Date(checkStartStr),
-        today
+        today,
+        rule.selectedDays
       );
 
       // Filter out dates that have already been generated

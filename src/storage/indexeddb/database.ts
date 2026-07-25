@@ -122,6 +122,13 @@ export class FinanceDatabase extends Dexie {
     });
     this.version(14).stores(schemaV13); // ecash + fund_transfer — no schema index changes needed
 
+    const schemaV15 = {
+      ...schemaV13,
+      recurringRules: '++id, type, frequency, startDate, endDate, *selectedDays',
+      budgetItems: '++id, type, active, categoryId, *workDays',
+    };
+    this.version(15).stores(schemaV15);
+
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');
     });

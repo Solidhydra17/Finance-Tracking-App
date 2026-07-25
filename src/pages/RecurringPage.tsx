@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Modal } from '@/components/ui/Modal';
-import { Input, Button, Icon } from '@/components/ui';
+import { CalcInput, Input, DayPicker, Modal, Button, Icon } from '@/components/ui';
 import { useRecurring } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents, centsToDisplay } from '@/lib/money';
@@ -14,6 +13,7 @@ export const RecurringPage: React.FC = () => {
   const [amountDisplay, setAmountDisplay] = useState('');
   const [categoryId, setCategoryId] = useState<number>(0);
   const [frequency, setFrequency] = useState<RecurringFrequency>('monthly');
+  const [customDaySelection, setCustomDaySelection] = useState<number[]>([1, 2, 3, 4, 5]);
   const [dayOfMonth] = useState<number>(1);
   const [dayOfWeek] = useState<number>(1);
   const [startDate] = useState(new Date().toISOString().split('T')[0]);
@@ -39,6 +39,7 @@ export const RecurringPage: React.FC = () => {
         frequency,
         dayOfWeek: frequency === 'weekly' ? dayOfWeek : null,
         dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
+        selectedDays: frequency === 'custom-days' ? customDaySelection : undefined,
         startDate,
         endDate: null,
         description,
@@ -55,6 +56,7 @@ export const RecurringPage: React.FC = () => {
     setAmountDisplay('');
     setCategoryId(0);
     setDescription('');
+    setCustomDaySelection([1, 2, 3, 4, 5]);
   };
 
   if (isLoading) {
@@ -160,15 +162,11 @@ export const RecurringPage: React.FC = () => {
             </button>
           </div>
 
-          <Input
+          <CalcInput
             label="Amount"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
             value={amountDisplay}
-            onChange={(e) => setAmountDisplay(e.target.value)}
-            leftIcon={<Icon name="CurrencyDollarIcon" className="w-5 h-5 text-gray-400" />}
+            onChange={setAmountDisplay}
+            placeholder="0.00"
             required
           />
 
@@ -201,7 +199,24 @@ export const RecurringPage: React.FC = () => {
             >
               Monthly
             </button>
+            <button
+              type="button"
+              onClick={() => setFrequency('custom-days')}
+              className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+                frequency === 'custom-days' ? 'bg-midblue text-white' : 'bg-[var(--item-bg)] text-[var(--text-muted)]'
+              }`}
+            >
+              Custom Days
+            </button>
           </div>
+
+          {frequency === 'custom-days' && (
+            <DayPicker
+              label="Select Days"
+              selected={customDaySelection}
+              onChange={setCustomDaySelection}
+            />
+          )}
 
           <Input
             label="Description"

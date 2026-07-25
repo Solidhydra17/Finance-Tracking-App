@@ -47,7 +47,8 @@ export const recurringEngine = {
         rule.dayOfWeek,
         rule.dayOfMonth,
         effectiveStart,
-        effectiveEnd
+        effectiveEnd,
+        rule.selectedDays
       );
 
       for (const date of generatedDates) {
@@ -68,16 +69,25 @@ export const recurringEngine = {
   },
 
   generateDates(
-    frequency: 'weekly' | 'bi-weekly' | 'monthly',
+    frequency: 'weekly' | 'bi-weekly' | 'monthly' | 'custom-days',
     dayOfWeek: number | null,
     dayOfMonth: number | null,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    selectedDays?: number[]
   ): string[] {
     const dates: string[] = [];
     const current = new Date(startDate);
 
-    if ((frequency === 'weekly' || frequency === 'bi-weekly') && dayOfWeek !== null) {
+    if (frequency === 'custom-days' && selectedDays && selectedDays.length > 0) {
+      const cur = new Date(startDate);
+      while (cur <= endDate) {
+        if (selectedDays.includes(cur.getDay())) {
+          dates.push(formatDateLocal(cur));
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    } else if ((frequency === 'weekly' || frequency === 'bi-weekly') && dayOfWeek !== null) {
       // Find the first occurrence of the day of week
       while (current.getDay() !== dayOfWeek) {
         current.setDate(current.getDate() + 1);
