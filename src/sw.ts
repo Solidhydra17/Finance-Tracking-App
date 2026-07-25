@@ -1,10 +1,21 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 
 declare const self: ServiceWorkerGlobalScope;
 
 // Workbox precache injection point
 precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches();
+
+// SPA navigation fallback
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (event.request.mode === 'navigate' && !url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      caches.match('/index.html').then((r) => r ?? fetch(event.request))
+    );
+  }
+});
 
 // ─── Declarations for Experimental APIs ───────────────────────────────────────
 declare var TimestampTrigger: any;
@@ -173,4 +184,67 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
         return self.clients.openWindow(urlToOpen);
       })
   );
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// WIDGET API — experimental / progressive
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Type declarations for the experimental Widgets API
+interface WidgetInstance {
+  tag: string;
+  id: string;
+}
+
+interface WidgetEvent extends ExtendableEvent {
+  widget: WidgetInstance;
+}
+
+// Ask the app to send fresh wallet data, then update the widget
+async function updateWidgetData(widget: WidgetInstance) {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const client of clients) {
+    client.postMessage({
+      type: 'WIDGET_DATA_REQUEST',
+      widgetTag: widget.tag,
+    });
+  }
+}
+
+self.addEventListener('widgetinstall', (event: Event) => {
+  const e = event as unknown as WidgetEvent;
+  e.waitUntil(updateWidgetData(e.widget));
+});
+
+self.addEventListener('widgetresume', (event: Event) => {
+  const e = event as unknown as WidgetEvent;
+  e.waitUntil(updateWidgetData(e.widget));
+});
+
+self.addEventListener('widgetuninstall', (_event: Event) => {
+  // Nothing to clean up for now
+});
+
+// Receive wallet data from the app and push it to the widget
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if (event.data?.type === 'WIDGET_DATA_RESPONSE') {
+    const { widgetTag, data } = event.data as {
+      widgetTag: string;
+      data: Record<string, unknown>;
+    };
+    const widgetsApi = (self as unknown as Record<string, unknown>)['widgets'];
+    if (widgetsApi && typeof widgetsApi === 'object') {
+      const api = widgetsApi as {
+        getByTag: (tag: string) => Promise<WidgetInstance | null>;
+        updateByTag: (tag: string, payload: { data: string }) => Promise<void>;
+      };
+      event.waitUntil(
+        api.getByTag(widgetTag).then((widget) => {
+          if (widget) {
+            return api.updateByTag(widgetTag, { data: JSON.stringify(data) });
+          }
+        })
+      );
+    }
+  }
 });

@@ -10,6 +10,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { AddTransactionPage } from "@/pages/AddTransactionPage";
 import { AddLoanPage } from "@/pages/AddLoanPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
+import { walletService } from '@/domain/wallet/walletService';
 
 export const App: React.FC = () => {
     useEffect(() => {
@@ -77,6 +78,55 @@ export const App: React.FC = () => {
         }, 15000); // Check every 15 seconds
 
         return () => clearInterval(foregroundCheckInterval);
+    }, []);
+
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) return;
+
+        const handleSWMessage = async (event: MessageEvent) => {
+            if (event.data?.type !== 'WIDGET_DATA_REQUEST') return;
+            const widgetTag = event.data.widgetTag as string;
+
+            try {
+                const [accounts, totals] = await Promise.all([
+                    walletService.getAllAccounts(),
+                    walletService.getTotals(),
+                ]);
+
+                // Balances are stored in integer cents — divide by 100 for display
+                const widgetData = {
+                    totalBalance: (totals.totalWalletBalance / 100).toFixed(2),
+                    currency: '₱',
+                    accounts: accounts.map((a) => ({
+                        name: a.name,
+                        type: a.type.toUpperCase(),
+                        // For credit accounts show available credit; otherwise show balance
+                        balance: a.type === 'credit'
+                            ? (((a.creditLimit ?? 0) - Math.max(0, a.balance)) / 100).toFixed(2)
+                            : (a.balance / 100).toFixed(2),
+                    })),
+                };
+
+                // Post the response back to the service worker
+                // NOTE: Use navigator.serviceWorker.controller (not event.source)
+                // because event.source is null for SW→client messages
+                const sw = navigator.serviceWorker.controller;
+                if (sw) {
+                    sw.postMessage({
+                        type: 'WIDGET_DATA_RESPONSE',
+                        widgetTag,
+                        data: widgetData,
+                    });
+                }
+            } catch (err) {
+                console.warn('[Widget] Failed to fetch wallet data for widget:', err);
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', handleSWMessage);
+        return () => {
+            navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+        };
     }, []);
 
     return (

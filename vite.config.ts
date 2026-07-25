@@ -57,6 +57,36 @@ export default defineConfig({
                         purpose: "maskable",
                     },
                 ],
+                widgets: [
+                    {
+                        name: "KURIPOT Wallet",
+                        short_name: "Wallet",
+                        description: "Your total balance and account breakdown",
+                        tag: "kuripot-wallet-widget",
+                        template: "widget-wallet.html",
+                        ms_ac_template: "widget-wallet.json",
+                        data: "/widget-data.json",
+                        type: "application/json",
+                        screenshots: [{ src: "logo192.png", sizes: "192x192", label: "Wallet Widget" }],
+                        icons: [{ src: "logo192.png", sizes: "192x192" }],
+                        auth: false,
+                        update: "86400"
+                    },
+                    {
+                        name: "KURIPOT Quick Add",
+                        short_name: "Quick Add",
+                        description: "Log income or expense directly from your home screen",
+                        tag: "kuripot-quickadd-widget",
+                        template: "widget-quickadd.html",
+                        ms_ac_template: "widget-quickadd.json",
+                        data: "/widget-data.json",
+                        type: "application/json",
+                        screenshots: [{ src: "logo192.png", sizes: "192x192", label: "Quick Add Widget" }],
+                        icons: [{ src: "logo192.png", sizes: "192x192" }],
+                        auth: false,
+                        update: "3600"
+                    }
+                ]
             },
             // Don't generate SW inside Capacitor native builds
             devOptions: {

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1729;
+      color: #fff;
+      padding: 16px;
+      border-radius: 20px;
+      min-height: 160px;
+    }
+    .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #285ccc;
+      margin-bottom: 4px;
+    }
+    .balance {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .accounts {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 4px;
+    }
+    .accounts::-webkit-scrollbar { display: none; }
+    .account-card {
+      flex-shrink: 0;
+      background: #1a2540;
+      border-radius: 12px;
+      padding: 10px 14px;
+      min-width: 110px;
+    }
+    .account-name { font-size: 11px; font-weight: 700; color: #a0aec0; }
+    .account-type {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #285ccc;
+      margin: 2px 0 4px;
+    }
+    .account-balance { font-size: 15px; font-weight: 800; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="label">KURIPOT · Total Balance</div>
+  <div class="balance">{{currency}}{{totalBalance}}</div>
+  <div class="accounts">
+    {{#accounts}}
+    <div class="account-card">
+      <div class="account-name">{{name}}</div>
+      <div class="account-type">{{type}}</div>
+      <div class="account-balance">{{currency}}{{balance}}</div>
+    </div>
+    {{/accounts}}
+  </div>
+</body>
+</html>

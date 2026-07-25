@@ -1,0 +1,28 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "KURIPOT · Quick Add",
+      "size": "Small",
+      "weight": "Bolder",
+      "color": "Accent"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "+ Income",
+      "url": "https://kuripot.onrender.com/add-transaction?type=income",
+      "style": "positive"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "− Expense",
+      "url": "https://kuripot.onrender.com/add-transaction?type=expense",
+      "style": "destructive"
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json"
+}
