@@ -3,13 +3,16 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const pkg = require("./package.json");
 
 export default defineConfig({
     define: {
-        __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "1.0.0"),
+        __APP_VERSION__: JSON.stringify(pkg.version),
     },
     plugins: [
         react(),
@@ -30,7 +33,9 @@ export default defineConfig({
                 ],
             },
             // Manifest — replaces public/manifest.json
-            manifest: {
+            // Cast to 'any' to allow the experimental 'widgets' field
+            // which is not yet part of vite-plugin-pwa's ManifestOptions type.
+            manifest: ({
                 name: "KURIPOT - Finance Tracker",
                 short_name: "KURIPOT",
                 description:
@@ -87,7 +92,7 @@ export default defineConfig({
                         update: "3600"
                     }
                 ]
-            },
+            } as any),
             // Don't generate SW inside Capacitor native builds
             devOptions: {
                 enabled: false,
