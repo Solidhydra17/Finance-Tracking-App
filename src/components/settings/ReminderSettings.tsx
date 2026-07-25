@@ -35,21 +35,47 @@ function PermissionRow() {
     );
   }
 
-  if (permission === 'granted') {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-success-500 shrink-0" />
-        <p className="text-xs text-[var(--text-muted)] font-medium">
-          Notifications are enabled
-        </p>
-      </div>
-    );
-  }
-
   const handleEnable = async () => {
     const result = await requestNotificationPermission();
     setPermission(result);
   };
+
+  const handleTest = () => {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SCHEDULE_REMINDERS',
+        reminders: [{
+          id: 'test',
+          label: 'Test Notification - it works!',
+          days: [0, 1, 2, 3, 4, 5, 6],
+          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+          enabled: true
+        }]
+      });
+      setTimeout(() => {
+        navigator.serviceWorker.controller?.postMessage({ type: 'CHECK_REMINDERS' });
+      }, 500);
+    }
+  };
+
+  if (permission === 'granted') {
+    return (
+      <div className="flex items-center justify-between p-3 bg-success-500/10 rounded-xl border border-success-500/20">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-success-500 shrink-0" />
+          <p className="text-xs text-[var(--text-main)] font-bold">
+            Notifications are enabled
+          </p>
+        </div>
+        <button
+          onClick={handleTest}
+          className="text-xs font-bold text-success-600 dark:text-success-400 bg-success-500/20 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+        >
+          Test
+        </button>
+      </div>
+    );
+  }
 
   return (
     <Button

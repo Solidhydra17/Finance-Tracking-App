@@ -31,6 +31,16 @@ export const App: React.FC = () => {
             }
         };
         syncReminders();
+
+        // Foreground reminder checker: ensures reminders fire reliably while the app is OPEN
+        // (Since fetch/sync events are not reliable enough for exact minute timing)
+        const foregroundCheckInterval = setInterval(() => {
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CHECK_REMINDERS' });
+            }
+        }, 30000); // Check every 30 seconds
+
+        return () => clearInterval(foregroundCheckInterval);
     }, []);
 
     return (
