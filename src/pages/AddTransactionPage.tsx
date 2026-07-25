@@ -8,6 +8,7 @@ import { displayToCents, formatCurrency } from '@/lib/money';
 import type { TransactionType } from '@/types';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { recurringRepository, categoryRepository } from '@/storage/indexeddb';
+import { db } from '@/storage/indexeddb/database';
 
 export const AddTransactionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -188,10 +189,8 @@ export const AddTransactionPage: React.FC = () => {
           note,
         });
       } else if (isRecurring) {
-        // const { recurringRepository } = await import('@/storage/indexeddb');
         const startDate = new Date(date);
-        // TODO: recurring rules do not store a wallet; wallet is set when the transaction is materialized
-        await recurringRepository.create({
+        const newRuleId = await recurringRepository.create({
           type,
           amount,
           categoryId,
@@ -201,11 +200,38 @@ export const AddTransactionPage: React.FC = () => {
           selectedDays: frequency === 'custom-days' ? customDaySelection : undefined,
           startDate: date,
           endDate: null,
+          lastGeneratedDate: null,
           description: note || 'Recurring Transaction',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         } as any);
-        addToast('success', 'Recurring rule created successfully');
+
+        // Immediately create a transaction for the startDate so it appears right away
+        await db.transactions.add({
+          type,
+          amount,
+          date,
+          categoryId,
+          walletAccountId: walletAccountId ? Number(walletAccountId) : undefined,
+          note: note || 'Recurring Transaction',
+          source: 'recurring' as const,
+          recurringRuleId: newRuleId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          deletedAt: null,
+        });
+
+        // Mark the startDate as generated so the materializer won't duplicate it
+        await db.recurringRules.update(newRuleId, {
+          lastGeneratedDate: date,
+          updatedAt: new Date().toISOString(),
+        });
+
+        // Run the materializer to catch any other past-due dates beyond startDate
+        const { recurringMaterializer } = await import('@/domain/recurring/materializer');
+        await recurringMaterializer.materializeDueTransactions();
+
+        addToast('success', 'Recurring rule created and first transaction added');
         success = true;
       } else {
         success = await createTransaction({

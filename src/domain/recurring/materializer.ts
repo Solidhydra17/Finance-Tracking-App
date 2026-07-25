@@ -43,6 +43,9 @@ export const recurringMaterializer = {
 
       // Create a transaction for each new due date
       for (const date of newDueDates) {
+        // Note: recurring-materialized transactions have no walletAccountId.
+        // The first transaction (on the startDate) is created with walletAccountId
+        // at rule-creation time in AddTransactionPage.tsx.
         const transaction: any = {
           type: rule.type,
           amount: rule.amount,
