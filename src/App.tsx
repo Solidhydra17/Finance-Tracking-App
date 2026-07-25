@@ -33,12 +33,48 @@ export const App: React.FC = () => {
         syncReminders();
 
         // Foreground reminder checker: ensures reminders fire reliably while the app is OPEN
-        // (Since fetch/sync events are not reliable enough for exact minute timing)
-        const foregroundCheckInterval = setInterval(() => {
-            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({ type: 'CHECK_REMINDERS' });
+        let lastFiredMinutes = -1;
+        const foregroundCheckInterval = setInterval(async () => {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            
+            const now = new Date();
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+            // Only fire once per minute to avoid spamming
+            if (nowMinutes === lastFiredMinutes) return;
+
+            const stored = JSON.parse(localStorage.getItem('kuripot_reminders') || '[]');
+            const dayOfWeek = now.getDay();
+            let firedAny = false;
+
+            for (const r of stored) {
+                if (!r.enabled || !r.days.includes(dayOfWeek)) continue;
+                
+                const [hh, mm] = r.time.split(':').map(Number);
+                const dueMinutes = hh * 60 + mm;
+                
+                if (nowMinutes === dueMinutes) {
+                    try {
+                        const reg = await navigator.serviceWorker.ready;
+                        reg.showNotification('KURIPOT Reminder', {
+                            body: r.label?.trim() || 'Time to log your finances!',
+                            icon: '/logo192.png',
+                            badge: '/logo192.png',
+                            tag: `reminder-${r.id}`,
+                            data: { url: '/' },
+                            renotify: true
+                        } as NotificationOptions);
+                        firedAny = true;
+                    } catch (e) {
+                        console.error('[Foreground Check] Failed to show notification', e);
+                    }
+                }
             }
-        }, 30000); // Check every 30 seconds
+
+            if (firedAny) {
+                lastFiredMinutes = nowMinutes;
+            }
+        }, 15000); // Check every 15 seconds
 
         return () => clearInterval(foregroundCheckInterval);
     }, []);

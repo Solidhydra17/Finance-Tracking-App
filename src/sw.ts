@@ -98,10 +98,6 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
     self.skipWaiting();
   }
 
-  if (event.data?.type === 'CHECK_REMINDERS') {
-    checkAndFireDueReminders();
-  }
-
   if (event.data?.type === 'SCHEDULE_REMINDERS') {
     scheduledReminders = (event.data.reminders as Reminder[]) || [];
     console.log(`[SW] Scheduled ${scheduledReminders.length} reminders`);
