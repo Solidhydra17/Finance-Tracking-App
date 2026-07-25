@@ -63,6 +63,12 @@ function checkAndFireDueReminders() {
 // ─── Message handler (receives reminders from the app) ───────────────────────
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  // vite-plugin-pwa's updateServiceWorker(true) posts SKIP_WAITING
+  // Without this handler the SW stays in 'waiting' state and the page never reloads
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+
   if (event.data?.type === 'SCHEDULE_REMINDERS') {
     scheduledReminders = (event.data.reminders as Reminder[]) || [];
     console.log(`[SW] Scheduled ${scheduledReminders.length} reminders`);

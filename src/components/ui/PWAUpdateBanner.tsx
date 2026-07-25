@@ -41,12 +41,14 @@ export const PWAUpdateBanner: React.FC = () => {
     // When the user clicks Update Now or the countdown hits 0,
     // call skipWaiting then force a hard reload so the new SW takes control
     const applyUpdate = useCallback(() => {
+        // Hide the banner immediately so it doesn't appear stuck
+        setNeedRefresh(false);
         updateServiceWorker(true);
         // Force reload after a short delay to ensure the SW has activated
         setTimeout(() => {
             window.location.reload();
         }, 400);
-    }, [updateServiceWorker]);
+    }, [updateServiceWorker, setNeedRefresh]);
 
     const isVisible = needRefresh;
 
