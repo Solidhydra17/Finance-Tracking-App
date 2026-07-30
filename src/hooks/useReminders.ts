@@ -3,7 +3,7 @@ import type { Reminder } from '@/types/reminder';
 
 const STORAGE_KEY = 'kuripot_reminders';
 
-function loadReminders(): Reminder[] {
+export function getReminders(): Reminder[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -18,7 +18,7 @@ function persistReminders(reminders: Reminder[]): void {
 }
 
 export function useReminders() {
-  const [reminders, setReminders] = useState<Reminder[]>(loadReminders);
+  const [reminders, setReminders] = useState<Reminder[]>(getReminders);
 
   const saveReminders = useCallback((updated: Reminder[]) => {
     persistReminders(updated);
@@ -30,13 +30,13 @@ export function useReminders() {
       ...r,
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     };
-    const updated = [...loadReminders(), newReminder];
+    const updated = [...getReminders(), newReminder];
     persistReminders(updated);
     setReminders(updated);
   }, []);
 
   const updateReminder = useCallback((id: string, updates: Partial<Reminder>) => {
-    const updated = loadReminders().map((r) =>
+    const updated = getReminders().map((r) =>
       r.id === id ? { ...r, ...updates } : r
     );
     persistReminders(updated);
@@ -44,7 +44,7 @@ export function useReminders() {
   }, []);
 
   const deleteReminder = useCallback((id: string) => {
-    const updated = loadReminders().filter((r) => r.id !== id);
+    const updated = getReminders().filter((r) => r.id !== id);
     persistReminders(updated);
     setReminders(updated);
   }, []);

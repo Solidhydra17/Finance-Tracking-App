@@ -5,7 +5,7 @@ import { useReminders } from '@/hooks/useReminders';
 import {
   isNotificationsSupported,
   requestNotificationPermission,
-  sendRemindersToSW,
+  scheduleReminders,
 } from '@/lib/notifications';
 import { useUIStore } from '@/store';
 
@@ -39,25 +39,24 @@ function PermissionRow() {
 
   const handleEnable = async () => {
     const result = await requestNotificationPermission();
-    setPermission(result);
+    setPermission(result ? 'granted' : 'denied');
   };
 
   const handleTest = () => {
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'SCHEDULE_REMINDERS',
-        reminders: [{
-          id: 'test',
-          label: 'Test Notification - it works!',
-          days: [0, 1, 2, 3, 4, 5, 6],
-          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-          enabled: true
+    const target = new Date();
+    target.setSeconds(target.getSeconds() + 2); // 2 seconds from now
+    import('@capacitor/local-notifications').then(({ LocalNotifications }) => {
+      LocalNotifications.schedule({
+        notifications: [{
+          id: 9999,
+          title: 'KURIPOT Reminder',
+          body: 'Test Notification - it works! 💰',
+          schedule: { at: target },
+          smallIcon: 'ic_stat_kuripot',
+          iconColor: '#285ccc',
         }]
-      });
-      setTimeout(() => {
-        navigator.serviceWorker.controller?.postMessage({ type: 'CHECK_REMINDERS' });
-      }, 500);
-    }
+      }).catch(console.error);
+    });
   };
 
   if (permission === 'granted') {
@@ -142,7 +141,7 @@ export const ReminderSettings: React.FC = () => {
       const stored: import('@/types/reminder').Reminder[] = JSON.parse(
         localStorage.getItem('kuripot_reminders') || '[]'
       );
-      sendRemindersToSW(stored).catch(console.error);
+      scheduleReminders(stored).catch(console.error);
     }, 50);
   };
 
@@ -152,7 +151,7 @@ export const ReminderSettings: React.FC = () => {
       const stored: import('@/types/reminder').Reminder[] = JSON.parse(
         localStorage.getItem('kuripot_reminders') || '[]'
       );
-      sendRemindersToSW(stored).catch(console.error);
+      scheduleReminders(stored).catch(console.error);
     }, 50);
   };
 
@@ -162,7 +161,7 @@ export const ReminderSettings: React.FC = () => {
       const stored: import('@/types/reminder').Reminder[] = JSON.parse(
         localStorage.getItem('kuripot_reminders') || '[]'
       );
-      sendRemindersToSW(stored).catch(console.error);
+      scheduleReminders(stored).catch(console.error);
     }, 50);
   };
 
