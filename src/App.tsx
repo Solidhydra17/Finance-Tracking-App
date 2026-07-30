@@ -11,9 +11,14 @@ import { AddTransactionPage } from "@/pages/AddTransactionPage";
 import { AddLoanPage } from "@/pages/AddLoanPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 import { walletService } from '@/domain/wallet/walletService';
+import { Capacitor } from '@capacitor/core';
+import { SplashScreen } from '@capacitor/splash-screen';
 
 export const App: React.FC = () => {
     useEffect(() => {
+        if (Capacitor.isNativePlatform()) {
+            SplashScreen.hide();
+        }
         const materialize = async () => {
             const { recurringMaterializer } = await import('@/domain/recurring/materializer');
             await recurringMaterializer.materializeDueTransactions();
