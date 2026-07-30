@@ -18,6 +18,8 @@ import { getReminders } from '@/hooks/useReminders';
 import { CapgoWidgetKit } from '@capgo/capacitor-widget-kit';
 import { useUIStore } from '@/store';
 
+const WIDGET_ACTIVITY_ID = 'kuripot-balance-widget';
+
 export async function updateNativeWidget() {
   if (!Capacitor.isNativePlatform()) return;
   try {
@@ -25,14 +27,39 @@ export async function updateNativeWidget() {
     const sym = useUIStore.getState().currencySymbol;
     const fmt = (n: number) => `${sym}${(n / 100).toFixed(2)}`;
 
-    await CapgoWidgetKit.setItem({
-      group: 'KuripotWidgetData',
-      key: 'totalBalance',
-      value: fmt(totals.totalWalletBalance),
-    });
-    // Add income and expense since the widget expects it, even though the user didn't explicitly include it in the snippet, it's a good idea if totals has it.
-    // Actually, I'll just follow the user's snippet exactly as requested to be safe.
-    await CapgoWidgetKit.reloadWidget();
+    const state = {
+      totalBalance: fmt(totals.totalWalletBalance),
+    };
+
+    try {
+      await CapgoWidgetKit.updateTemplateActivity({
+        activityId: WIDGET_ACTIVITY_ID,
+        state,
+      });
+    } catch {
+      await CapgoWidgetKit.startTemplateWidget({
+        activityId: WIDGET_ACTIVITY_ID,
+        definition: {
+          id: WIDGET_ACTIVITY_ID,
+          layouts: {
+            homeScreen: {
+              svg: `<svg viewBox="0 0 169 169" xmlns="http://www.w3.org/2000/svg">
+                <text x="84" y="84" text-anchor="middle" dominant-baseline="middle"
+                  font-family="system-ui" font-size="24" fill="#ffffff">
+                  {{state.totalBalance}}
+                </text>
+              </svg>`,
+              width: 169,
+              height: 169,
+            },
+          },
+        },
+        state,
+      });
+    }
+
+    await CapgoWidgetKit.reloadWidgets();
+
   } catch (e) {
     console.warn('[Widget] Failed to update native widget:', e);
   }
