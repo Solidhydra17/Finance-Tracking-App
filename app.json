@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "Kuripot",
+    "slug": "kuripot",
+    "version": "1.0.0",
+    "android": {
+      "package": "com.kuripot.app"
+    }
+  }
+}

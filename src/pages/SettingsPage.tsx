@@ -12,6 +12,7 @@ import { CustomCategorySettings } from '@/components/settings/CustomCategorySett
 import { ReminderSettings } from '@/components/settings/ReminderSettings';
 import { useNavigate } from 'react-router-dom';
 import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
+import { Capacitor } from '@capacitor/core';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -361,6 +362,25 @@ export const SettingsPage: React.FC = () => {
           )}
         </CardBody>
       </Card>
+
+      {/* --- Download App Section --- */}
+      {!Capacitor.isNativePlatform() && (
+        <Card id="card-download-app">
+          <CardBody className="space-y-4">
+            <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Download the App</h3>
+            <Button
+              variant="secondary"
+              onClick={() => window.open('https://github.com/Solidhydra17/Finance-Tracking-App/releases/latest/download/kuripot.apk', '_blank')}
+              className="w-full"
+            >
+              Download for Android (.apk)
+            </Button>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-2 font-medium">
+              Tap to download. You may need to allow installs from unknown sources in your Android settings.
+            </p>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Data Management */}
       <Card id="card-data-management">
