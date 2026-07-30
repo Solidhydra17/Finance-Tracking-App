@@ -112,4 +112,14 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
+    build: {
+        rollupOptions: {
+            // @capgo/capacitor-widget-kit is Android-native only; it is not
+            // installed in the web/Render build. Marking it external prevents
+            // Rollup from failing when the package is absent from node_modules.
+            // The import in App.tsx is already guarded by Capacitor.isNativePlatform()
+            // so this module is never actually executed on web.
+            external: ['@capgo/capacitor-widget-kit'],
+        },
+    },
 });

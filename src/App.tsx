@@ -15,7 +15,6 @@ import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
-import { CapgoWidgetKit } from '@capgo/capacitor-widget-kit';
 import { useUIStore } from '@/store';
 
 const WIDGET_ACTIVITY_ID = 'kuripot-balance-widget';
@@ -23,6 +22,8 @@ const WIDGET_ACTIVITY_ID = 'kuripot-balance-widget';
 export async function updateNativeWidget() {
   if (!Capacitor.isNativePlatform()) return;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { CapgoWidgetKit } = await import('@capgo/capacitor-widget-kit' as any) as any;
     const [totals] = await Promise.all([walletService.getTotals()]);
     const sym = useUIStore.getState().currencySymbol;
     const fmt = (n: number) => `${sym}${(n / 100).toFixed(2)}`;
