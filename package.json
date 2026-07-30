@@ -7,14 +7,18 @@
     "dev": "vite --host",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:android": "vite build && npx cap sync android",
+    "open:android": "npx cap open android",
+    "sync": "npx cap sync"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^6.0.2",
-    "@capacitor/android": "^6.1.2",
-    "@capacitor/core": "^6.1.2",
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@capacitor/ios": "^6.1.2",
     "@capacitor/preferences": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.4",
     "@heroicons/react": "^2.2.0",
     "chart.js": "^4.5.1",
     "dexie": "^4.0.10",
@@ -25,6 +29,8 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.2.1",
     "@types/node": "^26.1.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

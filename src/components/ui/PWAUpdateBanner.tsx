@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { Capacitor } from '@capacitor/core';
 
 declare const __APP_VERSION__: string;
 
 export const PWAUpdateBanner: React.FC = () => {
+    if (Capacitor.isNativePlatform()) return null;
     const [countdown, setCountdown] = useState(5);
 
     const {
