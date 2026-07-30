@@ -15,6 +15,28 @@ import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
+import { CapgoWidgetKit } from '@capgo/capacitor-widget-kit';
+import { useUIStore } from '@/store';
+
+export async function updateNativeWidget() {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    const [totals] = await Promise.all([walletService.getTotals()]);
+    const sym = useUIStore.getState().currencySymbol;
+    const fmt = (n: number) => `${sym}${(n / 100).toFixed(2)}`;
+
+    await CapgoWidgetKit.setItem({
+      group: 'KuripotWidgetData',
+      key: 'totalBalance',
+      value: fmt(totals.totalWalletBalance),
+    });
+    // Add income and expense since the widget expects it, even though the user didn't explicitly include it in the snippet, it's a good idea if totals has it.
+    // Actually, I'll just follow the user's snippet exactly as requested to be safe.
+    await CapgoWidgetKit.reloadWidget();
+  } catch (e) {
+    console.warn('[Widget] Failed to update native widget:', e);
+  }
+}
 
 export const App: React.FC = () => {
     useEffect(() => {
@@ -26,6 +48,8 @@ export const App: React.FC = () => {
             await recurringMaterializer.materializeDueTransactions();
         };
         materialize();
+
+        updateNativeWidget();
 
         // Re-schedule reminders on every app open to refresh the 4-week window
         const reminders = getReminders();
