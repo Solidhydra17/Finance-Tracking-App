@@ -318,47 +318,37 @@ export const SettingsPage: React.FC = () => {
       <RecurringSettings />
       <CustomCategorySettings />
 
-      {/* Home Screen Widget */}
-      <Card id="card-widget">
+      {/* Download App */}
+      <Card id="card-download-app">
         <CardBody className="space-y-3">
           <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">
-            Home Screen Widget
+            Download App
           </h3>
-          {widgetsSupported ? (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-midblue/10 flex items-center justify-center shrink-0 mt-0.5">
-                <Icon name="DevicePhoneMobileIcon" className="w-5 h-5 text-midblue" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-[var(--text-main)]">
-                  Widget Support Detected
-                </p>
-                <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
-                  Add KURIPOT to your home screen to use the Wallet Balance widget
-                  and Quick Add widget directly from your home screen.
-                </p>
-              </div>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-midblue/10 flex items-center justify-center shrink-0 mt-0.5">
+              <Icon name="DevicePhoneMobileIcon" className="w-5 h-5 text-midblue" />
             </div>
-          ) : (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--item-bg)] flex items-center justify-center shrink-0 mt-0.5">
-                <Icon name="DevicePhoneMobileIcon" className="w-5 h-5 text-[var(--text-muted)]" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-[var(--text-main)]">
-                  Home Screen Widgets
-                </p>
-                <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
-                  Widgets are available on Chrome for Android with experimental
-                  web features enabled. This will appear automatically when your
-                  browser supports it.
-                </p>
-                <p className="text-[10px] text-midblue font-bold mt-2">
-                  COMING TO YOUR BROWSER SOON
-                </p>
-              </div>
+            <div>
+              <p className="text-sm font-bold text-[var(--text-main)]">
+                Get Kuripot on Android
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
+                Download and install the Kuripot app directly on your Android
+                phone for the full native experience.
+              </p>
+              <a
+                href="https://github.com/Solidhydra17/Finance-Tracking-App/releases/latest/download/kuripot.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-midblue font-bold mt-2 block"
+              >
+                DOWNLOAD APK
+              </a>
+              <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                Android only · Allow installs from unknown sources if prompted
+              </p>
             </div>
-          )}
+          </div>
         </CardBody>
       </Card>
 
