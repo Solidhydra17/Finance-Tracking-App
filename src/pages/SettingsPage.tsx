@@ -313,7 +313,7 @@ export const SettingsPage: React.FC = () => {
         </CardBody>
       </Card>
 
-      <ReminderSettings />
+      {Capacitor.isNativePlatform() && <ReminderSettings />}
       <RecurringSettings />
       <CustomCategorySettings />
 

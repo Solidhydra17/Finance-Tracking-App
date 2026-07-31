@@ -53,12 +53,20 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
         const [hours, minutes] = reminder.time.split(':').map(Number);
         const target = new Date(now);
 
-        // Find the next occurrence of this weekday
-        const daysUntil = (day - now.getDay() + 7) % 7 || (week === 0 ? 7 : 0);
-        target.setDate(now.getDate() + daysUntil + week * 7);
+        // Days until next occurrence of this weekday
+        const rawDiff = (day - now.getDay() + 7) % 7;
+        // On week 0: schedule the next occurrence (today if time is future, else +7d)
+        // On week 1+: add full weeks on top
+        const daysToAdd = rawDiff + (week * 7);
+        target.setDate(now.getDate() + daysToAdd);
         target.setHours(hours, minutes, 0, 0);
 
-        if (target <= now) continue; // Skip past times
+        // Skip if this time has already passed
+        if (target <= now) {
+          // Try adding 7 more days to get the next cycle
+          target.setDate(target.getDate() + 7);
+          if (target <= now) continue;
+        }
 
         notifications.push({
           id: idCounter++,

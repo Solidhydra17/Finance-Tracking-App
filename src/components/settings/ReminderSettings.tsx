@@ -6,19 +6,18 @@ import {
   isNotificationsSupported,
   requestNotificationPermission,
   scheduleReminders,
+  getNotificationPermission,
 } from '@/lib/notifications';
 import { useUIStore } from '@/store';
 
 const DAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function PermissionRow() {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [permission, setPermission] = useState<string>('loading');
   const devOptionsVisible = useUIStore((state) => state.devOptionsVisible);
 
   useEffect(() => {
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
-    }
+    getNotificationPermission().then(setPermission).catch(() => setPermission('default'));
   }, []);
 
   if (!isNotificationsSupported()) {
@@ -29,28 +28,39 @@ function PermissionRow() {
     );
   }
 
+  if (permission === 'loading') {
+    return <p className="text-xs text-[var(--text-muted)]">Checking notification status...</p>;
+  }
+
   if (permission === 'denied') {
     return (
-      <p className="text-xs text-danger-500 font-medium">
-        Notifications are blocked. Enable them in your browser settings.
-      </p>
+      <div className="p-3 bg-danger-500/10 rounded-xl border border-danger-500/20">
+        <p className="text-xs text-danger-500 font-medium">
+          Notifications are blocked. Go to your phone Settings → Apps → KURIPOT → Notifications to enable.
+        </p>
+      </div>
     );
   }
 
   const handleEnable = async () => {
-    const result = await requestNotificationPermission();
-    setPermission(result ? 'granted' : 'denied');
+    const granted = await requestNotificationPermission();
+    setPermission(granted ? 'granted' : 'denied');
+    if (granted) {
+      // Re-schedule existing reminders now that permission is granted
+      const stored = JSON.parse(localStorage.getItem('kuripot_reminders') || '[]');
+      scheduleReminders(stored).catch(console.error);
+    }
   };
 
   const handleTest = () => {
     const target = new Date();
-    target.setSeconds(target.getSeconds() + 2); // 2 seconds from now
+    target.setSeconds(target.getSeconds() + 5); // 5 seconds delay for testing
     import('@capacitor/local-notifications').then(({ LocalNotifications }) => {
       LocalNotifications.schedule({
         notifications: [{
           id: 9999,
           title: 'KURIPOT Reminder',
-          body: 'Test Notification - it works! 💰',
+          body: 'Test notification — it works! 💰',
           schedule: { at: target },
           smallIcon: 'ic_stat_kuripot',
           iconColor: '#285ccc',
@@ -64,16 +74,14 @@ function PermissionRow() {
       <div className="flex items-center justify-between p-3 bg-success-500/10 rounded-xl border border-success-500/20">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-success-500 shrink-0" />
-          <p className="text-xs text-[var(--text-main)] font-bold">
-            Notifications are enabled
-          </p>
+          <p className="text-xs text-[var(--text-main)] font-bold">Notifications enabled</p>
         </div>
         {devOptionsVisible && (
           <button
             onClick={handleTest}
             className="text-xs font-bold text-success-600 dark:text-success-400 bg-success-500/20 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
           >
-            Test
+            Test (5s)
           </button>
         )}
       </div>
@@ -81,11 +89,7 @@ function PermissionRow() {
   }
 
   return (
-    <Button
-      variant="secondary"
-      onClick={handleEnable}
-      className="w-full text-sm"
-    >
+    <Button variant="secondary" onClick={handleEnable} className="w-full text-sm">
       🔔 Enable Notifications
     </Button>
   );
