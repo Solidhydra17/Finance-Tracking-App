@@ -1,9 +1,12 @@
-name: Build Android APK
+name: Build and Release Android APK
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -40,9 +43,44 @@ jobs:
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - name: Get version from package.json
+        id: version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Get short commit SHA
+        id: sha
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Delete existing latest release if it exists
+        run: |
+          gh release delete latest --yes 2>/dev/null || true
+          git push --delete origin latest 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release and upload APK
+        uses: softprops/action-gh-release@v2
         with:
-          name: kuripot-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          tag_name: latest
+          name: "Kuripot v${{ steps.version.outputs.VERSION }} (${{ steps.sha.outputs.SHA }})"
+          body: |
+            🤖 Automated build from commit ${{ steps.sha.outputs.SHA }}
+
+            **Branch:** main
+            **Version:** ${{ steps.version.outputs.VERSION }}
+            **Built:** ${{ github.event.head_commit.timestamp }}
+            **Commit message:** ${{ github.event.head_commit.message }}
+
+            ---
+            ### Install Instructions
+            1. Download `kuripot.apk` below
+            2. On your Android phone, open the downloaded file
+            3. If prompted, allow installs from unknown sources in your phone settings
+            4. Install and open Kuripot
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          name_mapping: |
+            app-debug.apk=kuripot.apk
+          prerelease: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
