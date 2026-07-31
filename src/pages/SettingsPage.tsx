@@ -46,8 +46,6 @@ export const SettingsPage: React.FC = () => {
   const resetTimer = useRef<any>(null);
   const [devCountdown, setDevCountdown] = useState<number | null>(null);
 
-  const widgetsSupported = typeof navigator !== 'undefined' && 'widgets' in navigator;
-
   const resetAllStores = () => {
     useTransactionStore.setState({
       transactions: [],
