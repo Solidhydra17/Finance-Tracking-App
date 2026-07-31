@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "build:android": "vite build && npx cap sync android",
     "open:android": "npx cap open android",
-    "sync": "npx cap sync"
+    "sync": "npx cap sync",
+    "eas-build-pre-build": "npm run build:android"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^6.0.2",
