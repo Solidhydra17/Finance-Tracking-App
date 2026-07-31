@@ -17,52 +17,55 @@ import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
 import { useUIStore } from '@/store';
 
-const WIDGET_ACTIVITY_ID = 'kuripot-balance-widget';
 
-export async function updateNativeWidget() {
+
+export async function updateNativeWidget(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { CapgoWidgetKit } = await import('@capgo/capacitor-widget-kit' as any) as any;
-    const [totals] = await Promise.all([walletService.getTotals()]);
+    const [accounts, totals] = await Promise.all([
+      walletService.getAllAccounts(),
+      walletService.getTotals(),
+    ]);
     const sym = useUIStore.getState().currencySymbol;
     const fmt = (n: number) => `${sym}${(n / 100).toFixed(2)}`;
 
-    const state = {
-      totalBalance: fmt(totals.totalWalletBalance),
-    };
+    // Calculate monthly income and expense from current month's transactions
+    const { db } = await import('@/storage/indexeddb/database');
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const allTx = await db.transactions
+      .where('date').aboveOrEqual(monthStart)
+      .and(tx => tx.deletedAt == null)
+      .toArray();
+    const monthIncome = allTx
+      .filter(tx => tx.type === 'income')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const monthExpense = allTx
+      .filter(tx => tx.type === 'expense')
+      .reduce((sum, tx) => sum + tx.amount, 0);
 
-    try {
-      await CapgoWidgetKit.updateTemplateActivity({
-        activityId: WIDGET_ACTIVITY_ID,
-        state,
-      });
-    } catch {
-      await CapgoWidgetKit.startTemplateWidget({
-        activityId: WIDGET_ACTIVITY_ID,
-        definition: {
-          id: WIDGET_ACTIVITY_ID,
-          layouts: {
-            homeScreen: {
-              svg: `<svg viewBox="0 0 169 169" xmlns="http://www.w3.org/2000/svg">
-                <text x="84" y="84" text-anchor="middle" dominant-baseline="middle"
-                  font-family="system-ui" font-size="24" fill="#ffffff">
-                  {{state.totalBalance}}
-                </text>
-              </svg>`,
-              width: 169,
-              height: 169,
-            },
-          },
-        },
-        state,
-      });
-    }
+    // Build account breakdown JSON for the Kotlin widget
+    const accountsData = accounts.map(a => ({
+      name: a.name,
+      type: a.type.toUpperCase(),
+      balance: a.type === 'credit'
+        ? fmt(Math.max(0, (a.creditLimit ?? 0) - a.balance))
+        : fmt(a.balance),
+    }));
 
-    await CapgoWidgetKit.reloadWidgets();
+    // Write to SharedPreferences via Capacitor Preferences plugin
+    const { Preferences } = await import('@capacitor/preferences');
+    await Preferences.set({ key: 'widget_totalBalance', value: fmt(totals.totalWalletBalance) });
+    await Preferences.set({ key: 'widget_income', value: fmt(monthIncome) });
+    await Preferences.set({ key: 'widget_expense', value: fmt(monthExpense) });
+    await Preferences.set({ key: 'widget_accounts', value: JSON.stringify(accountsData) });
 
+    // Tell Android to redraw the widget
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { CapacitorWidgetUpdater } = await import('@capgo/capacitor-widget-kit' as any) as any;
+    await CapacitorWidgetUpdater?.reloadWidgets?.();
   } catch (e) {
-    console.warn('[Widget] Failed to update native widget:', e);
+    console.warn('[Widget] updateNativeWidget failed:', e);
   }
 }
 
