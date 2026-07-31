@@ -137,6 +137,26 @@ export class FinanceDatabase extends Dexie {
 
 export const db = new FinanceDatabase();
 
+export async function ensureFreshInstallDefaults(): Promise<void> {
+  // Ensure default Cash wallet account exists
+  const walletCount = await db.walletAccounts.count();
+  if (walletCount === 0) {
+    await db.walletAccounts.add({
+      name: 'Cash',
+      type: 'cash',
+      balance: 0,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Ensure default categories exist
+  const categoryCount = await db.categories.count();
+  if (categoryCount === 0) {
+    const { seedDefaultCategories } = await import('./categoryRepository');
+    await seedDefaultCategories();
+  }
+}
+
 export async function clearAllData(): Promise<void> {
   await db.transactions.clear();
   await db.loans.clear();
@@ -154,7 +174,13 @@ export async function clearAllData(): Promise<void> {
       balance: 0,
       createdAt: new Date().toISOString()
   });
+
+  // Re-seed categories
+  const { seedDefaultCategories } = await import('./categoryRepository');
+  await db.categories.clear();
+  await seedDefaultCategories();
 }
+
 
 export async function exportAllData(): Promise<{
   transactions: Transaction[];
