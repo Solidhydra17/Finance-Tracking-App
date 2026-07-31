@@ -16,8 +16,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
 import { useUIStore } from '@/store';
-
-
+import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
 
 export async function updateNativeWidget(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
@@ -74,6 +73,10 @@ export const App: React.FC = () => {
         if (Capacitor.isNativePlatform()) {
             SplashScreen.hide();
         }
+
+        // Seed defaults on every startup (safe — checks count before inserting)
+        ensureFreshInstallDefaults().catch(console.warn);
+
         const materialize = async () => {
             const { recurringMaterializer } = await import('@/domain/recurring/materializer');
             await recurringMaterializer.materializeDueTransactions();
