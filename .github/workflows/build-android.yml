@@ -40,6 +40,18 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
+      - name: Download kaching notification sound
+        run: |
+          mkdir -p android/app/src/main/res/raw
+          # Try multiple sources for the kaching sound
+          curl -fsSL "https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3" \
+            -o android/app/src/main/res/raw/kaching.mp3 2>/dev/null || \
+          curl -fsSL "https://www.soundjay.com/misc/sounds/cash-register-1.mp3" \
+            -o android/app/src/main/res/raw/kaching.mp3 2>/dev/null || \
+          (echo "Sound download failed - creating silent placeholder" && \
+           dd if=/dev/zero bs=1024 count=4 2>/dev/null | \
+           cat > android/app/src/main/res/raw/kaching.mp3)
+
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug
 

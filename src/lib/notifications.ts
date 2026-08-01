@@ -76,6 +76,8 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
           extra: { type: 'kuripot-reminder', reminderId: reminder.id },
           smallIcon: 'ic_stat_kuripot',
           iconColor: '#285ccc',
+          channelId: 'kuripot_reminders',
+          sound: 'kaching.mp3',
         });
       }
     }
