@@ -20,6 +20,9 @@ public class MainActivity extends BridgeActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     registerPlugin(NotificationSettingsPlugin.class);
+    // Create channels BEFORE super.onCreate() so Capacitor's LocalNotifications
+    // plugin finds our high-importance channels already in place and does not
+    // create a low-importance "default" channel on its own.
     createChannels();
     super.onCreate(savedInstanceState);
   }
@@ -31,10 +34,6 @@ public class MainActivity extends BridgeActivity {
       (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     if (manager == null) return;
 
-    // Delete both channels to force recreation with IMPORTANCE_HIGH
-    manager.deleteNotificationChannel("default");
-    manager.deleteNotificationChannel(CHANNEL_ID);
-
     Uri soundUri = Uri.parse(
       "android.resource://" + getPackageName() + "/raw/kaching"
     );
@@ -43,28 +42,37 @@ public class MainActivity extends BridgeActivity {
       .setUsage(AudioAttributes.USAGE_NOTIFICATION)
       .build();
 
-    // Create the default channel (just in case Capacitor still expects it)
+    // Delete any existing channels so we can recreate with correct settings.
+    // Android locks channel importance after first creation — deleting forces reset.
+    manager.deleteNotificationChannel("default");
+    manager.deleteNotificationChannel(CHANNEL_ID);
+
+    // "default" channel — Capacitor always falls back to this channel.
+    // Must be IMPORTANCE_HIGH so floating banners work even if channelId is ignored.
     NotificationChannel defaultChannel = new NotificationChannel(
       "default",
-      "Default",
+      "KURIPOT Notifications",
       NotificationManager.IMPORTANCE_HIGH
     );
+    defaultChannel.setDescription("General KURIPOT notifications");
+    defaultChannel.enableVibration(true);
+    defaultChannel.setVibrationPattern(new long[]{0, 250, 150, 250});
     defaultChannel.setSound(soundUri, audioAttrs);
+    defaultChannel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PRIVATE);
     manager.createNotificationChannel(defaultChannel);
 
-    // Create our custom channel
-    NotificationChannel channel = new NotificationChannel(
+    // "kuripot_reminders" channel — explicitly targeted in notifications.ts
+    NotificationChannel remindersChannel = new NotificationChannel(
       CHANNEL_ID,
       CHANNEL_NAME,
       NotificationManager.IMPORTANCE_HIGH
     );
-    channel.setDescription(CHANNEL_DESC);
-    channel.enableVibration(true);
-    channel.setVibrationPattern(new long[]{0, 250, 150, 250});
-    channel.setSound(soundUri, audioAttrs);
-    channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PRIVATE);
-
-    manager.createNotificationChannel(channel);
+    remindersChannel.setDescription(CHANNEL_DESC);
+    remindersChannel.enableVibration(true);
+    remindersChannel.setVibrationPattern(new long[]{0, 250, 150, 250});
+    remindersChannel.setSound(soundUri, audioAttrs);
+    remindersChannel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PRIVATE);
+    manager.createNotificationChannel(remindersChannel);
   }
 
   public void openNotificationChannelSettings() {
