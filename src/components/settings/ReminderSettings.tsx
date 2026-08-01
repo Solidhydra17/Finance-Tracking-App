@@ -9,6 +9,8 @@ import {
   getNotificationPermission,
 } from '@/lib/notifications';
 import { useUIStore } from '@/store';
+import { openNotificationChannelSettings } from '@/lib/notificationSettings';
+import { Capacitor } from '@capacitor/core';
 
 const DAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -71,17 +73,50 @@ function PermissionRow() {
 
   if (permission === 'granted') {
     return (
-      <div className="flex items-center justify-between p-3 bg-success-500/10 rounded-xl border border-success-500/20">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-success-500 shrink-0" />
-          <p className="text-xs text-[var(--text-main)] font-bold">Notifications enabled</p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between p-3
+          bg-[var(--item-bg)] rounded-xl border border-[var(--card-border)]">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#22c55e] shrink-0" />
+            <p className="text-xs text-[var(--text-main)] font-bold">
+              Notifications enabled
+            </p>
+          </div>
+          {devOptionsVisible && (
+            <button
+              onClick={handleTest}
+              className="text-xs font-bold text-[#22c55e] bg-[#22c55e]/10
+                px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+            >
+              Test (5s)
+            </button>
+          )}
         </div>
-        {devOptionsVisible && (
+
+        {/* Deep link to channel settings so user can verify Urgent importance */}
+        {Capacitor.isNativePlatform() && (
           <button
-            onClick={handleTest}
-            className="text-xs font-bold text-success-600 dark:text-success-400 bg-success-500/20 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+            onClick={openNotificationChannelSettings}
+            className="w-full flex items-center justify-between px-4 py-3
+              rounded-xl bg-[var(--item-bg)] border border-[var(--card-border)]
+              active:scale-[0.99] transition-all"
           >
-            Test (5s)
+            <div className="flex items-center gap-3">
+              <span className="text-base">🔔</span>
+              <div className="text-left">
+                <p className="text-xs font-bold text-[var(--text-main)]">
+                  Notification Settings
+                </p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                  Tap to verify "Urgent" importance is set for floating banners
+                </p>
+              </div>
+            </div>
+            <svg className="w-4 h-4 text-[var(--text-muted)]"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         )}
       </div>
