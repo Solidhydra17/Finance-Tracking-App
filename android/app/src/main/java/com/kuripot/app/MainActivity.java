@@ -14,13 +14,13 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-  private static final String CHANNEL_ID = "kuripot_reminders_v4";
+  private static final String CHANNEL_ID = "kuripot_reminders_v5";
   private static final String CHANNEL_NAME = "KURIPOT Reminders";
   private static final String CHANNEL_DESC = "Finance logging reminders";
 
   // Old channel IDs to clean up
   private static final String[] OLD_CHANNEL_IDS = {
-    "default", "kuripot_reminders", "kuripot_reminders_v2", "kuripot_reminders_v3"
+    "default", "kuripot_reminders", "kuripot_reminders_v2", "kuripot_reminders_v3", "kuripot_reminders_v4"
   };
 
   @Override
