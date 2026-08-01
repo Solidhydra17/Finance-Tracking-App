@@ -37,11 +37,12 @@ async function configureChannels() {
     // 2. Create our fresh V2 channel. Since it's a new ID, Android won't have 
     // any cached IMPORTANCE_DEFAULT for it, so it will correctly get IMPORTANCE_HIGH (5)
     await LocalNotifications.createChannel({
-      id: 'kuripot_reminders_v2',
+      id: 'kuripot_reminders_v3',
       name: 'KURIPOT Reminders',
       description: 'Finance logging reminders',
       importance: 5,
       visibility: 1,
+      sound: 'kaching.mp3',
       vibration: true
     });
   } catch (e) {
@@ -103,7 +104,8 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
           extra: { type: 'kuripot-reminder', reminderId: reminder.id },
           smallIcon: 'ic_stat_kuripot',
           iconColor: '#285ccc',
-          channelId: 'kuripot_reminders_v2',
+          channelId: 'kuripot_reminders_v3',
+          sound: 'kaching.mp3',
         });
       }
     }
