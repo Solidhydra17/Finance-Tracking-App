@@ -31,13 +31,17 @@ export async function getNotificationPermission(): Promise<string> {
 async function configureChannels() {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    // 1. Delete Capacitor's default channel so it doesn't pollute settings
-    await LocalNotifications.deleteChannel({ id: 'default' }).catch(() => {});
+    // Delete all old stale channels
+    const oldChannels = ['default', 'kuripot_reminders', 'kuripot_reminders_v2', 'kuripot_reminders_v3'];
+    for (const id of oldChannels) {
+      await LocalNotifications.deleteChannel({ id }).catch(() => {});
+    }
 
-    // 2. Create our fresh V2 channel. Since it's a new ID, Android won't have 
-    // any cached IMPORTANCE_DEFAULT for it, so it will correctly get IMPORTANCE_HIGH (5)
+    // Create/update our v4 channel with full settings.
+    // The native Java code in MainActivity already creates this channel
+    // before Capacitor initializes, but we call it here too as a safety net.
     await LocalNotifications.createChannel({
-      id: 'kuripot_reminders_v3',
+      id: 'kuripot_reminders_v4',
       name: 'KURIPOT Reminders',
       description: 'Finance logging reminders',
       importance: 5,
@@ -104,7 +108,7 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
           extra: { type: 'kuripot-reminder', reminderId: reminder.id },
           smallIcon: 'ic_stat_kuripot',
           iconColor: '#285ccc',
-          channelId: 'kuripot_reminders_v3',
+          channelId: 'kuripot_reminders_v4',
           sound: 'kaching.mp3',
         });
       }
