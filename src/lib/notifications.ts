@@ -11,7 +11,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   if (Capacitor.isNativePlatform()) {
     const result = await LocalNotifications.requestPermissions();
     if (result.display === 'granted') {
-      await configureDefaultChannel();
+      await configureChannels();
     }
     return result.display === 'granted';
   }
@@ -28,20 +28,24 @@ export async function getNotificationPermission(): Promise<string> {
   return Notification.permission ?? 'default';
 }
 
-async function configureDefaultChannel() {
+async function configureChannels() {
   if (!Capacitor.isNativePlatform()) return;
   try {
+    // 1. Delete Capacitor's default channel so it doesn't pollute settings
+    await LocalNotifications.deleteChannel({ id: 'default' }).catch(() => {});
+
+    // 2. Create our fresh V2 channel. Since it's a new ID, Android won't have 
+    // any cached IMPORTANCE_DEFAULT for it, so it will correctly get IMPORTANCE_HIGH (5)
     await LocalNotifications.createChannel({
-      id: 'default',
+      id: 'kuripot_reminders_v2',
       name: 'KURIPOT Reminders',
       description: 'Finance logging reminders',
       importance: 5,
       visibility: 1,
-      sound: 'kaching.mp3',
       vibration: true
     });
   } catch (e) {
-    console.warn('Failed to configure default channel', e);
+    console.warn('Failed to configure notification channels', e);
   }
 }
 
@@ -62,7 +66,7 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
   if (permission !== 'granted') return;
 
   // Enforce channel settings on every schedule run
-  await configureDefaultChannel();
+  await configureChannels();
 
   const notifications: Parameters<typeof LocalNotifications.schedule>[0]['notifications'] = [];
   let idCounter = 1000; // Start IDs at 1000 to avoid conflicts
@@ -99,8 +103,7 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
           extra: { type: 'kuripot-reminder', reminderId: reminder.id },
           smallIcon: 'ic_stat_kuripot',
           iconColor: '#285ccc',
-          channelId: 'default',
-          sound: 'kaching.mp3',
+          channelId: 'kuripot_reminders_v2',
         });
       }
     }
