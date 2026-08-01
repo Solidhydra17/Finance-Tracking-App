@@ -20,27 +20,20 @@ public class MainActivity extends BridgeActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     registerPlugin(NotificationSettingsPlugin.class);
+    createChannels();
     super.onCreate(savedInstanceState);
-    createHighImportanceChannel();
   }
 
-  private void createHighImportanceChannel() {
+  private void createChannels() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
 
     NotificationManager manager =
       (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     if (manager == null) return;
 
-    // If channel already exists with correct importance, skip
-    NotificationChannel existing = manager.getNotificationChannel(CHANNEL_ID);
-    if (existing != null && existing.getImportance() >= NotificationManager.IMPORTANCE_HIGH) {
-      return;
-    }
-
-    // Delete old channel if it exists with wrong importance
-    if (existing != null) {
-      manager.deleteNotificationChannel(CHANNEL_ID);
-    }
+    // Delete both channels to force recreation with IMPORTANCE_HIGH
+    manager.deleteNotificationChannel("default");
+    manager.deleteNotificationChannel(CHANNEL_ID);
 
     Uri soundUri = Uri.parse(
       "android.resource://" + getPackageName() + "/raw/kaching"
@@ -50,6 +43,16 @@ public class MainActivity extends BridgeActivity {
       .setUsage(AudioAttributes.USAGE_NOTIFICATION)
       .build();
 
+    // Create the default channel (just in case Capacitor still expects it)
+    NotificationChannel defaultChannel = new NotificationChannel(
+      "default",
+      "Default",
+      NotificationManager.IMPORTANCE_HIGH
+    );
+    defaultChannel.setSound(soundUri, audioAttrs);
+    manager.createNotificationChannel(defaultChannel);
+
+    // Create our custom channel
     NotificationChannel channel = new NotificationChannel(
       CHANNEL_ID,
       CHANNEL_NAME,
