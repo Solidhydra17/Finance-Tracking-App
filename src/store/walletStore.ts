@@ -29,11 +29,11 @@ export const useWalletStore = create<WalletState>((set) => ({
         try {
             const accounts = await walletService.getAllAccounts();
             const totals = await walletService.getTotals();
-            set({ 
-                accounts, 
-                totalWalletBalance: totals.totalWalletBalance, 
+            set({
+                accounts,
+                totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false 
+                isLoading: false
             });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -47,11 +47,11 @@ export const useWalletStore = create<WalletState>((set) => ({
             // Refresh
             const accounts = await walletService.getAllAccounts();
             const totals = await walletService.getTotals();
-            set({ 
+            set({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false 
+                isLoading: false
             });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -65,11 +65,11 @@ export const useWalletStore = create<WalletState>((set) => ({
             await walletService.updateAccount(id, updates);
             const accounts = await walletService.getAllAccounts();
             const totals = await walletService.getTotals();
-            set({ 
+            set({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false 
+                isLoading: false
             });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -86,7 +86,7 @@ export const useWalletStore = create<WalletState>((set) => ({
             }));
             // Background refresh totals
             const totals = await walletService.getTotals();
-            set({ 
+            set({
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
             });
@@ -102,11 +102,11 @@ export const useWalletStore = create<WalletState>((set) => ({
             await walletService.payCreditCard(paymentData);
             const accounts = await walletService.getAllAccounts();
             const totals = await walletService.getTotals();
-            set({ 
+            set({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false 
+                isLoading: false
             });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -120,11 +120,11 @@ export const useWalletStore = create<WalletState>((set) => ({
             await walletService.createFundTransfer(data);
             const accounts = await walletService.getAllAccounts();
             const totals = await walletService.getTotals();
-            set({ 
+            set({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false 
+                isLoading: false
             });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
