@@ -13,7 +13,7 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-  private static final String CHANNEL_ID = "kuripot_reminders_v2";
+  private static final String CHANNEL_ID = "kuripot_reminders_v3";
 
   @Override
   public void onCreate(Bundle savedInstanceState) {

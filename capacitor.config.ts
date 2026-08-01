@@ -15,6 +15,7 @@ const config: CapacitorConfig = {
     LocalNotifications: {
       smallIcon: 'ic_stat_kuripot',
       iconColor: '#285ccc',
+      sound: 'kaching.mp3',
       // Our channel kuripot_reminders is pre-created in MainActivity.kt
       // with IMPORTANCE_HIGH for floating heads-up banners
     },
