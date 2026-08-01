@@ -10,6 +10,9 @@ export function isNotificationsSupported(): boolean {
 export async function requestNotificationPermission(): Promise<boolean> {
   if (Capacitor.isNativePlatform()) {
     const result = await LocalNotifications.requestPermissions();
+    if (result.display === 'granted') {
+      await configureDefaultChannel();
+    }
     return result.display === 'granted';
   }
   if (!('Notification' in window)) return false;
@@ -23,6 +26,23 @@ export async function getNotificationPermission(): Promise<string> {
     return result.display;
   }
   return Notification.permission ?? 'default';
+}
+
+async function configureDefaultChannel() {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    await LocalNotifications.createChannel({
+      id: 'default',
+      name: 'KURIPOT Reminders',
+      description: 'Finance logging reminders',
+      importance: 5,
+      visibility: 1,
+      sound: 'kaching.mp3',
+      vibration: true
+    });
+  } catch (e) {
+    console.warn('Failed to configure default channel', e);
+  }
 }
 
 export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
@@ -40,6 +60,9 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
 
   const permission = await getNotificationPermission();
   if (permission !== 'granted') return;
+
+  // Enforce channel settings on every schedule run
+  await configureDefaultChannel();
 
   const notifications: Parameters<typeof LocalNotifications.schedule>[0]['notifications'] = [];
   let idCounter = 1000; // Start IDs at 1000 to avoid conflicts
