@@ -26,18 +26,22 @@ public class WalletWidget extends AppWidgetProvider {
 
   public static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
     SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+    String projectedBalance = prefs.getString("widget_projectedBalance", "₱0.00");
     String totalBalance = prefs.getString("widget_totalBalance", "₱0.00");
     String accountsJson = prefs.getString("widget_accounts", "[]");
 
+    if (projectedBalance == null) projectedBalance = "₱0.00";
     if (totalBalance == null) totalBalance = "₱0.00";
     if (accountsJson == null) accountsJson = "[]";
 
     RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_wallet);
-    views.setTextViewText(R.id.widget_balance, totalBalance);
 
-    String accountsText = buildAccountsText(accountsJson);
-    views.setTextViewText(R.id.widget_accounts_summary, accountsText);
+    views.setTextViewText(R.id.widget_projected_balance, projectedBalance);
+    views.setTextViewText(R.id.widget_total_balance_sub, "Total Wallet Balance: " + totalBalance);
+    views.setTextViewText(R.id.widget_accounts_summary, buildAccountsText(accountsJson));
 
+    // Tap to open app
     Intent launchIntent = context.getPackageManager()
       .getLaunchIntentForPackage(context.getPackageName());
     if (launchIntent != null) {
