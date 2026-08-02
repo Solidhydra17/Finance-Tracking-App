@@ -60,11 +60,7 @@
     android:textColor="#8899bb"
     android:textSize="9sp"
     android:singleLine="true"
-    android:ellipsize="marquee"
-    android:marqueeRepeatLimit="marquee_forever"
-    android:scrollHorizontally="true"
-    android:focusable="true"
-    android:focusableInTouchMode="true"
+    android:ellipsize="end"
     android:text="" />
 
 </LinearLayout>
