@@ -22,6 +22,10 @@ import { refreshWidget } from '@/lib/notificationSettings';
 export async function updateNativeWidget(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
+    // Force refresh stores from DB so we get current balances
+    await useWalletStore.getState().fetchAccounts();
+    await useLoanStore.getState().fetchLoans();
+
     // Read directly from Zustand stores — same values shown in the app
     const { accounts, totalWalletBalance, totalCreditDebt } =
       useWalletStore.getState();
