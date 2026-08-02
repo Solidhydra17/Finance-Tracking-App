@@ -14,8 +14,8 @@ import org.json.JSONObject;
 
 public class WalletWidget extends AppWidgetProvider {
 
-  // Capacitor Preferences uses "_capacitorPreferences" as the SharedPreferences name
-  private static final String PREFS_NAME = "_capacitorPreferences";
+  // @capacitor/preferences stores data in "CapacitorStorage" (not "_capacitorPreferences")
+  private static final String PREFS_NAME = "CapacitorStorage";
 
   @Override
   public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
