@@ -17,6 +17,7 @@ import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
 import { useUIStore } from '@/store';
 import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
+import { refreshWidget } from '@/lib/notificationSettings';
 
 export async function updateNativeWidget(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
@@ -59,10 +60,8 @@ export async function updateNativeWidget(): Promise<void> {
     await Preferences.set({ key: 'widget_expense', value: fmt(monthExpense) });
     await Preferences.set({ key: 'widget_accounts', value: JSON.stringify(accountsData) });
 
-    // Tell Android to redraw the widget
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { CapacitorWidgetUpdater } = await import('@capgo/capacitor-widget-kit' as any) as any;
-    await CapacitorWidgetUpdater?.reloadWidgets?.();
+    // Tell Android to redraw the widget via our custom plugin
+    await refreshWidget();
   } catch (e) {
     console.warn('[Widget] updateNativeWidget failed:', e);
   }
