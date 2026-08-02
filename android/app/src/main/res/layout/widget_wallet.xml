@@ -5,7 +5,7 @@
   android:layout_width="match_parent"
   android:layout_height="match_parent"
   android:orientation="vertical"
-  android:background="@drawable/widget_background"
+  android:background="#0f1729"
   android:padding="14dp">
 
   <!-- TOP SECTION: Projected Balance -->
@@ -21,7 +21,6 @@
       android:textColor="#285ccc"
       android:textSize="9sp"
       android:textStyle="bold"
-      android:letterSpacing="0.12"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content" />
 
@@ -30,7 +29,6 @@
       android:textColor="#8899bb"
       android:textSize="8sp"
       android:textStyle="bold"
-      android:letterSpacing="0.08"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_marginTop="6dp" />
