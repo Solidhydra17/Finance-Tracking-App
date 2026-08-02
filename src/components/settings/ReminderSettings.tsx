@@ -66,6 +66,8 @@ function PermissionRow() {
           schedule: { at: target },
           smallIcon: 'ic_stat_kuripot',
           iconColor: '#285ccc',
+          channelId: 'kuripot_reminders',
+          sound: 'kaching.ogg',
         }]
       }).catch(console.error);
     });

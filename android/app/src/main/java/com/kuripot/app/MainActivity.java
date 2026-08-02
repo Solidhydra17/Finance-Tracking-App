@@ -14,13 +14,13 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-  private static final String CHANNEL_ID = "kuripot_reminders_v5";
+  private static final String CHANNEL_ID = "kuripot_reminders";
   private static final String CHANNEL_NAME = "KURIPOT Reminders";
   private static final String CHANNEL_DESC = "Finance logging reminders";
 
   // Old channel IDs to clean up
   private static final String[] OLD_CHANNEL_IDS = {
-    "default", "kuripot_reminders", "kuripot_reminders_v2", "kuripot_reminders_v3", "kuripot_reminders_v4"
+    "kuripot_reminders_v2", "kuripot_reminders_v3", "kuripot_reminders_v4", "kuripot_reminders_v5"
   };
 
   @Override
@@ -45,18 +45,11 @@ public class MainActivity extends BridgeActivity {
       try { manager.deleteNotificationChannel(oldId); } catch (Exception ignored) {}
     }
 
-    // 2. Check if our current channel already exists with correct settings
-    NotificationChannel existing = manager.getNotificationChannel(CHANNEL_ID);
-    if (existing != null && existing.getImportance() >= NotificationManager.IMPORTANCE_HIGH) {
-      // Channel already exists with correct importance — Android locks importance
-      // after creation, so we can only update name/description (which we do below).
-      existing.setName(CHANNEL_NAME);
-      existing.setDescription(CHANNEL_DESC);
-      manager.createNotificationChannel(existing);
-      return;
-    }
+    // Delete current channels to force recreation
+    manager.deleteNotificationChannel(CHANNEL_ID);
+    manager.deleteNotificationChannel("default");
 
-    // 3. Create the channel fresh with ALL settings maxed out
+    // 2. Create the channel fresh with ALL settings maxed out
     Uri soundUri = Uri.parse(
       ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/kaching"
     );
@@ -81,6 +74,24 @@ public class MainActivity extends BridgeActivity {
     channel.setShowBadge(true);
 
     manager.createNotificationChannel(channel);
+
+    // Recreate default channel with high importance as requested
+    NotificationChannel defaultChannel = new NotificationChannel(
+      "default",
+      CHANNEL_NAME,
+      NotificationManager.IMPORTANCE_HIGH
+    );
+    defaultChannel.setDescription(CHANNEL_DESC);
+    defaultChannel.enableVibration(true);
+    defaultChannel.setVibrationPattern(new long[]{0, 250, 150, 250});
+    defaultChannel.setSound(soundUri, audioAttrs);
+    defaultChannel.enableLights(true);
+    defaultChannel.setLightColor(0xFF285CCC);
+    defaultChannel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
+    defaultChannel.setBypassDnd(false);
+    defaultChannel.setShowBadge(true);
+    
+    manager.createNotificationChannel(defaultChannel);
   }
 
   public void openNotificationChannelSettings() {
