@@ -32,16 +32,20 @@ async function configureChannels() {
   if (!Capacitor.isNativePlatform()) return;
   try {
     // Delete all old stale channels
-    const oldChannels = ['default', 'kuripot_reminders', 'kuripot_reminders_v2', 'kuripot_reminders_v3', 'kuripot_reminders_v4'];
+    const oldChannels = ['kuripot_reminders_v2', 'kuripot_reminders_v3', 'kuripot_reminders_v4', 'kuripot_reminders_v5'];
     for (const id of oldChannels) {
       await LocalNotifications.deleteChannel({ id }).catch(() => {});
     }
 
-    // Create/update our v5 channel with full settings.
+    // Delete current channels to force recreation
+    await LocalNotifications.deleteChannel({ id: 'kuripot_reminders' }).catch(() => {});
+    await LocalNotifications.deleteChannel({ id: 'default' }).catch(() => {});
+
+    // Create/update our canonical channel with full settings.
     // The native Java code in MainActivity already creates this channel
     // before Capacitor initializes, but we call it here too as a safety net.
     await LocalNotifications.createChannel({
-      id: 'kuripot_reminders_v5',
+      id: 'kuripot_reminders',
       name: 'KURIPOT Reminders',
       description: 'Finance logging reminders',
       importance: 5,
@@ -108,7 +112,7 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
           extra: { type: 'kuripot-reminder', reminderId: reminder.id },
           smallIcon: 'ic_stat_kuripot',
           iconColor: '#285ccc',
-          channelId: 'kuripot_reminders_v5',
+          channelId: 'kuripot_reminders',
           sound: 'kaching.ogg',
         });
       }
