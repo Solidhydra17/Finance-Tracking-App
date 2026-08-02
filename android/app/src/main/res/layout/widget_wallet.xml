@@ -5,10 +5,10 @@
   android:layout_width="match_parent"
   android:layout_height="match_parent"
   android:orientation="vertical"
-  android:background="#0f1729"
+  android:background="#1a3abf"
   android:padding="14dp">
 
-  <!-- TOP SECTION: Projected Balance -->
+  <!-- TOP: Projected Balance (large) + Total Balance (sub) -->
   <LinearLayout
     android:layout_width="match_parent"
     android:layout_height="0dp"
@@ -17,48 +17,48 @@
     android:gravity="center_vertical">
 
     <TextView
-      android:text="KURIPOT"
-      android:textColor="#285ccc"
+      android:text="PROJECTED BALANCE"
+      android:textColor="#aabbdd"
       android:textSize="9sp"
       android:textStyle="bold"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content" />
 
     <TextView
-      android:text="PROJECTED BALANCE"
-      android:textColor="#8899bb"
-      android:textSize="8sp"
-      android:textStyle="bold"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="6dp" />
-
-    <TextView
-      android:id="@+id/widget_balance"
+      android:id="@+id/widget_projected_balance"
       android:text="₱0.00"
       android:textColor="#ffffff"
-      android:textSize="26sp"
+      android:textSize="28sp"
       android:textStyle="bold"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_marginTop="2dp" />
 
+    <TextView
+      android:id="@+id/widget_total_balance_sub"
+      android:text="Total Wallet Balance: ₱0.00"
+      android:textColor="#aabbdd"
+      android:textSize="10sp"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp" />
+
   </LinearLayout>
 
-  <!-- Divider -->
+  <!-- DIVIDER -->
   <TextView
     android:layout_width="match_parent"
     android:layout_height="1dp"
-    android:background="#1e2d4a"
-    android:layout_marginBottom="10dp"
+    android:background="#2244cc"
+    android:layout_marginBottom="8dp"
     android:text="" />
 
-  <!-- BOTTOM SECTION: Account summary (marquee scroll) -->
+  <!-- BOTTOM: Account breakdown scrolling text -->
   <TextView
     android:id="@+id/widget_accounts_summary"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:textColor="#8899bb"
+    android:textColor="#aabbdd"
     android:textSize="9sp"
     android:singleLine="true"
     android:ellipsize="end"

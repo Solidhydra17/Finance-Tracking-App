@@ -15,52 +15,57 @@ import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
-import { useUIStore } from '@/store';
+import { useUIStore, useWalletStore, useLoanStore } from '@/store';
 import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
 import { refreshWidget } from '@/lib/notificationSettings';
 
 export async function updateNativeWidget(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    const [accounts, totals] = await Promise.all([
-      walletService.getAllAccounts(),
-      walletService.getTotals(),
-    ]);
+    // Read directly from Zustand stores — same values shown in the app
+    const { accounts, totalWalletBalance, totalCreditDebt } =
+      useWalletStore.getState();
+    const { totalOwedToYou, totalYouOwe } =
+      useLoanStore.getState();
     const sym = useUIStore.getState().currencySymbol;
-    const fmt = (n: number) => `${sym}${(n / 100).toFixed(2)}`;
+    const pos = useUIStore.getState().currencyPosition;
 
-    // Calculate monthly income and expense from current month's transactions
-    const { db } = await import('@/storage/indexeddb/database');
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const allTx = await db.transactions
-      .where('date').aboveOrEqual(monthStart)
-      .and(tx => tx.deletedAt == null)
-      .toArray();
-    const monthIncome = allTx
-      .filter(tx => tx.type === 'income')
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const monthExpense = allTx
-      .filter(tx => tx.type === 'expense')
-      .reduce((sum, tx) => sum + tx.amount, 0);
+    const fmt = (n: number) => {
+      const abs = Math.abs(n / 100).toFixed(2);
+      const sign = n < 0 ? '-' : '';
+      return pos === 'suffix'
+        ? `${sign}${abs}${sym}`
+        : `${sign}${sym}${abs}`;
+    };
 
-    // Build account breakdown JSON for the Kotlin widget
-    const accountsData = accounts.map(a => ({
-      name: a.name,
-      type: a.type.toUpperCase(),
-      balance: a.type === 'credit'
-        ? fmt(Math.max(0, (a.creditLimit ?? 0) - a.balance))
-        : fmt(a.balance),
-    }));
+    // Match DashboardPage formula exactly
+    const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
 
-    // Write to SharedPreferences via Capacitor Preferences plugin
+    // Build account breakdown grouped by type — matches WalletPage layout
+    const cash = accounts.filter(a => a.type === 'cash');
+    const ecash = accounts.filter(a => a.type === 'ecash');
+    const debit = accounts.filter(a => a.type === 'debit');
+    const credit = accounts.filter(a => a.type === 'credit');
+
+    const accountsData = [
+      ...cash.map(a => ({ name: a.name, type: 'CASH', balance: fmt(a.balance) })),
+      ...ecash.map(a => ({ name: a.name, type: 'E-CASH', balance: fmt(a.balance) })),
+      ...debit.map(a => ({ name: a.name, type: 'DEBIT', balance: fmt(a.balance) })),
+      ...credit.map(a => ({
+        name: a.name,
+        type: 'CREDIT',
+        balance: fmt(Math.max(0, (a.creditLimit ?? 0) - a.balance)),
+      })),
+    ];
+
     const { Preferences } = await import('@capacitor/preferences');
-    await Preferences.set({ key: 'widget_totalBalance', value: fmt(totals.totalWalletBalance) });
-    await Preferences.set({ key: 'widget_income', value: fmt(monthIncome) });
-    await Preferences.set({ key: 'widget_expense', value: fmt(monthExpense) });
+    await Preferences.set({ key: 'widget_projectedBalance', value: fmt(projectedBalance) });
+    await Preferences.set({ key: 'widget_totalBalance', value: fmt(totalWalletBalance) });
+    await Preferences.set({ key: 'widget_creditDebt', value: fmt(totalCreditDebt) });
+    await Preferences.set({ key: 'widget_owedToYou', value: fmt(totalOwedToYou) });
+    await Preferences.set({ key: 'widget_youOwe', value: fmt(totalYouOwe) });
     await Preferences.set({ key: 'widget_accounts', value: JSON.stringify(accountsData) });
 
-    // Tell Android to redraw the widget via our custom plugin
     await refreshWidget();
   } catch (e) {
     console.warn('[Widget] updateNativeWidget failed:', e);
