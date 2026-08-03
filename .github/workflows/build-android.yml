@@ -2,7 +2,7 @@ name: Build and Release Android APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'update/**', 'updated/**']
   workflow_dispatch:
 
 permissions:
@@ -40,8 +40,16 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build debug APK
-        run: cd android && ./gradlew assembleDebug
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/kuripot-release.keystore
+
+      - name: Build Release APK
+        run: cd android && ./gradlew assembleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Get version from package.json
         id: version
@@ -52,7 +60,7 @@ jobs:
         run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Rename APK to kuripot.apk
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk kuripot.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk kuripot.apk
 
       - name: Delete existing latest release and tag if they exist
         run: |
@@ -69,7 +77,7 @@ jobs:
           body: |
             🤖 Automated build from commit ${{ steps.sha.outputs.SHA }}
 
-            **Branch:** main
+            **Branch:** ${{ github.ref_name }}
             **Version:** ${{ steps.version.outputs.VERSION }}
             **Built:** ${{ github.event.head_commit.timestamp }}
             **Commit message:** ${{ github.event.head_commit.message }}
@@ -79,7 +87,7 @@ jobs:
             1. Download `kuripot.apk` below
             2. On your Android phone, open the downloaded file
             3. If prompted, allow installs from unknown sources in your phone settings
-            4. Install and open Kuripot
+            4. Install — updates cleanly without losing your data ✅
           files: kuripot.apk
           prerelease: false
           make_latest: true
