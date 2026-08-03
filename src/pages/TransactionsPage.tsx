@@ -26,7 +26,7 @@ export const TransactionsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
     const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
-    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | string | null>(null);
 
     useEffect(() => {
         setFilters({ searchQuery: debouncedSearchTerm });
@@ -63,7 +63,7 @@ export const TransactionsPage: React.FC = () => {
     const getCategoryById = (id: number) => categories.find((c) => c.id === id);
     const getAccountName = (id?: number) => accounts.find(a => a.id === id)?.name || "Unknown";
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: number | string) => {
         setConfirmDeleteId(id);
     };
 
@@ -374,17 +374,15 @@ export const TransactionsPage: React.FC = () => {
                                                                 {amountPrefix}
                                                                 {centsToDisplay(transaction.amount)}
                                                             </p>
-                                                            {!isLoan && !isLoanPayment && (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleDelete(transaction.id!);
-                                                                    }}
-                                                                    className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
-                                                                >
-                                                                    <Icon name="TrashIcon" className="w-4 h-4" />
-                                                                </button>
-                                                            )}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDelete(transaction.id!);
+                                                                }}
+                                                                className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
+                                                            >
+                                                                <Icon name="TrashIcon" className="w-4 h-4" />
+                                                            </button>
                                                         </div>
                                                     </CardBody>
                                                 </Card>

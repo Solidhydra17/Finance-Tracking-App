@@ -128,13 +128,30 @@ export const AddLoanPage: React.FC = () => {
                             className="text-3xl font-bold text-[var(--text-main)]"
                         />
 
-                        <Input
-                            label={direction === 'outbound' ? "Who did you lend to?" : "Who did you borrow from?"}
-                            placeholder="Name of person or bank"
-                            value={personName}
-                            onChange={(e) => setPersonName(e.target.value)}
-                            required
-                        />
+                        <div>
+                            <Input
+                                label={direction === 'outbound' ? "Who did you lend to?" : "Who did you borrow from?"}
+                                placeholder="Name of person or bank"
+                                value={personName}
+                                onChange={(e) => setPersonName(e.target.value)}
+                                required
+                                list={direction === 'inbound' ? "loan-providers" : undefined}
+                            />
+                            {direction === 'inbound' && (
+                                <datalist id="loan-providers">
+                                    <option value="GLoan" />
+                                    <option value="GCredit" />
+                                    <option value="SPayLater" />
+                                    <option value="SLoan" />
+                                    <option value="Maya Credit" />
+                                    <option value="Maya Personal Loan" />
+                                    <option value="Billease" />
+                                    <option value="Tala" />
+                                    <option value="JuanHand" />
+                                    <option value="Home Credit" />
+                                </datalist>
+                            )}
+                        </div>
 
                         <div className="flex gap-4">
                             <div className="flex-1">

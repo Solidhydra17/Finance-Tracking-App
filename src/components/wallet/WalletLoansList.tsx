@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLoanStore, useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Modal, Input, Button } from '@/components/ui';
@@ -7,6 +8,7 @@ import { formatDateLocal } from '@/lib/date';
 import type { Loan } from '@/types';
 
 export const WalletLoansList: React.FC = () => {
+    const navigate = useNavigate();
     const { loans, repayLoan } = useLoanStore(useShallow(state => ({
         loans: state.loans,
         repayLoan: state.repayLoan
@@ -102,6 +104,9 @@ export const WalletLoansList: React.FC = () => {
             <section className="space-y-3">
                 <div className="flex justify-between items-center px-1">
                     <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Owed to You (Outbound)</h3>
+                    <button onClick={() => navigate('/add-loan')} className="text-xs font-bold text-midblue">
+                        + Add Loan
+                    </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {outboundLoans.map(renderLoanCard)}
@@ -117,6 +122,9 @@ export const WalletLoansList: React.FC = () => {
             <section className="space-y-3">
                 <div className="flex justify-between items-center px-1">
                     <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">You Owe (Inbound)</h3>
+                    <button onClick={() => navigate('/add-loan')} className="text-xs font-bold text-midblue">
+                        + Add Loan
+                    </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {inboundLoans.map(renderLoanCard)}
