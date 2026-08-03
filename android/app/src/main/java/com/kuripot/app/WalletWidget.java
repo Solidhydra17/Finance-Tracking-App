@@ -39,7 +39,10 @@ public class WalletWidget extends AppWidgetProvider {
 
     views.setTextViewText(R.id.widget_projected_balance, projectedBalance);
     views.setTextViewText(R.id.widget_total_balance_sub, "Total Wallet Balance: " + totalBalance);
-    views.setTextViewText(R.id.widget_accounts_summary, buildAccountsText(accountsJson));
+    String accountsText = buildAccountsText(accountsJson);
+    views.setTextViewText(R.id.widget_accounts_summary, accountsText);
+    // setSelected(true) is required to activate marquee scrolling inside a RemoteViews widget
+    views.setBoolean(R.id.widget_accounts_summary, "setSelected", true);
 
     // Tap to open app
     Intent launchIntent = context.getPackageManager()
