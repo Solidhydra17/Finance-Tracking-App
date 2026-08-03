@@ -132,7 +132,9 @@ export const SettingsPage: React.FC = () => {
       fetch('https://api.github.com/repos/Solidhydra17/Finance-Tracking-App/releases/latest')
         .then(res => res.json())
         .then(data => {
-          const latestVersion = data.tag_name?.replace('v', '');
+          // The tag_name is "latest", so extract version from the release name (e.g., "Kuripot v1.0.11 (6114090)")
+          const match = (data.name || data.tag_name || '').match(/v?(\d+\.\d+\.\d+)/);
+          const latestVersion = match ? match[1] : null;
           if (latestVersion && latestVersion.localeCompare(APP_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > 0) {
             setHasApkUpdate(true);
           }
