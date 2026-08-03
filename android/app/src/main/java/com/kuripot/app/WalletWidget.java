@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.widget.RemoteViews;
+import android.text.TextUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,8 +42,14 @@ public class WalletWidget extends AppWidgetProvider {
     views.setTextViewText(R.id.widget_total_balance_sub, "Total Wallet Balance: " + totalBalance);
     String accountsText = buildAccountsText(accountsJson);
     views.setTextViewText(R.id.widget_accounts_summary, accountsText);
-    // setSelected(true) is required to activate marquee scrolling inside a RemoteViews widget
+    // Enable marquee scrolling programmatically
+    // These cannot be set in XML for RemoteViews — must be done in Java
     views.setBoolean(R.id.widget_accounts_summary, "setSelected", true);
+    views.setBoolean(R.id.widget_accounts_summary, "setSingleLine", true);
+    views.setBoolean(R.id.widget_accounts_summary, "setHorizontallyScrolling", true);
+    views.setInt(R.id.widget_accounts_summary, "setEllipsize",
+      android.text.TextUtils.TruncateAt.MARQUEE.ordinal() + 1);
+    views.setInt(R.id.widget_accounts_summary, "setMarqueeRepeatLimit", -1);
 
     // Tap to open app
     Intent launchIntent = context.getPackageManager()
