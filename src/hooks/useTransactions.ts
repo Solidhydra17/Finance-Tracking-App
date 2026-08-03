@@ -42,7 +42,7 @@ export function useTransactions(filters: FilterState) {
     try {
       let allTransactions: any[] = [];
       
-      if (filters.transactionType === 'loans') {
+      if (filters.transactionType === 'all' || filters.transactionType === 'loans') {
         const loans = await loanRepository.getAll();
         const loanPayments = await db.loanPayments.toArray();
         
@@ -68,17 +68,31 @@ export function useTransactions(filters: FilterState) {
             };
         });
         
-        allTransactions = [...mappedLoans, ...mappedPayments]
+        let loanItems = [...mappedLoans, ...mappedPayments]
           .filter(item => {
             if (filters.dateRange?.startDate && filters.dateRange?.endDate) {
               return item.date >= filters.dateRange.startDate && item.date <= filters.dateRange.endDate;
             }
             return true;
-          })
-          .sort((a, b) => b.date.localeCompare(a.date));
-      } else {
-        allTransactions = await transactionsEngine.getByFilters(filters);
+          });
+
+        if (filters.searchQuery) {
+          const query = filters.searchQuery.toLowerCase();
+          loanItems = loanItems.filter(item => 
+              (item.originalLoan?.personName?.toLowerCase() || '').includes(query) ||
+              item.date.includes(query)
+          );
+        }
+
+        allTransactions = [...allTransactions, ...loanItems];
       }
+      
+      if (filters.transactionType !== 'loans') {
+        const engineTransactions = await transactionsEngine.getByFilters(filters);
+        allTransactions = [...allTransactions, ...engineTransactions];
+      }
+
+      allTransactions.sort((a, b) => b.date.localeCompare(a.date));
       
       setTransactions(allTransactions);
       setTotal(allTransactions.length);
@@ -132,9 +146,19 @@ export function useTransactions(filters: FilterState) {
   );
 
   const deleteTransaction = useCallback(
-    async (id: number) => {
+    async (id: number | string) => {
       try {
-        await transactionsEngine.softDelete(id);
+        if (typeof id === 'string') {
+          if (id.startsWith('loan_payment_')) {
+            const paymentId = parseInt(id.replace('loan_payment_', ''), 10);
+            await db.loanPayments.delete(paymentId);
+          } else if (id.startsWith('loan_')) {
+            const loanId = parseInt(id.replace('loan_', ''), 10);
+            await loanRepository.delete(loanId);
+          }
+        } else {
+          await transactionsEngine.softDelete(id);
+        }
         // Optimistically remove from store — no loading spinner
         setTransactions(transactions.filter(t => t.id !== id));
         setTotal(Math.max(0, totalTransactions - 1));
