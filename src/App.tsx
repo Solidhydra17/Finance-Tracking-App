@@ -35,7 +35,7 @@ export async function updateNativeWidget(): Promise<void> {
     const pos = useUIStore.getState().currencyPosition;
 
     const fmt = (n: number) => {
-      const abs = Math.abs(n / 100).toFixed(2);
+      const abs = Math.abs(n / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const sign = n < 0 ? '-' : '';
       return pos === 'suffix'
         ? `${sign}${abs}${sym}`
@@ -113,15 +113,15 @@ export const App: React.FC = () => {
 
                 // Balances are stored in integer cents — divide by 100 for display
                 const widgetData = {
-                    totalBalance: (totals.totalWalletBalance / 100).toFixed(2),
+                    totalBalance: (totals.totalWalletBalance / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                     currency: '₱',
                     accounts: accounts.map((a) => ({
                         name: a.name,
                         type: a.type.toUpperCase(),
                         // For credit accounts show available credit; otherwise show balance
                         balance: a.type === 'credit'
-                            ? (((a.creditLimit ?? 0) - Math.max(0, a.balance)) / 100).toFixed(2)
-                            : (a.balance / 100).toFixed(2),
+                            ? (((a.creditLimit ?? 0) - Math.max(0, a.balance)) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            : (a.balance / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                     })),
                 };
 
