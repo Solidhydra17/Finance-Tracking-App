@@ -30,6 +30,7 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
 
     try {
       const isFirst = useUIStore.getState().isFirstLoad;
+      const startTime = Date.now();
       const useMock = useUIStore.getState().useMockData;
 
       // If first load and mock data is enabled, seed the data
@@ -45,6 +46,14 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
       await recurringMaterializer.materializeDueTransactions();
 
       const dashboardData = await dashboardEngine.getDashboardData(filters, showLoans);
+      
+      if (isFirst) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 5000) {
+          await new Promise(resolve => setTimeout(resolve, 5000 - elapsed));
+        }
+      }
+
       setData(dashboardData);
       setCachedDashboardData(dashboardData);
       setFirstLoad(false);
