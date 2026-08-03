@@ -10,9 +10,10 @@ export const AddLoanPage: React.FC = () => {
     const navigate = useNavigate();
     const { addToast, currencySymbol, currencyPosition } = useUIStore();
     const { createLoan } = useLoanStore();
-    const { accounts, fetchAccounts } = useWalletStore(useShallow(state => ({
+    const { accounts, fetchAccounts, createFundTransfer } = useWalletStore(useShallow(state => ({
         accounts: state.accounts,
-        fetchAccounts: state.fetchAccounts
+        fetchAccounts: state.fetchAccounts,
+        createFundTransfer: state.createFundTransfer
     })));
 
     useEffect(() => {
@@ -27,6 +28,10 @@ export const AddLoanPage: React.FC = () => {
     const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
     const [note, setNote] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loanAccountId, setLoanAccountId] = useState<number | ''>(''); // for inbound from loan account (Option B)
+
+    const loanAccounts = accounts.filter(a => a.type === 'loan');
+    const cashDebitAccounts = accounts.filter(a => a.type !== 'loan' && a.type !== 'credit');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,6 +44,36 @@ export const AddLoanPage: React.FC = () => {
         const amount = displayToCents(amountDisplay);
         if (amount <= 0) {
             addToast('warning', 'Amount must be greater than zero');
+            return;
+        }
+
+        // Option B: inbound from loan account -> fund transfer (loan account -> cash wallet)
+        if (direction === 'inbound' && loanAccountId) {
+            if (!walletAccountId) {
+                addToast('warning', 'Please select a destination wallet');
+                return;
+            }
+            setIsSubmitting(true);
+            try {
+                await createFundTransfer({
+                    sourceAccountId: Number(loanAccountId),
+                    destinationAccountId: Number(walletAccountId),
+                    amount,
+                    date,
+                    notes: note || undefined,
+                });
+                updateNativeWidget();
+                addToast('success', 'Loan disbursement recorded successfully');
+                navigate('/wallet');
+            } catch (error: any) {
+                addToast('error', error.message || 'Failed to record loan');
+                setIsSubmitting(false);
+            }
+            return;
+        }
+
+        if (!personName.trim()) {
+            addToast('warning', 'Please enter a person/entity name');
             return;
         }
 
@@ -128,13 +163,15 @@ export const AddLoanPage: React.FC = () => {
                             className="text-3xl font-bold text-[var(--text-main)]"
                         />
 
+                        {/* Person name - hidden when borrowing from a loan account */}
+                        {!(direction === 'inbound' && loanAccountId) && (
                         <div>
                             <Input
                                 label={direction === 'outbound' ? "Who did you lend to?" : "Who did you borrow from?"}
                                 placeholder="Name of person or bank"
                                 value={personName}
                                 onChange={(e) => setPersonName(e.target.value)}
-                                required
+                                required={!(direction === 'inbound' && loanAccountId)}
                                 list={direction === 'inbound' ? "loan-providers" : undefined}
                             />
                             {direction === 'inbound' && (
@@ -152,32 +189,75 @@ export const AddLoanPage: React.FC = () => {
                                 </datalist>
                             )}
                         </div>
+                        )}
 
-                        <div className="flex gap-4">
-                            <div className="flex-1">
-                                <Input
-                                    label="Date Given/Received"
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    required
-                                />
+                        {/* Loan Account Source (only for inbound) */}
+                        {direction === 'inbound' && loanAccounts.length > 0 && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
+                                    Source Loan Account <span className="font-normal text-[var(--text-muted)]">(optional — leave blank for manual loans)</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={loanAccountId}
+                                        onChange={(e) => setLoanAccountId(e.target.value ? Number(e.target.value) : '')}
+                                        className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
+                                    >
+                                        <option value="">No loan account (manual)</option>
+                                        {loanAccounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>
+                                                {acc.name} (Avail: {formatCurrency(Math.max(0, (acc.creditLimit || 0) - acc.balance), currencySymbol, currencyPosition)})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                        <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <Input
-                                    label="Due Date"
-                                    type="date"
-                                    value={dueDate}
-                                    onChange={(e) => setDueDate(e.target.value)}
-                                    required
-                                />
+                        )}
+
+                    {/* Hide person/date fields when using a loan account (Option B flow) */}
+                    {!(direction === 'inbound' && loanAccountId) && (
+                        <>
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <Input
+                                        label="Date Given/Received"
+                                        type="date"
+                                        value={date}
+                                        onChange={(e) => setDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <Input
+                                        label="Due Date"
+                                        type="date"
+                                        value={dueDate}
+                                        onChange={(e) => setDueDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
                             </div>
+                        </>
+                    )}
+                    {direction === 'inbound' && loanAccountId && (
+                        <div className="flex-1">
+                            <Input
+                                label="Date"
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                required
+                            />
                         </div>
+                    )}
 
                         {/* Wallet Selection */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
-                                {direction === 'outbound' ? 'Withdraw from Wallet' : 'Deposit into Wallet'}
+                                {direction === 'outbound' ? 'Withdraw from Wallet' : (loanAccountId ? 'Deposit into Wallet' : 'Deposit into Wallet')}
                             </label>
                             <div className="relative">
                                 <select
@@ -187,7 +267,7 @@ export const AddLoanPage: React.FC = () => {
                                     className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
                                 >
                                     <option value="" disabled>Select Wallet...</option>
-                                    {accounts.map(account => (
+                                    {(direction === 'inbound' ? cashDebitAccounts : accounts.filter(a => a.type !== 'loan')).map(account => (
                                         <option key={account.id} value={account.id}>
                                             {account.name} ({formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})
                                         </option>

@@ -38,6 +38,7 @@ export const WalletAccountsList: React.FC = () => {
     const debitAccounts = accounts.filter(a => a.type === 'debit');
     const ecashAccounts = accounts.filter(a => a.type === 'ecash');
     const creditAccounts = accounts.filter(a => a.type === 'credit');
+    const loanAccounts = accounts.filter(a => a.type === 'loan');
     const nonCreditAccounts = [cashAccount, ...debitAccounts, ...ecashAccounts].filter(Boolean) as WalletAccount[];
 
     const totalDebitBalance = (cashAccount?.balance || 0) + debitAccounts.reduce((sum, a) => sum + a.balance, 0) + ecashAccounts.reduce((sum, a) => sum + a.balance, 0);
@@ -71,14 +72,14 @@ export const WalletAccountsList: React.FC = () => {
             if (editingAccount) {
                 await updateAccount(editingAccount.id!, {
                     name: accountType === 'cash' ? 'Cash' : name,
-                    creditLimit: accountType === 'credit' ? limitCents : undefined
+                    creditLimit: (accountType === 'credit' || accountType === 'loan') ? limitCents : undefined
                 });
                 addToast('success', 'Account updated');
             } else {
                 await createAccount({
                     name: accountType === 'cash' ? 'Cash' : name,
                     type: accountType,
-                    creditLimit: accountType === 'credit' ? limitCents : undefined
+                    creditLimit: (accountType === 'credit' || accountType === 'loan') ? limitCents : undefined
                 });
                 addToast('success', 'Account created');
             }
@@ -137,7 +138,7 @@ export const WalletAccountsList: React.FC = () => {
     };
 
     const renderCard = (account: WalletAccount) => {
-        const isCredit = account.type === 'credit';
+        const isCredit = account.type === 'credit' || account.type === 'loan';
         const limit = account.creditLimit || 1; // avoid division by zero visually
         const usagePercent = isCredit ? (Math.max(0, account.balance) / limit) * 100 : 0;
         const overLimit = usagePercent > 100;
@@ -155,13 +156,15 @@ export const WalletAccountsList: React.FC = () => {
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${account.type === 'cash' ? 'bg-emerald-500/10 text-emerald-500' :
                                 account.type === 'debit' ? 'bg-blue-500/10 text-blue-500' :
                                     account.type === 'ecash' ? 'bg-teal-500/10 text-teal-500' :
-                                        'bg-purple-500/10 text-purple-500'
+                                        account.type === 'loan' ? 'bg-rose-500/10 text-rose-500' :
+                                            'bg-purple-500/10 text-purple-500'
                             }`}>
                             <Icon name={
                                 account.type === 'cash' ? 'BanknotesIcon' :
                                     account.type === 'debit' ? 'BuildingLibraryIcon' :
                                         account.type === 'ecash' ? 'DevicePhoneMobileIcon' :
-                                            'CreditCardIcon'
+                                            account.type === 'loan' ? 'DocumentTextIcon' :
+                                                'CreditCardIcon'
                             } className="w-5 h-5" />
                         </div>
                         <div>
@@ -170,7 +173,7 @@ export const WalletAccountsList: React.FC = () => {
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className={`font-extrabold ${isCredit ? (overLimit ? 'text-red-500' : 'text-purple-500') : account.type === 'ecash' ? 'text-teal-600 dark:text-teal-400' : 'text-[var(--text-main)]'}`}>
+                        <p className={`font-extrabold ${isCredit ? (overLimit ? 'text-red-500' : (account.type === 'loan' ? 'text-rose-500' : 'text-purple-500')) : account.type === 'ecash' ? 'text-teal-600 dark:text-teal-400' : 'text-[var(--text-main)]'}`}>
                             {formatCurrency(account.balance, currencySymbol, currencyPosition)}
                         </p>
                         {isCredit && account.creditLimit && (
@@ -193,7 +196,7 @@ export const WalletAccountsList: React.FC = () => {
                         </div>
                         <div className="h-1.5 bg-[var(--item-bg)] rounded-full overflow-hidden mb-3">
                             <div
-                                className={`h-full rounded-full ${overLimit ? 'bg-red-500' : 'bg-purple-500'}`}
+                                className={`h-full rounded-full ${overLimit ? 'bg-red-500' : (account.type === 'loan' ? 'bg-rose-500' : 'bg-purple-500')}`}
                                 style={{ width: `${Math.min(100, usagePercent)}%` }}
                             />
                         </div>
@@ -203,7 +206,7 @@ export const WalletAccountsList: React.FC = () => {
                             onClick={(e) => { e.stopPropagation(); openPayModal(account); }}
                             className="w-full text-xs py-2"
                         >
-                            Pay Card
+                            {account.type === 'loan' ? 'Pay Loan' : 'Pay Card'}
                         </Button>
                     </div>
                 )}
@@ -284,6 +287,24 @@ export const WalletAccountsList: React.FC = () => {
                 </div>
             </section>
 
+            {/* Loan Section */}
+            <section className="space-y-3">
+                <div className="flex justify-between items-center px-1">
+                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Loan Accounts</h3>
+                    <button onClick={() => openCreateModal('loan')} className="text-xs font-bold text-midblue">
+                        + Add Loan Account
+                    </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {loanAccounts.map(renderCard)}
+                    {loanAccounts.length === 0 && (
+                        <div className="col-span-full text-center p-6 border-2 border-dashed border-[var(--card-border)] rounded-2xl">
+                            <p className="text-sm text-[var(--text-muted)] font-medium">No loan accounts found.</p>
+                        </div>
+                    )}
+                </div>
+            </section>
+
             {/* Manage Account Modal */}
             <Modal
                 isOpen={isManageModalOpen}
@@ -300,15 +321,16 @@ export const WalletAccountsList: React.FC = () => {
                             placeholder={
                                 accountType === 'debit' ? "e.g., Main Savings" :
                                     accountType === 'ecash' ? "e.g., GCash, Maya" :
-                                        "e.g., BDO Visa"
+                                        accountType === 'loan' ? "e.g., GLoan, Billease" :
+                                            "e.g., BDO Visa"
                             }
                             required
                         />
                     )}
 
-                    {accountType === 'credit' && (
+                    {(accountType === 'credit' || accountType === 'loan') && (
                         <Input
-                            label="Credit Limit"
+                            label={accountType === 'loan' ? "Max Loan Limit" : "Credit Limit"}
                             type="number"
                             step="0.01"
                             value={creditLimit}
