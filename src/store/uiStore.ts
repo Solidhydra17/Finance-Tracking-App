@@ -114,7 +114,7 @@ export const useUIStore = create<UIState>((set) => ({
   },
 
   // Settings
-  currencySymbol: '$',
+  currencySymbol: '₱',
   currencyPosition: 'prefix',
   dateFormat: 'MMM dd, yyyy',
   creditWarningThreshold: 80,

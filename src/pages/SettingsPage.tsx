@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 declare const __APP_VERSION__: string;
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.10';
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.11';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -41,6 +41,7 @@ export const SettingsPage: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
+  const [hasApkUpdate, setHasApkUpdate] = useState(false);
 
   const tapCount = useRef(0);
   const lastTapTime = useRef(0);
@@ -124,6 +125,20 @@ export const SettingsPage: React.FC = () => {
         clearTimeout(resetTimer.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      fetch('https://api.github.com/repos/Solidhydra17/Finance-Tracking-App/releases/latest')
+        .then(res => res.json())
+        .then(data => {
+          const latestVersion = data.tag_name?.replace('v', '');
+          if (latestVersion && latestVersion !== APP_VERSION) {
+            setHasApkUpdate(true);
+          }
+        })
+        .catch(err => console.error('Failed to check for updates', err));
+    }
   }, []);
 
   const handleExportJSON = useCallback(async () => {
@@ -318,11 +333,11 @@ export const SettingsPage: React.FC = () => {
       <CustomCategorySettings />
 
       {/* Download App */}
-      {!Capacitor.isNativePlatform() && (
+      {(!Capacitor.isNativePlatform() || hasApkUpdate) && (
         <Card id="card-download-app">
           <CardBody className="space-y-3">
             <h3 className="font-bold text-midblue uppercase text-xs tracking-widest">
-              Download App
+              {hasApkUpdate ? 'Update App' : 'Download App'}
             </h3>
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-midblue/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -330,11 +345,12 @@ export const SettingsPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-bold text-[var(--text-main)]">
-                  Get Kuripot on Android
+                  {hasApkUpdate ? 'Update Kuripot on Android' : 'Get Kuripot on Android'}
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
-                  Download and install the Kuripot app directly on your Android
-                  phone for the full native experience.
+                  {hasApkUpdate 
+                    ? 'A new version of the app is available. Download and install to get the latest features.' 
+                    : 'Download and install the Kuripot app directly on your Android phone for the full native experience.'}
                 </p>
                 <a
                   href="https://github.com/Solidhydra17/Finance-Tracking-App/releases/latest/download/kuripot.apk"
@@ -342,7 +358,7 @@ export const SettingsPage: React.FC = () => {
                   className="inline-flex items-center gap-2 mt-3 px-5 py-3 rounded-2xl bg-midblue text-white font-bold text-sm active:scale-95 transition-all shadow-md shadow-midblue/20"
                 >
                   <Icon name="ArrowDownTrayIcon" className="w-4 h-4" />
-                  Download APK
+                  {hasApkUpdate ? 'Download Update' : 'Download APK'}
                 </a>
                 <p className="text-[10px] text-[var(--text-muted)] mt-1">
                   Android only · Allow installs from unknown sources if prompted
