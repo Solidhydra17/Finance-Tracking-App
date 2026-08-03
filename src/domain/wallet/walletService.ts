@@ -79,10 +79,10 @@ export class WalletService {
             for (const ft of inTransfers) {
                 acc.balance += ft.amount;
             }
-        } else if (acc.type === 'credit') {
+        } else if (acc.type === 'credit' || acc.type === 'loan') {
             let owed = 0;
             
-            // Expenses on this card
+            // Expenses on this card/loan
             const txs = await db.transactions.where('walletAccountId').equals(acc.id).toArray();
             for (const tx of txs) {
                 if (!tx.deletedAt && tx.type === 'expense') {
@@ -90,7 +90,16 @@ export class WalletService {
                 }
             }
             
-            // Minus Credit Payments to this card
+            // Fund Transfers from this card/loan (e.g. borrowing money to cash)
+            const outTransfers = await db.transactions
+                .where('walletAccountId').equals(acc.id)
+                .filter(tx => tx.type === 'fund_transfer' && !tx.deletedAt)
+                .toArray();
+            for (const ft of outTransfers) {
+                owed += ft.amount; // Borrowing money increases the debt
+            }
+
+            // Minus Credit/Loan Payments to this account
             const creditPayments = await db.transactions
                 .where('targetWalletAccountId').equals(acc.id)
                 .filter(tx => tx.type === 'credit_payment' && !tx.deletedAt)
@@ -141,8 +150,8 @@ export class WalletService {
         accounts.forEach(acc => {
             if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
                 totalWalletBalance += acc.balance;
-            } else if (acc.type === 'credit') {
-                // If a credit card has a positive balance, it means you owe money
+            } else if (acc.type === 'credit' || acc.type === 'loan') {
+                // If a credit card or loan has a positive balance, it means you owe money
                 totalCreditDebt += Math.max(0, acc.balance);
             }
         });

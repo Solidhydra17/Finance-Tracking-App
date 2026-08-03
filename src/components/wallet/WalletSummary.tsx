@@ -33,6 +33,7 @@ export const WalletSummary: React.FC = () => {
     const creditDebtPercentage = debitBalance > 0 ? (totalCreditDebt / debitBalance) * 100 : 0;
     
     const isCreditWarning = creditDebtPercentage >= creditWarningThreshold;
+    const hasCreditWarning = isCreditWarning;
 
     return (
         <Card className="bg-gradient-to-br from-midblue to-blue-800 text-white border-none shadow-2xl relative overflow-hidden">
@@ -66,10 +67,10 @@ export const WalletSummary: React.FC = () => {
 
                     <div>
                         <div className="flex items-center gap-1.5 mb-1">
-                            <Icon name="CreditCardIcon" className={`w-4 h-4 ${isCreditWarning ? 'text-red-300' : 'text-blue-200'}`} />
-                            <p className={`text-[10px] font-bold uppercase tracking-widest ${isCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit Debt</p>
+                            <Icon name="CreditCardIcon" className={`w-4 h-4 ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`} />
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit & Loan Debt</p>
                         </div>
-                        <p className={`text-lg font-bold ${isCreditWarning ? 'text-red-400' : 'text-white'}`}>
+                        <p className={`text-lg font-bold ${hasCreditWarning ? 'text-red-400' : 'text-white'}`}>
                             {formatCurrency(totalCreditDebt, currencySymbol, currencyPosition)}
                         </p>
                     </div>
@@ -97,11 +98,11 @@ export const WalletSummary: React.FC = () => {
                     </div>
                 </div>
 
-                {isCreditWarning && (
+                {hasCreditWarning && (
                     <div className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl flex items-start gap-2">
                         <Icon name="ExclamationTriangleIcon" className="w-5 h-5 text-red-300 shrink-0 mt-0.5" />
                         <p className="text-xs text-red-100 font-medium leading-tight">
-                            Warning: Your total credit card debt ({creditDebtPercentage.toFixed(0)}%) exceeds your safety threshold of {creditWarningThreshold}% of your available funds.
+                            Warning: Your total credit card & loan debt ({creditDebtPercentage.toFixed(0)}%) exceeds your safety threshold of {creditWarningThreshold}% of your available funds.
                         </p>
                     </div>
                 )}

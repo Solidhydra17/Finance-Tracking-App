@@ -51,6 +51,8 @@ export async function updateNativeWidget(): Promise<void> {
     const debit = accounts.filter(a => a.type === 'debit');
     const credit = accounts.filter(a => a.type === 'credit');
 
+    const loan = accounts.filter(a => a.type === 'loan');
+
     const accountsData = [
       ...cash.map(a => ({ name: a.name, type: 'CASH', balance: fmt(a.balance) })),
       ...ecash.map(a => ({ name: a.name, type: 'E-CASH', balance: fmt(a.balance) })),
@@ -59,6 +61,11 @@ export async function updateNativeWidget(): Promise<void> {
         name: a.name,
         type: 'CREDIT',
         balance: fmt(Math.max(0, (a.creditLimit ?? 0) - a.balance)),
+      })),
+      ...loan.map(a => ({
+        name: a.name,
+        type: 'LOAN',
+        balance: fmt(a.balance), // debt owed on this loan
       })),
     ];
 
