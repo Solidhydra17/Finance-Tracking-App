@@ -133,7 +133,7 @@ export const SettingsPage: React.FC = () => {
         .then(res => res.json())
         .then(data => {
           const latestVersion = data.tag_name?.replace('v', '');
-          if (latestVersion && latestVersion !== APP_VERSION) {
+          if (latestVersion && latestVersion.localeCompare(APP_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > 0) {
             setHasApkUpdate(true);
           }
         })
