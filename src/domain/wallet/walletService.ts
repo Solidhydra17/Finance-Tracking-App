@@ -140,23 +140,28 @@ export class WalletService {
 
     async getTotals(): Promise<{
         totalWalletBalance: number; // Cash + Debit
-        totalCreditDebt: number;    // Sum of credit balances (usually positive if debt)
+        totalCreditDebt: number;    // Sum of credit card balances
+        walletLoanDebt: number;     // Sum of institutional loan balances
     }> {
         const accounts = await this.getAllAccounts();
         
         let totalWalletBalance = 0;
         let totalCreditDebt = 0;
+        let walletLoanDebt = 0;
 
         accounts.forEach(acc => {
             if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
                 totalWalletBalance += acc.balance;
-            } else if (acc.type === 'credit' || acc.type === 'loan') {
-                // If a credit card or loan has a positive balance, it means you owe money
+            } else if (acc.type === 'credit') {
+                // If a credit card has a positive balance, it means you owe money
                 totalCreditDebt += Math.max(0, acc.balance);
+            } else if (acc.type === 'loan') {
+                // Institutional loans inside the wallet
+                walletLoanDebt += Math.max(0, acc.balance);
             }
         });
 
-        return { totalWalletBalance, totalCreditDebt };
+        return { totalWalletBalance, totalCreditDebt, walletLoanDebt };
     }
 
     async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'>): Promise<number> {

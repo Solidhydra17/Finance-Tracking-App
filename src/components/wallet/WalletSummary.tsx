@@ -7,9 +7,10 @@ import { Link } from 'react-router-dom';
 import { calculateBalances } from '@/lib/balances';
 
 export const WalletSummary: React.FC = () => {
-    const { totalWalletBalance, totalCreditDebt } = useWalletStore(useShallow(state => ({
+    const { totalWalletBalance, totalCreditDebt, walletLoanDebt } = useWalletStore(useShallow(state => ({
         totalWalletBalance: state.totalWalletBalance,
-        totalCreditDebt: state.totalCreditDebt
+        totalCreditDebt: state.totalCreditDebt,
+        walletLoanDebt: state.walletLoanDebt
     })));
 
     const { totalOwedToYou, totalYouOwe } = useLoanStore(useShallow(state => ({
@@ -23,11 +24,12 @@ export const WalletSummary: React.FC = () => {
         creditWarningThreshold: state.creditWarningThreshold
     })));
 
-    const { netWorth, projectedBalance } = calculateBalances({
+    const { netWorth, projectedBalance, creditDebt, loanDebt } = calculateBalances({
         totalWalletBalance,
         totalCreditDebt,
+        walletLoanDebt,
+        peerLoanDebt: totalYouOwe,
         totalOwedToYou,
-        totalYouOwe,
     });
     
     // Total debit balance for percentage calculation (Debit + Cash)
@@ -70,10 +72,10 @@ export const WalletSummary: React.FC = () => {
                     <div>
                         <div className="flex items-center gap-1.5 mb-1">
                             <Icon name="CreditCardIcon" className={`w-4 h-4 ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`} />
-                            <p className={`text-[10px] font-bold uppercase tracking-widest ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit & Loan Debt</p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit Debt</p>
                         </div>
                         <p className={`text-lg font-bold ${hasCreditWarning ? 'text-red-400' : 'text-white'}`}>
-                            {formatCurrency(totalCreditDebt, currencySymbol, currencyPosition)}
+                            {formatCurrency(creditDebt, currencySymbol, currencyPosition)}
                         </p>
                     </div>
                 </div>
@@ -95,7 +97,7 @@ export const WalletSummary: React.FC = () => {
                             <p className="text-rose-300 text-[10px] font-bold uppercase tracking-widest">You Owe (Loans)</p>
                         </div>
                         <p className="text-lg font-bold text-rose-400">
-                            -{formatCurrency(totalYouOwe, currencySymbol, currencyPosition)}
+                            -{formatCurrency(loanDebt, currencySymbol, currencyPosition)}
                         </p>
                     </div>
                 </div>

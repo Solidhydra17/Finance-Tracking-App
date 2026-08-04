@@ -7,6 +7,7 @@ interface WalletState {
     accounts: WalletAccount[];
     totalWalletBalance: number;
     totalCreditDebt: number;
+    walletLoanDebt: number;
     isLoading: boolean;
     error: string | null;
 
@@ -22,6 +23,7 @@ export const useWalletStore = create<WalletState>((set) => ({
     accounts: [],
     totalWalletBalance: 0,
     totalCreditDebt: 0,
+    walletLoanDebt: 0,
     isLoading: false,
     error: null,
 
@@ -38,6 +40,7 @@ export const useWalletStore = create<WalletState>((set) => ({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
+                walletLoanDebt: totals.walletLoanDebt,
                 isLoading: false
             });
         } catch (error: any) {

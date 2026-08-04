@@ -37,18 +37,19 @@ export async function syncWidget(): Promise<void> {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
-        const { accounts, totalWalletBalance, totalCreditDebt } = useWalletStore.getState();
+        const { accounts, totalWalletBalance, totalCreditDebt, walletLoanDebt } = useWalletStore.getState();
         const { totalOwedToYou, totalYouOwe } = useLoanStore.getState();
         const { currencySymbol, currencyPosition } = useUIStore.getState();
 
         const f = (n: number) => fmt(n, currencySymbol, currencyPosition);
 
         // Ensure Widget matches Dashboard and Wallet exactly
-        const { netWorth, projectedBalance } = calculateBalances({
+        const { netWorth, projectedBalance, creditDebt, loanDebt } = calculateBalances({
             totalWalletBalance,
             totalCreditDebt,
+            walletLoanDebt,
+            peerLoanDebt: totalYouOwe,
             totalOwedToYou,
-            totalYouOwe,
         });
 
         // Build per-account payload grouped by type (matches WalletPage layout)
@@ -72,9 +73,9 @@ export async function syncWidget(): Promise<void> {
         await Promise.all([
             Preferences.set({ key: 'widget_projectedBalance', value: f(projectedBalance) }),
             Preferences.set({ key: 'widget_totalBalance',     value: f(netWorth) }),
-            Preferences.set({ key: 'widget_creditDebt',       value: f(totalCreditDebt) }),
+            Preferences.set({ key: 'widget_creditDebt',       value: f(creditDebt) }),
             Preferences.set({ key: 'widget_owedToYou',        value: f(totalOwedToYou) }),
-            Preferences.set({ key: 'widget_youOwe',           value: f(totalYouOwe) }),
+            Preferences.set({ key: 'widget_youOwe',           value: f(loanDebt) }),
             Preferences.set({ key: 'widget_accounts',         value: JSON.stringify(accountsData) }),
         ]);
 
