@@ -4,6 +4,7 @@ import { useWalletStore, useLoanStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { formatCurrency } from '@/lib/money';
 import { Link } from 'react-router-dom';
+import { calculateBalances } from '@/lib/balances';
 
 export const WalletSummary: React.FC = () => {
     const { totalWalletBalance, totalCreditDebt } = useWalletStore(useShallow(state => ({
@@ -22,11 +23,12 @@ export const WalletSummary: React.FC = () => {
         creditWarningThreshold: state.creditWarningThreshold
     })));
 
-    // Net Worth = Physical balance + money owed TO user (outbound loans) - money user owes (inbound loans)
-    const netWorth = totalWalletBalance + totalOwedToYou - totalYouOwe;
-
-    // Projected Balance = Total Wallet Balance - Unpaid Credit - Unpaid Inbound Loans
-    const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
+    const { netWorth, projectedBalance } = calculateBalances({
+        totalWalletBalance,
+        totalCreditDebt,
+        totalOwedToYou,
+        totalYouOwe,
+    });
     
     // Total debit balance for percentage calculation (Debit + Cash)
     const debitBalance = totalWalletBalance;

@@ -15,6 +15,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { useLoanStore } from '@/store/loanStore';
 import { useUIStore } from '@/store/uiStore';
 import { refreshWidget } from '@/lib/notificationSettings';
+import { calculateBalances } from '@/lib/balances';
 
 function fmt(n: number, sym: string, pos: 'prefix' | 'suffix'): string {
     const abs = Math.abs(n / 100).toLocaleString('en-US', {
@@ -42,8 +43,13 @@ export async function syncWidget(): Promise<void> {
 
         const f = (n: number) => fmt(n, currencySymbol, currencyPosition);
 
-        // Match Dashboard / WalletSummary formulas exactly
-        const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
+        // Ensure Widget matches Dashboard and Wallet exactly
+        const { netWorth, projectedBalance } = calculateBalances({
+            totalWalletBalance,
+            totalCreditDebt,
+            totalOwedToYou,
+            totalYouOwe,
+        });
 
         // Build per-account payload grouped by type (matches WalletPage layout)
         const cash   = accounts.filter(a => a.type === 'cash');
@@ -65,7 +71,7 @@ export async function syncWidget(): Promise<void> {
         const { Preferences } = await import('@capacitor/preferences');
         await Promise.all([
             Preferences.set({ key: 'widget_projectedBalance', value: f(projectedBalance) }),
-            Preferences.set({ key: 'widget_totalBalance',     value: f(totalWalletBalance) }),
+            Preferences.set({ key: 'widget_totalBalance',     value: f(netWorth) }),
             Preferences.set({ key: 'widget_creditDebt',       value: f(totalCreditDebt) }),
             Preferences.set({ key: 'widget_owedToYou',        value: f(totalOwedToYou) }),
             Preferences.set({ key: 'widget_youOwe',           value: f(totalYouOwe) }),
