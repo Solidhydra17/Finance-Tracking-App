@@ -4,7 +4,6 @@ import { CalcInput, Input, TextArea, Button, Icon } from '@/components/ui';
 import { useLoanStore, useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, formatCurrency } from '@/lib/money';
-import { updateNativeWidget } from '@/App';
 
 export const AddLoanPage: React.FC = () => {
     const navigate = useNavigate();
@@ -62,7 +61,6 @@ export const AddLoanPage: React.FC = () => {
                     date,
                     notes: note || undefined,
                 });
-                updateNativeWidget();
                 addToast('success', 'Loan disbursement recorded successfully');
                 navigate('/wallet');
             } catch (error: any) {
@@ -100,7 +98,6 @@ export const AddLoanPage: React.FC = () => {
                 destinationWalletAccountId: direction === 'inbound' ? Number(walletAccountId) : undefined,
                 notes: note,
             });
-            updateNativeWidget();
             addToast('success', 'Loan created successfully');
             navigate('/wallet');
         } catch (error: any) {

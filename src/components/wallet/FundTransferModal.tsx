@@ -4,13 +4,11 @@ import { useShallow } from 'zustand/react/shallow';
 import { Modal, Input, CalcInput, Button, Icon } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
 import type { WalletAccount } from '@/types';
-import { updateNativeWidget } from '@/App';
 
 export const FundTransferModal: React.FC = () => {
-    const { accounts, createFundTransfer, fetchAccounts } = useWalletStore(useShallow(state => ({
+    const { accounts, createFundTransfer } = useWalletStore(useShallow(state => ({
         accounts: state.accounts,
         createFundTransfer: state.createFundTransfer,
-        fetchAccounts: state.fetchAccounts
     })));
 
     const invalidateCache = useTransactionStore(state => state.invalidateCache);
@@ -68,9 +66,7 @@ export const FundTransferModal: React.FC = () => {
                 date: transferDate,
                 notes: transferNotes
             });
-            await fetchAccounts();
             invalidateCache(); // Force TransactionsPage to refetch
-            updateNativeWidget().catch(console.warn);
             addToast('success', 'Transfer completed');
             setTransferOpen(false);
         } catch (error: any) {

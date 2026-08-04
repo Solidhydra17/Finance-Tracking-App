@@ -9,7 +9,6 @@ import type { TransactionType } from '@/types';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { recurringRepository, categoryRepository } from '@/storage/indexeddb';
 import { db } from '@/storage/indexeddb/database';
-import { updateNativeWidget } from '@/App';
 
 export const AddTransactionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -248,7 +247,6 @@ export const AddTransactionPage: React.FC = () => {
 
       console.log('Submission result:', success);
       if (success) {
-        updateNativeWidget();
         navigate('/transactions');
       } else {
         setIsSubmitting(false);

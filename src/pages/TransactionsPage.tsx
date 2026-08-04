@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateNativeWidget } from "@/App";
 import {
     Card,
     CardBody,
@@ -70,9 +69,8 @@ export const TransactionsPage: React.FC = () => {
     const confirmDelete = async () => {
         if (confirmDeleteId !== null) {
             await deleteTransaction(confirmDeleteId);
-            await fetchAccounts(); // ensure walletStore totals are fresh
+            // walletStore refresh + widget sync handled inside deleteTransaction
             setConfirmDeleteId(null);
-            updateNativeWidget().catch(console.warn);
         }
     };
 
