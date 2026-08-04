@@ -91,9 +91,10 @@ export const DashboardPage: React.FC = () => {
   })));
   const { data } = useDashboard(filters, showLoans);
   const { plan, items } = useBudget();
-  const { totalWalletBalance, totalCreditDebt, fetchAccounts } = useWalletStore(useShallow(state => ({
+  const { totalWalletBalance, totalCreditDebt, walletLoanDebt, fetchAccounts } = useWalletStore(useShallow(state => ({
     totalWalletBalance: state.totalWalletBalance,
     totalCreditDebt: state.totalCreditDebt,
+    walletLoanDebt: state.walletLoanDebt,
     fetchAccounts: state.fetchAccounts,
   })));
   const { totalOwedToYou, totalYouOwe, fetchLoans } = useLoanStore(useShallow(state => ({
@@ -105,8 +106,9 @@ export const DashboardPage: React.FC = () => {
   const { netWorth, projectedBalance } = calculateBalances({
     totalWalletBalance,
     totalCreditDebt,
+    walletLoanDebt,
+    peerLoanDebt: totalYouOwe,
     totalOwedToYou,
-    totalYouOwe,
   });
 
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
