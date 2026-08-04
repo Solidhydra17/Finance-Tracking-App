@@ -80,6 +80,7 @@ const FunnyLoadingScreen = () => {
 };
 
 import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/lib/date';
+import { calculateBalances } from '@/lib/balances';
 
 export const DashboardPage: React.FC = () => {
   const { filters, setFilters, showLoans, isFirstLoad } = useUIStore(useShallow(state => ({
@@ -100,8 +101,14 @@ export const DashboardPage: React.FC = () => {
     totalYouOwe: state.totalYouOwe,
     fetchLoans: state.fetchLoans,
   })));
-  const netWorth = totalWalletBalance + totalOwedToYou - totalYouOwe;
-  const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
+
+  const { netWorth, projectedBalance } = calculateBalances({
+    totalWalletBalance,
+    totalCreditDebt,
+    totalOwedToYou,
+    totalYouOwe,
+  });
+
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
 
   useEffect(() => {
