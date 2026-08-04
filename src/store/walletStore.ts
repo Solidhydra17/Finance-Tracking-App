@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { walletService } from '@/domain/wallet/walletService';
 import type { WalletAccount, CreditPayment } from '@/types';
+import { refreshFinancialState } from '@/lib/financialState';
 
 interface WalletState {
     accounts: WalletAccount[];
@@ -24,6 +25,10 @@ export const useWalletStore = create<WalletState>((set) => ({
     isLoading: false,
     error: null,
 
+    /**
+     * Pure read/refresh — fetches accounts and totals from DB, updates Zustand state.
+     * No side effects. Widget sync is NOT triggered here.
+     */
     fetchAccounts: async () => {
         set({ isLoading: true, error: null });
         try {
@@ -44,15 +49,8 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.createAccount(account);
-            // Refresh
-            const accounts = await walletService.getAllAccounts();
-            const totals = await walletService.getTotals();
-            set({
-                accounts,
-                totalWalletBalance: totals.totalWalletBalance,
-                totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false
-            });
+            await refreshFinancialState();
+            set({ isLoading: false });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
@@ -63,14 +61,8 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.updateAccount(id, updates);
-            const accounts = await walletService.getAllAccounts();
-            const totals = await walletService.getTotals();
-            set({
-                accounts,
-                totalWalletBalance: totals.totalWalletBalance,
-                totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false
-            });
+            await refreshFinancialState();
+            set({ isLoading: false });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
@@ -80,16 +72,7 @@ export const useWalletStore = create<WalletState>((set) => ({
     deleteAccount: async (id) => {
         try {
             await walletService.deleteAccount(id);
-            // Optimistically remove from store — no loading spinner
-            set((state) => ({
-                accounts: state.accounts.filter(a => a.id !== id),
-            }));
-            // Background refresh totals
-            const totals = await walletService.getTotals();
-            set({
-                totalWalletBalance: totals.totalWalletBalance,
-                totalCreditDebt: totals.totalCreditDebt,
-            });
+            await refreshFinancialState();
         } catch (error: any) {
             set({ error: error.message });
             throw error;
@@ -100,14 +83,8 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.payCreditCard(paymentData);
-            const accounts = await walletService.getAllAccounts();
-            const totals = await walletService.getTotals();
-            set({
-                accounts,
-                totalWalletBalance: totals.totalWalletBalance,
-                totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false
-            });
+            await refreshFinancialState();
+            set({ isLoading: false });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
@@ -118,14 +95,8 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.createFundTransfer(data);
-            const accounts = await walletService.getAllAccounts();
-            const totals = await walletService.getTotals();
-            set({
-                accounts,
-                totalWalletBalance: totals.totalWalletBalance,
-                totalCreditDebt: totals.totalCreditDebt,
-                isLoading: false
-            });
+            await refreshFinancialState();
+            set({ isLoading: false });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;

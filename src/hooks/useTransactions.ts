@@ -6,6 +6,7 @@ import { db } from '@/storage/indexeddb/database';
 import type { TransactionCreate, TransactionUpdate, FilterState } from '@/types';
 import { useUIStore, useTransactionStore } from '@/store';
 import { paginateItems, type PaginationResult } from '@/lib/pagination';
+import { refreshFinancialState } from '@/lib/financialState';
 
 export function useTransactions(filters: FilterState) {
   const { 
@@ -117,8 +118,10 @@ export function useTransactions(filters: FilterState) {
     async (data: TransactionCreate) => {
       try {
         await transactionsEngine.create(data);
-        addToast('success', 'Transaction added successfully');
+        // Refresh stores + widget, then reload transaction list
+        await refreshFinancialState();
         await loadTransactions(true);
+        addToast('success', 'Transaction added successfully');
         return true;
       } catch (error) {
         console.error('Failed to create transaction:', error);
@@ -133,8 +136,10 @@ export function useTransactions(filters: FilterState) {
     async (id: number, data: TransactionUpdate) => {
       try {
         await transactionsEngine.update(id, data);
-        addToast('success', 'Transaction updated successfully');
+        // Refresh stores + widget, then reload transaction list
+        await refreshFinancialState();
         await loadTransactions(true);
+        addToast('success', 'Transaction updated successfully');
         return true;
       } catch (error) {
         console.error('Failed to update transaction:', error);
@@ -159,9 +164,11 @@ export function useTransactions(filters: FilterState) {
         } else {
           await transactionsEngine.softDelete(id);
         }
-        // Optimistically remove from store — no loading spinner
+        // Optimistically remove from transaction list for instant UI feedback
         setTransactions(transactions.filter(t => t.id !== id));
         setTotal(Math.max(0, totalTransactions - 1));
+        // Refresh wallet balances (previously stale after delete) + widget
+        await refreshFinancialState();
         addToast('success', 'Transaction deleted');
         return true;
       } catch (error) {
