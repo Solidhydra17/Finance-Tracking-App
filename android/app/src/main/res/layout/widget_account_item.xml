@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One row shown in the ViewFlipper for each wallet account.
+  Layout:  [NAME (left)]   [TYPE · BALANCE (right)]
+-->
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:orientation="horizontal"
+  android:gravity="center_vertical">
+
+  <!-- Account name -->
+  <TextView
+    android:id="@+id/account_item_name"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:textColor="#ffffff"
+    android:textSize="10sp"
+    android:textStyle="bold"
+    android:singleLine="true"
+    android:ellipsize="end"
+    android:text="" />
+
+  <!-- Type badge -->
+  <TextView
+    android:id="@+id/account_item_type"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textColor="#6688cc"
+    android:textSize="8sp"
+    android:textStyle="bold"
+    android:paddingEnd="4dp"
+    android:text="" />
+
+  <!-- Balance -->
+  <TextView
+    android:id="@+id/account_item_balance"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textColor="#aabbdd"
+    android:textSize="10sp"
+    android:textStyle="bold"
+    android:text="" />
+
+</LinearLayout>

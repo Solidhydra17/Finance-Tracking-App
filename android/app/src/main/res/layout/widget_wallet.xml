@@ -53,13 +53,34 @@
     android:layout_marginBottom="8dp"
     android:text="" />
 
-  <!-- BOTTOM: Account breakdown scrolling text -->
-  <TextView
-    android:id="@+id/widget_accounts_summary"
+  <!-- BOTTOM: Account breakdown — auto-cycling ViewFlipper -->
+  <ViewFlipper
+    android:id="@+id/widget_accounts_flipper"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:textColor="#aabbdd"
-    android:textSize="9sp"
-    android:text="" />
+    android:autoStart="true"
+    android:flipInterval="3000"
+    android:inAnimation="@android:anim/fade_in"
+    android:outAnimation="@android:anim/fade_out">
+
+    <!-- Placeholder item shown before data loads -->
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:gravity="center_vertical">
+
+      <TextView
+        android:id="@+id/widget_accounts_placeholder"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="#aabbdd"
+        android:textSize="9sp"
+        android:text="" />
+
+    </LinearLayout>
+
+  </ViewFlipper>
 
 </LinearLayout>
