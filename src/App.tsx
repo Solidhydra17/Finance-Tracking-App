@@ -27,7 +27,7 @@ export async function updateNativeWidget(): Promise<void> {
     await useLoanStore.getState().fetchLoans();
 
     // Read directly from Zustand stores — same values shown in the app
-    const { accounts, totalWalletBalance, totalCreditDebt } =
+    const { accounts, totalWalletBalance, totalCreditDebt, totalWalletLoanDebt } =
       useWalletStore.getState();
     const { totalOwedToYou, totalYouOwe } =
       useLoanStore.getState();
@@ -42,8 +42,9 @@ export async function updateNativeWidget(): Promise<void> {
         : `${sign}${sym}${abs}`;
     };
 
-    // Match DashboardPage formula exactly
-    const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
+    // Match DashboardPage / WalletSummary formula exactly
+    // projectedBalance = available wallet funds minus all outstanding debts
+    const projectedBalance = totalWalletBalance - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
 
     // Build account breakdown grouped by type — matches WalletPage layout
     const cash = accounts.filter(a => a.type === 'cash');
@@ -73,6 +74,8 @@ export async function updateNativeWidget(): Promise<void> {
     await Preferences.set({ key: 'widget_projectedBalance', value: fmt(projectedBalance) });
     await Preferences.set({ key: 'widget_totalBalance', value: fmt(totalWalletBalance) });
     await Preferences.set({ key: 'widget_creditDebt', value: fmt(totalCreditDebt) });
+    // Loan Debt = institutional loan account debt + P2P loan debt (kept separate from credit card debt)
+    await Preferences.set({ key: 'widget_loanDebt', value: fmt(totalWalletLoanDebt + totalYouOwe) });
     await Preferences.set({ key: 'widget_owedToYou', value: fmt(totalOwedToYou) });
     await Preferences.set({ key: 'widget_youOwe', value: fmt(totalYouOwe) });
     await Preferences.set({ key: 'widget_accounts', value: JSON.stringify(accountsData) });

@@ -5,7 +5,8 @@ export interface Transaction {
   id?: number | string;
   type: TransactionType;
   amount: number; // integer cents
-  date: string; // ISO date string
+  date: string; // ISO date string (YYYY-MM-DD)
+  time: string; // HH:mm (24-hour) time of day
   categoryId: number;
   note: string;
   source: TransactionSource;
@@ -21,6 +22,7 @@ export interface TransactionCreate {
   type: TransactionType;
   amount: number;
   date: string;
+  time?: string;
   categoryId: number;
   note: string;
   source: TransactionSource;
@@ -31,6 +33,7 @@ export interface TransactionUpdate {
   type?: TransactionType;
   amount?: number;
   date?: string;
+  time?: string;
   categoryId?: number;
   walletAccountId?: number;
   note?: string;

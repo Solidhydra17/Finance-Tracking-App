@@ -92,7 +92,12 @@ export function useTransactions(filters: FilterState) {
         allTransactions = [...allTransactions, ...engineTransactions];
       }
 
-      allTransactions.sort((a, b) => b.date.localeCompare(a.date));
+      allTransactions.sort((a, b) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date);
+        const timeA = a.time ?? '00:00';
+        const timeB = b.time ?? '00:00';
+        return timeB.localeCompare(timeA);
+      });
       
       setTransactions(allTransactions);
       setTotal(allTransactions.length);

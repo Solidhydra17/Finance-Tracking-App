@@ -139,24 +139,30 @@ export class WalletService {
     }
 
     async getTotals(): Promise<{
-        totalWalletBalance: number; // Cash + Debit
-        totalCreditDebt: number;    // Sum of credit balances (usually positive if debt)
+        totalWalletBalance: number; // Cash + Debit + E-Cash
+        totalCreditDebt: number;    // Sum of credit card balances (debt owed on credit cards only)
+        totalWalletLoanDebt: number; // Sum of institutional loan account balances (GLoan, Billease, etc.)
     }> {
         const accounts = await this.getAllAccounts();
-        
+
         let totalWalletBalance = 0;
         let totalCreditDebt = 0;
+        let totalWalletLoanDebt = 0;
 
         accounts.forEach(acc => {
             if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
                 totalWalletBalance += acc.balance;
-            } else if (acc.type === 'credit' || acc.type === 'loan') {
-                // If a credit card or loan has a positive balance, it means you owe money
+            } else if (acc.type === 'credit') {
+                // Credit card debt — kept strictly separate from loan account debt
                 totalCreditDebt += Math.max(0, acc.balance);
+            } else if (acc.type === 'loan') {
+                // Institutional loan account debt (GLoan, Billease, Maya Credit, etc.)
+                // MUST NOT be merged into totalCreditDebt — this was the previous bug
+                totalWalletLoanDebt += Math.max(0, acc.balance);
             }
         });
 
-        return { totalWalletBalance, totalCreditDebt };
+        return { totalWalletBalance, totalCreditDebt, totalWalletLoanDebt };
     }
 
     async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'>): Promise<number> {
@@ -166,6 +172,7 @@ export class WalletService {
             targetWalletAccountId: paymentData.creditCardAccountId,
             amount: paymentData.amount,
             date: paymentData.date,
+            time: '00:00',
             note: paymentData.notes || '',
             source: 'manual',
             categoryId: 0, // Placeholder
@@ -187,6 +194,7 @@ export class WalletService {
             targetWalletAccountId: data.destinationAccountId,
             amount: data.amount,
             date: data.date,
+            time: '00:00',
             note: data.notes || '',
             source: 'manual',
             categoryId: 0,

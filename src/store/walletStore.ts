@@ -6,6 +6,7 @@ interface WalletState {
     accounts: WalletAccount[];
     totalWalletBalance: number;
     totalCreditDebt: number;
+    totalWalletLoanDebt: number; // Institutional Loan Account debt (GLoan, Billease, etc.) — separate from Credit Card debt
     isLoading: boolean;
     error: string | null;
 
@@ -21,6 +22,7 @@ export const useWalletStore = create<WalletState>((set) => ({
     accounts: [],
     totalWalletBalance: 0,
     totalCreditDebt: 0,
+    totalWalletLoanDebt: 0,
     isLoading: false,
     error: null,
 
@@ -33,6 +35,7 @@ export const useWalletStore = create<WalletState>((set) => ({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
                 isLoading: false
             });
         } catch (error: any) {
@@ -51,6 +54,7 @@ export const useWalletStore = create<WalletState>((set) => ({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
                 isLoading: false
             });
         } catch (error: any) {
@@ -69,6 +73,7 @@ export const useWalletStore = create<WalletState>((set) => ({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
                 isLoading: false
             });
         } catch (error: any) {
@@ -89,6 +94,7 @@ export const useWalletStore = create<WalletState>((set) => ({
             set({
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
             });
         } catch (error: any) {
             set({ error: error.message });
@@ -106,6 +112,7 @@ export const useWalletStore = create<WalletState>((set) => ({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
                 isLoading: false
             });
         } catch (error: any) {
@@ -124,6 +131,7 @@ export const useWalletStore = create<WalletState>((set) => ({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
                 isLoading: false
             });
         } catch (error: any) {

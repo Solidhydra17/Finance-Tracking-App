@@ -12,6 +12,7 @@ interface AddTransactionModalProps {
     type: TransactionType;
     amount: number;
     date: string;
+    time?: string;
     categoryId: number;
     note: string;
   };
@@ -30,6 +31,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     editTransaction ? centsToDisplay(editTransaction.amount) : ''
   );
   const [date, setDate] = useState(editTransaction?.date || new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState(editTransaction?.time || new Date().toISOString().split('T')[1].substring(0,5));
   const [categoryId, setCategoryId] = useState<number>(editTransaction?.categoryId || 0);
   const [note, setNote] = useState(editTransaction?.note || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,6 +62,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           type,
           amount,
           date,
+          time,
           categoryId,
           note,
         });
@@ -68,6 +71,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           type,
           amount,
           date,
+          time,
           categoryId,
           note,
           source: 'manual',
@@ -143,6 +147,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             label: c.name,
           })),
         ]}
+        required
+      />
+      <Input
+        label="Time"
+        type="time"
+        value={time}
+        onChange={(e) => setTime(e.target.value)}
         required
       />
 

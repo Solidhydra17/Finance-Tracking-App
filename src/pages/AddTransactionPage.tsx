@@ -26,6 +26,7 @@ export const AddTransactionPage: React.FC = () => {
   const [type, setType] = useState<TransactionType>(initialType);
   const [amountDisplay, setAmountDisplay] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [time, _setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
   const [categoryId, setCategoryId] = useState<number>(0);
   const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
   const [note, setNote] = useState('');
@@ -185,6 +186,7 @@ export const AddTransactionPage: React.FC = () => {
           type,
           amount,
           date,
+          time,
           categoryId,
           walletAccountId: Number(walletAccountId) || undefined,
           note,
@@ -212,6 +214,7 @@ export const AddTransactionPage: React.FC = () => {
           type,
           amount,
           date,
+          time,
           categoryId,
           walletAccountId: walletAccountId ? Number(walletAccountId) : undefined,
           note: note || 'Recurring Transaction',
@@ -239,6 +242,7 @@ export const AddTransactionPage: React.FC = () => {
           type,
           amount,
           date,
+          time,
           categoryId,
           walletAccountId: Number(walletAccountId),
           note,

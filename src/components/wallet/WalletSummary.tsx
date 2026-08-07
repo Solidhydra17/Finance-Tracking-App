@@ -6,9 +6,10 @@ import { formatCurrency } from '@/lib/money';
 import { Link } from 'react-router-dom';
 
 export const WalletSummary: React.FC = () => {
-    const { totalWalletBalance, totalCreditDebt } = useWalletStore(useShallow(state => ({
+    const { totalWalletBalance, totalCreditDebt, totalWalletLoanDebt } = useWalletStore(useShallow(state => ({
         totalWalletBalance: state.totalWalletBalance,
-        totalCreditDebt: state.totalCreditDebt
+        totalCreditDebt: state.totalCreditDebt,
+        totalWalletLoanDebt: state.totalWalletLoanDebt
     })));
 
     const { totalOwedToYou, totalYouOwe } = useLoanStore(useShallow(state => ({
@@ -22,16 +23,17 @@ export const WalletSummary: React.FC = () => {
         creditWarningThreshold: state.creditWarningThreshold
     })));
 
-    // Net Worth = Physical balance + money owed TO user (outbound loans) - money user owes (inbound loans)
-    const netWorth = totalWalletBalance + totalOwedToYou - totalYouOwe;
+    // Net Worth = Physical balance + money owed TO user - all liabilities (credit cards, institutional loans, P2P loans)
+    const netWorth = totalWalletBalance + totalOwedToYou - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
 
-    // Projected Balance = Total Wallet Balance - Unpaid Credit - Unpaid Inbound Loans
-    const projectedBalance = totalWalletBalance - totalCreditDebt - totalYouOwe;
-    
-    // Total debit balance for percentage calculation (Debit + Cash)
-    const debitBalance = totalWalletBalance;
-    const creditDebtPercentage = debitBalance > 0 ? (totalCreditDebt / debitBalance) * 100 : 0;
-    
+    // Projected Balance = Total Wallet Balance - all outstanding debts that must be paid from wallet
+    const projectedBalance = totalWalletBalance - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
+
+    // Warning threshold: credit cards + institutional loan debt relative to available funds
+    // Zero-balance guard prevents Infinity / NaN
+    const totalLiabilitiesForWarning = totalCreditDebt + totalWalletLoanDebt;
+    const creditDebtPercentage = totalWalletBalance > 0 ? (totalLiabilitiesForWarning / totalWalletBalance) * 100 : 0;
+
     const isCreditWarning = creditDebtPercentage >= creditWarningThreshold;
     const hasCreditWarning = isCreditWarning;
 
@@ -68,7 +70,7 @@ export const WalletSummary: React.FC = () => {
                     <div>
                         <div className="flex items-center gap-1.5 mb-1">
                             <Icon name="CreditCardIcon" className={`w-4 h-4 ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`} />
-                            <p className={`text-[10px] font-bold uppercase tracking-widest ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit & Loan Debt</p>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit Card Debt</p>
                         </div>
                         <p className={`text-lg font-bold ${hasCreditWarning ? 'text-red-400' : 'text-white'}`}>
                             {formatCurrency(totalCreditDebt, currencySymbol, currencyPosition)}
@@ -90,10 +92,10 @@ export const WalletSummary: React.FC = () => {
                     <div>
                         <div className="flex items-center gap-1.5 mb-1">
                             <Icon name="ArrowTrendingDownIcon" className="w-4 h-4 text-rose-300" />
-                            <p className="text-rose-300 text-[10px] font-bold uppercase tracking-widest">You Owe (Loans)</p>
+                            <p className="text-rose-300 text-[10px] font-bold uppercase tracking-widest">Loan Debt</p>
                         </div>
                         <p className="text-lg font-bold text-rose-400">
-                            -{formatCurrency(totalYouOwe, currencySymbol, currencyPosition)}
+                            -{formatCurrency(totalWalletLoanDebt + totalYouOwe, currencySymbol, currencyPosition)}
                         </p>
                     </div>
                 </div>
@@ -102,7 +104,7 @@ export const WalletSummary: React.FC = () => {
                     <div className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl flex items-start gap-2">
                         <Icon name="ExclamationTriangleIcon" className="w-5 h-5 text-red-300 shrink-0 mt-0.5" />
                         <p className="text-xs text-red-100 font-medium leading-tight">
-                            Warning: Your total credit card & loan debt ({creditDebtPercentage.toFixed(0)}%) exceeds your safety threshold of {creditWarningThreshold}% of your available funds.
+                            Warning: Your total credit card &amp; institutional loan debt ({creditDebtPercentage.toFixed(0)}%) exceeds your safety threshold of {creditWarningThreshold}% of your available funds.
                         </p>
                     </div>
                 )}

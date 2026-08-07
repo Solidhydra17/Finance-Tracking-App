@@ -25,7 +25,12 @@ export const dashboardEngine = {
       ...transactions,
       ...recurringTransactions,
     ].filter(t => t.type !== 'credit_payment' && t.type !== 'fund_transfer')
-     .sort((a, b) => b.date.localeCompare(a.date)) as Transaction[];
+     .sort((a, b) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date);
+        const timeA = (a as any).time ?? '00:00';
+        const timeB = (b as any).time ?? '00:00';
+        return timeB.localeCompare(timeA);
+      }) as Transaction[];
 
     const stats = transactionsEngine.calculateStats(allTransactions);
     const categoryBreakdown = transactionsEngine.getCategoryBreakdown(allTransactions, categories);
