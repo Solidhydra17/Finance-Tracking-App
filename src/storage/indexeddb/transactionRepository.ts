@@ -25,8 +25,10 @@ export const transactionRepository: TransactionRepository = {
 
   async create(data: TransactionCreate): Promise<number> {
     const now = new Date().toISOString();
+    const time = (data as any).time ?? '00:00';
     const transaction: Transaction = {
       ...data,
+      time,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -99,6 +101,11 @@ export const transactionRepository: TransactionRepository = {
       );
     }
 
-    return allTransactions.sort((a, b) => b.date.localeCompare(a.date));
+    return allTransactions.sort((a, b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      const timeA = a.time ?? '00:00';
+      const timeB = b.time ?? '00:00';
+      return timeB.localeCompare(timeA);
+    });
   },
 };

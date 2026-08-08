@@ -24,6 +24,7 @@ export interface Loan {
     destinationWalletAccountId?: number; // The account money went to (for inbound)
     installmentPlan?: LoanInstallmentPlan;
     status: LoanStatus;
+    time?: string;
     createdAt: string; // ISO string
 }
 
@@ -33,5 +34,7 @@ export interface LoanPayment {
     amount: number; // integer cents
     walletAccountId: number; // The account used for repayment
     paidDate: string; // ISO string
+    time?: string;
     notes?: string;
+    transactionId?: number;
 }

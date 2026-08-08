@@ -56,7 +56,9 @@ export function useTransactions(filters: FilterState) {
             categoryId: -1
         }));
         
-        const mappedPayments = loanPayments.map(payment => {
+        const mappedPayments = loanPayments
+            .filter(payment => !(payment as any).transactionId)
+            .map(payment => {
             const loan = loans.find(l => l.id === payment.loanId);
             return {
                 id: `loan_payment_${payment.id}`,
@@ -93,7 +95,12 @@ export function useTransactions(filters: FilterState) {
         allTransactions = [...allTransactions, ...engineTransactions];
       }
 
-      allTransactions.sort((a, b) => b.date.localeCompare(a.date));
+      allTransactions.sort((a, b) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date);
+        const timeA = a.time ?? '00:00';
+        const timeB = b.time ?? '00:00';
+        return timeB.localeCompare(timeA);
+      });
       
       setTransactions(allTransactions);
       setTotal(allTransactions.length);

@@ -13,3 +13,5 @@ nodejs/
 android/app/build/
 android/.gradle/
 android/local.properties
+
+kuripot-keystore-base64.txt

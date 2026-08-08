@@ -7,7 +7,7 @@ interface WalletState {
     accounts: WalletAccount[];
     totalWalletBalance: number;
     totalCreditDebt: number;
-    walletLoanDebt: number;
+    totalWalletLoanDebt: number; // Institutional Loan Account debt (GLoan, Billease, etc.) — separate from Credit Card debt
     isLoading: boolean;
     error: string | null;
 
@@ -15,15 +15,15 @@ interface WalletState {
     createAccount: (account: Omit<WalletAccount, 'id' | 'createdAt' | 'balance'>) => Promise<void>;
     updateAccount: (id: number, updates: Partial<WalletAccount>) => Promise<void>;
     deleteAccount: (id: number) => Promise<void>;
-    payCreditCard: (paymentData: Omit<CreditPayment, 'id' | 'createdAt'>) => Promise<void>;
-    createFundTransfer: (data: { sourceAccountId: number; destinationAccountId: number; amount: number; date: string; notes?: string }) => Promise<void>;
+    payCreditCard: (paymentData: Omit<CreditPayment, 'id' | 'createdAt'> & { time?: string }) => Promise<void>;
+    createFundTransfer: (data: { sourceAccountId: number; destinationAccountId: number; amount: number; date: string; time?: string; notes?: string }) => Promise<void>;
 }
 
 export const useWalletStore = create<WalletState>((set) => ({
     accounts: [],
     totalWalletBalance: 0,
     totalCreditDebt: 0,
-    walletLoanDebt: 0,
+    totalWalletLoanDebt: 0,
     isLoading: false,
     error: null,
 
@@ -40,7 +40,7 @@ export const useWalletStore = create<WalletState>((set) => ({
                 accounts,
                 totalWalletBalance: totals.totalWalletBalance,
                 totalCreditDebt: totals.totalCreditDebt,
-                walletLoanDebt: totals.walletLoanDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
                 isLoading: false
             });
         } catch (error: any) {
@@ -52,8 +52,16 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.createAccount(account);
-            await refreshFinancialState();
-            set({ isLoading: false });
+            // Refresh
+            const accounts = await walletService.getAllAccounts();
+            const totals = await walletService.getTotals();
+            set({
+                accounts,
+                totalWalletBalance: totals.totalWalletBalance,
+                totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
+                isLoading: false
+            });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
@@ -64,8 +72,15 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.updateAccount(id, updates);
-            await refreshFinancialState();
-            set({ isLoading: false });
+            const accounts = await walletService.getAllAccounts();
+            const totals = await walletService.getTotals();
+            set({
+                accounts,
+                totalWalletBalance: totals.totalWalletBalance,
+                totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
+                isLoading: false
+            });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
@@ -75,7 +90,17 @@ export const useWalletStore = create<WalletState>((set) => ({
     deleteAccount: async (id) => {
         try {
             await walletService.deleteAccount(id);
-            await refreshFinancialState();
+            // Optimistically remove from store — no loading spinner
+            set((state) => ({
+                accounts: state.accounts.filter(a => a.id !== id),
+            }));
+            // Background refresh totals
+            const totals = await walletService.getTotals();
+            set({
+                totalWalletBalance: totals.totalWalletBalance,
+                totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
+            });
         } catch (error: any) {
             set({ error: error.message });
             throw error;
@@ -86,8 +111,15 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.payCreditCard(paymentData);
-            await refreshFinancialState();
-            set({ isLoading: false });
+            const accounts = await walletService.getAllAccounts();
+            const totals = await walletService.getTotals();
+            set({
+                accounts,
+                totalWalletBalance: totals.totalWalletBalance,
+                totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
+                isLoading: false
+            });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
@@ -98,8 +130,15 @@ export const useWalletStore = create<WalletState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await walletService.createFundTransfer(data);
-            await refreshFinancialState();
-            set({ isLoading: false });
+            const accounts = await walletService.getAllAccounts();
+            const totals = await walletService.getTotals();
+            set({
+                accounts,
+                totalWalletBalance: totals.totalWalletBalance,
+                totalCreditDebt: totals.totalCreditDebt,
+                totalWalletLoanDebt: totals.totalWalletLoanDebt,
+                isLoading: false
+            });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;

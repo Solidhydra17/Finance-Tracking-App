@@ -91,10 +91,10 @@ export const DashboardPage: React.FC = () => {
   })));
   const { data } = useDashboard(filters, showLoans);
   const { plan, items } = useBudget();
-  const { totalWalletBalance, totalCreditDebt, walletLoanDebt, fetchAccounts } = useWalletStore(useShallow(state => ({
+  const { totalWalletBalance, totalCreditDebt, totalWalletLoanDebt, fetchAccounts } = useWalletStore(useShallow(state => ({
     totalWalletBalance: state.totalWalletBalance,
     totalCreditDebt: state.totalCreditDebt,
-    walletLoanDebt: state.walletLoanDebt,
+    totalWalletLoanDebt: state.totalWalletLoanDebt,
     fetchAccounts: state.fetchAccounts,
   })));
   const { totalOwedToYou, totalYouOwe, fetchLoans } = useLoanStore(useShallow(state => ({
@@ -102,15 +102,10 @@ export const DashboardPage: React.FC = () => {
     totalYouOwe: state.totalYouOwe,
     fetchLoans: state.fetchLoans,
   })));
-
-  const { netWorth, projectedBalance } = calculateBalances({
-    totalWalletBalance,
-    totalCreditDebt,
-    walletLoanDebt,
-    peerLoanDebt: totalYouOwe,
-    totalOwedToYou,
-  });
-
+  // Net Worth = Physical wallet balance + money others owe you - all liabilities
+  const netWorth = totalWalletBalance + totalOwedToYou - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
+  // Projected Balance = Available cash minus all outstanding debts
+  const projectedBalance = totalWalletBalance - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
 
   useEffect(() => {

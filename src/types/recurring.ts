@@ -13,6 +13,8 @@ export interface RecurringRule {
   endDate: string | null; // ISO date string, null if indefinite
   lastGeneratedDate: string | null; // Track materialization
   description: string;
+  time?: string;
+  walletAccountId?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +31,8 @@ export interface RecurringRuleCreate {
   endDate: string | null;
   lastGeneratedDate: string | null;
   description: string;
+  time?: string;
+  walletAccountId?: number;
 }
 
 export interface RecurringTransaction {

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { CalcInput, Input, DayPicker, Modal, Button, Icon } from '@/components/ui';
 import { useRecurring } from '@/hooks';
-import { useUIStore } from '@/store';
-import { displayToCents, centsToDisplay } from '@/lib/money';
+import { useUIStore, useWalletStore } from '@/store';
+import { useShallow } from 'zustand/react/shallow';
+import { displayToCents, centsToDisplay, formatCurrency } from '@/lib/money';
 import type { RecurringFrequency } from '@/types';
 
 export const RecurringPage: React.FC = () => {
@@ -16,14 +17,29 @@ export const RecurringPage: React.FC = () => {
   const [customDaySelection, setCustomDaySelection] = useState<number[]>([1, 2, 3, 4, 5]);
   const [dayOfMonth] = useState<number>(1);
   const [dayOfWeek] = useState<number>(1);
-  const [startDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
+  const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { accounts, fetchAccounts } = useWalletStore(useShallow(state => ({
+      accounts: state.accounts,
+      fetchAccounts: state.fetchAccounts
+  })));
+
+  const transactionAccounts = accounts.filter(a => a.type !== 'loan');
+
+  React.useEffect(() => {
+      fetchAccounts();
+  }, [fetchAccounts]);
+
+  const { currencySymbol, currencyPosition } = useUIStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!amountDisplay || !categoryId) {
+    if (!amountDisplay || !categoryId || !walletAccountId) {
       addToast('warning', 'Please fill in all required fields');
       return;
     }
@@ -41,6 +57,8 @@ export const RecurringPage: React.FC = () => {
         dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
         selectedDays: frequency === 'custom-days' ? customDaySelection : undefined,
         startDate,
+        time,
+        walletAccountId: Number(walletAccountId) || undefined,
         endDate: null,
         description,
         lastGeneratedDate: null,
@@ -226,7 +244,50 @@ export const RecurringPage: React.FC = () => {
             required
           />
 
-          <Button type="submit" isLoading={isSubmitting} className="w-full">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Input
+                  label="Start Date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <Input
+                  label="Time"
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Wallet Account</label>
+              <div className="relative">
+                <select
+                  value={walletAccountId}
+                  onChange={(e) => setWalletAccountId(Number(e.target.value))}
+                  required
+                  className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
+                >
+                  <option value="" disabled>Select Wallet...</option>
+                  {transactionAccounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>
+                          {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
+                      </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                </div>
+              </div>
+            </div>
+
+            <Button type="submit" isLoading={isSubmitting} className="w-full h-14 text-lg">
             Create Rule
           </Button>
         </form>

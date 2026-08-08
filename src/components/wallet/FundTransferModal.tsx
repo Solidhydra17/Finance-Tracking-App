@@ -25,6 +25,7 @@ export const FundTransferModal: React.FC = () => {
     const [transferToId, setTransferToId] = useState<number | ''>('');
     const [transferAmount, setTransferAmount] = useState('');
     const [transferDate, setTransferDate] = useState(new Date().toISOString().split('T')[0]);
+    const [transferTime, setTransferTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
     const [transferNotes, setTransferNotes] = useState('');
 
     const cashAccount = accounts.find(a => a.type === 'cash');
@@ -39,6 +40,7 @@ export const FundTransferModal: React.FC = () => {
             setTransferToId('');
             setTransferAmount('');
             setTransferDate(new Date().toISOString().split('T')[0]);
+            setTransferTime(new Date().toISOString().split('T')[1].substring(0,5));
             setTransferNotes('');
         }
     }, [isTransferOpen]);
@@ -64,6 +66,7 @@ export const FundTransferModal: React.FC = () => {
                 destinationAccountId: Number(transferToId),
                 amount: amountCents,
                 date: transferDate,
+                time: transferTime,
                 notes: transferNotes
             });
             invalidateCache(); // Force TransactionsPage to refetch
@@ -136,13 +139,26 @@ export const FundTransferModal: React.FC = () => {
                     required
                 />
 
-                <Input
-                    label="Date"
-                    type="date"
-                    value={transferDate}
-                    onChange={(e) => setTransferDate(e.target.value)}
-                    required
-                />
+                <div className="flex gap-3">
+                    <div className="flex-1">
+                        <Input
+                            label="Date"
+                            type="date"
+                            value={transferDate}
+                            onChange={(e) => setTransferDate(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="flex-1">
+                        <Input
+                            label="Time"
+                            type="time"
+                            value={transferTime}
+                            onChange={(e) => setTransferTime(e.target.value)}
+                            required
+                        />
+                    </div>
+                </div>
 
                 <Input
                     label="Notes (Optional)"

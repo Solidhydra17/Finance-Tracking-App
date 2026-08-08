@@ -44,6 +44,7 @@ export class WalletService {
             // Loan Payments
             const loanPayments = await db.loanPayments.where('walletAccountId').equals(acc.id).toArray();
             for (const p of loanPayments) {
+                if ((p as any).transactionId) continue;
                 const loan = loans.find(l => l.id === p.loanId);
                 if (loan) {
                     if (loan.direction === 'outbound') balance += p.amount;
@@ -139,38 +140,40 @@ export class WalletService {
     }
 
     async getTotals(): Promise<{
-        totalWalletBalance: number; // Cash + Debit
-        totalCreditDebt: number;    // Sum of credit card balances
-        walletLoanDebt: number;     // Sum of institutional loan balances
+        totalWalletBalance: number; // Cash + Debit + E-Cash
+        totalCreditDebt: number;    // Sum of credit card balances (debt owed on credit cards only)
+        totalWalletLoanDebt: number; // Sum of institutional loan account balances (GLoan, Billease, etc.)
     }> {
         const accounts = await this.getAllAccounts();
-        
+
         let totalWalletBalance = 0;
         let totalCreditDebt = 0;
-        let walletLoanDebt = 0;
+        let totalWalletLoanDebt = 0;
 
         accounts.forEach(acc => {
             if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
                 totalWalletBalance += acc.balance;
             } else if (acc.type === 'credit') {
-                // If a credit card has a positive balance, it means you owe money
+                // Credit card debt — kept strictly separate from loan account debt
                 totalCreditDebt += Math.max(0, acc.balance);
             } else if (acc.type === 'loan') {
-                // Institutional loans inside the wallet
-                walletLoanDebt += Math.max(0, acc.balance);
+                // Institutional loan account debt (GLoan, Billease, Maya Credit, etc.)
+                // MUST NOT be merged into totalCreditDebt — this was the previous bug
+                totalWalletLoanDebt += Math.max(0, acc.balance);
             }
         });
 
-        return { totalWalletBalance, totalCreditDebt, walletLoanDebt };
+        return { totalWalletBalance, totalCreditDebt, totalWalletLoanDebt };
     }
 
-    async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'>): Promise<number> {
+    async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'> & { time?: string }): Promise<number> {
         return await db.transactions.add({
             type: 'credit_payment',
             walletAccountId: paymentData.sourceWalletAccountId,
             targetWalletAccountId: paymentData.creditCardAccountId,
             amount: paymentData.amount,
             date: paymentData.date,
+            time: paymentData.time || '00:00',
             note: paymentData.notes || '',
             source: 'manual',
             categoryId: 0, // Placeholder
@@ -184,6 +187,7 @@ export class WalletService {
         destinationAccountId: number;
         amount: number;
         date: string;
+        time?: string;
         notes?: string;
     }): Promise<number> {
         return await db.transactions.add({
@@ -192,6 +196,7 @@ export class WalletService {
             targetWalletAccountId: data.destinationAccountId,
             amount: data.amount,
             date: data.date,
+            time: data.time || '00:00',
             note: data.notes || '',
             source: 'manual',
             categoryId: 0,

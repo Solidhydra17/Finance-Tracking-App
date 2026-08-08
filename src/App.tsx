@@ -18,6 +18,72 @@ import { getReminders } from '@/hooks/useReminders';
 import { refreshFinancialState } from '@/lib/financialState';
 import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
 
+export async function updateNativeWidget(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    // Force refresh stores from DB so we get current balances
+    await useWalletStore.getState().fetchAccounts();
+    await useLoanStore.getState().fetchLoans();
+
+    // Read directly from Zustand stores — same values shown in the app
+    const { accounts, totalWalletBalance, totalCreditDebt, totalWalletLoanDebt } =
+      useWalletStore.getState();
+    const { totalOwedToYou, totalYouOwe } =
+      useLoanStore.getState();
+    const sym = useUIStore.getState().currencySymbol;
+    const pos = useUIStore.getState().currencyPosition;
+
+    const fmt = (n: number) => {
+      const abs = Math.abs(n / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const sign = n < 0 ? '-' : '';
+      return pos === 'suffix'
+        ? `${sign}${abs}${sym}`
+        : `${sign}${sym}${abs}`;
+    };
+
+    // Match DashboardPage / WalletSummary formula exactly
+    // projectedBalance = available wallet funds minus all outstanding debts
+    const projectedBalance = totalWalletBalance - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
+
+    // Build account breakdown grouped by type — matches WalletPage layout
+    const cash = accounts.filter(a => a.type === 'cash');
+    const ecash = accounts.filter(a => a.type === 'ecash');
+    const debit = accounts.filter(a => a.type === 'debit');
+    const credit = accounts.filter(a => a.type === 'credit');
+
+    const loan = accounts.filter(a => a.type === 'loan');
+
+    const accountsData = [
+      ...cash.map(a => ({ name: a.name, type: 'CASH', balance: fmt(a.balance) })),
+      ...ecash.map(a => ({ name: a.name, type: 'E-CASH', balance: fmt(a.balance) })),
+      ...debit.map(a => ({ name: a.name, type: 'DEBIT', balance: fmt(a.balance) })),
+      ...credit.map(a => ({
+        name: a.name,
+        type: 'CREDIT',
+        balance: fmt(Math.max(0, (a.creditLimit ?? 0) - a.balance)),
+      })),
+      ...loan.map(a => ({
+        name: a.name,
+        type: 'LOAN',
+        balance: fmt(a.balance), // debt owed on this loan
+      })),
+    ];
+
+    const { Preferences } = await import('@capacitor/preferences');
+    await Preferences.set({ key: 'widget_projectedBalance', value: fmt(projectedBalance) });
+    await Preferences.set({ key: 'widget_totalBalance', value: fmt(totalWalletBalance) });
+    await Preferences.set({ key: 'widget_creditDebt', value: fmt(totalCreditDebt) });
+    // Loan Debt = institutional loan account debt + P2P loan debt (kept separate from credit card debt)
+    await Preferences.set({ key: 'widget_loanDebt', value: fmt(totalWalletLoanDebt + totalYouOwe) });
+    await Preferences.set({ key: 'widget_owedToYou', value: fmt(totalOwedToYou) });
+    await Preferences.set({ key: 'widget_youOwe', value: fmt(totalYouOwe) });
+    await Preferences.set({ key: 'widget_accounts', value: JSON.stringify(accountsData) });
+
+    await refreshWidget();
+  } catch (e) {
+    console.warn('[Widget] updateNativeWidget failed:', e);
+  }
+}
 
 export const App: React.FC = () => {
     useEffect(() => {

@@ -12,7 +12,7 @@ interface LoanState {
 
     fetchLoans: () => Promise<void>;
     createLoan: (loanData: Omit<Loan, 'id' | 'createdAt'>) => Promise<void>;
-    repayLoan: (loanId: number, amount: number, walletAccountId: number, date: string, notes?: string) => Promise<void>;
+    repayLoan: (loanId: number, amount: number, walletAccountId: number, date: string, notes?: string, time?: string) => Promise<void>;
 }
 
 export const useLoanStore = create<LoanState>((set) => ({
@@ -56,14 +56,20 @@ export const useLoanStore = create<LoanState>((set) => ({
         }
     },
 
-    repayLoan: async (loanId, amount, walletAccountId, date, notes) => {
+    repayLoan: async (loanId, amount, walletAccountId, date, notes, time) => {
         set({ isLoading: true, error: null });
         try {
-            await loanService.repayLoan(loanId, amount, walletAccountId, date, notes);
-            // refreshFinancialState refreshes both wallets and loans (repayment
-            // affects wallet balances and loan remaining totals)
-            await refreshFinancialState();
-            set({ isLoading: false });
+            await loanService.repayLoan(loanId, amount, walletAccountId, date, notes, time);
+            const loans = await loanService.getAllLoans();
+            const totals = await loanService.getTotals();
+            set({ 
+                loans, 
+                totalOwedToYou: totals.totalOwedToYou,
+                totalYouOwe: totals.totalYouOwe,
+                isLoading: false 
+            });
+            // A loan repayment impacts wallet balances, so trigger wallet refresh
+            useWalletStore.getState().fetchAccounts();
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
