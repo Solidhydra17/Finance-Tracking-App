@@ -28,13 +28,17 @@ export const WalletLoansList: React.FC = () => {
     const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
     const [repayAmount, setRepayAmount] = useState('');
     const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
 
     const openRepayModal = (loan: Loan) => {
         setSelectedLoan(loan);
         setRepayAmount('');
-        // Auto-select a default wallet (cash or first debit)
+        const originalWalletId = loan.direction === 'outbound' ? loan.sourceWalletAccountId : loan.destinationWalletAccountId;
         const defaultWallet = accounts.find(a => a.type === 'cash') || accounts.find(a => a.type === 'debit');
-        setWalletAccountId(defaultWallet?.id || '');
+        setWalletAccountId(originalWalletId || defaultWallet?.id || '');
+        setDate(new Date().toISOString().split('T')[0]);
+        setTime(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
         setIsRepayModalOpen(true);
     };
 
@@ -53,8 +57,9 @@ export const WalletLoansList: React.FC = () => {
                 selectedLoan.id!,
                 amountCents,
                 Number(walletAccountId),
-                new Date().toISOString(),
-                "Manual Repayment"
+                date,
+                "Manual Repayment",
+                time
             );
             addToast('success', 'Repayment successful');
             setIsRepayModalOpen(false);
@@ -172,6 +177,27 @@ export const WalletLoansList: React.FC = () => {
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <Input
+                                label="Date"
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <Input
+                                label="Time"
+                                type="time"
+                                value={time}
+                                onChange={(e) => setTime(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div className="pt-4 flex gap-3">

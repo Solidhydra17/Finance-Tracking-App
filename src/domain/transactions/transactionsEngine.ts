@@ -54,9 +54,9 @@ export const transactionsEngine = {
     let totalExpenses = 0;
 
     for (const t of transactions) {
-      if (t.type === 'income') {
+      if (t.type === 'income' && t.source !== 'loan_payment') {
         totalIncome = addCents(totalIncome, t.amount);
-      } else if (t.type === 'expense') {
+      } else if (t.type === 'expense' && t.source !== 'loan_payment') {
         totalExpenses = addCents(totalExpenses, t.amount);
       }
     }

@@ -44,6 +44,7 @@ export class WalletService {
             // Loan Payments
             const loanPayments = await db.loanPayments.where('walletAccountId').equals(acc.id).toArray();
             for (const p of loanPayments) {
+                if ((p as any).transactionId) continue;
                 const loan = loans.find(l => l.id === p.loanId);
                 if (loan) {
                     if (loan.direction === 'outbound') balance += p.amount;

@@ -12,7 +12,7 @@ interface LoanState {
 
     fetchLoans: () => Promise<void>;
     createLoan: (loanData: Omit<Loan, 'id' | 'createdAt'>) => Promise<void>;
-    repayLoan: (loanId: number, amount: number, walletAccountId: number, date: string, notes?: string) => Promise<void>;
+    repayLoan: (loanId: number, amount: number, walletAccountId: number, date: string, notes?: string, time?: string) => Promise<void>;
 }
 
 export const useLoanStore = create<LoanState>((set) => ({
@@ -59,10 +59,10 @@ export const useLoanStore = create<LoanState>((set) => ({
         }
     },
 
-    repayLoan: async (loanId, amount, walletAccountId, date, notes) => {
+    repayLoan: async (loanId, amount, walletAccountId, date, notes, time) => {
         set({ isLoading: true, error: null });
         try {
-            await loanService.repayLoan(loanId, amount, walletAccountId, date, notes);
+            await loanService.repayLoan(loanId, amount, walletAccountId, date, notes, time);
             const loans = await loanService.getAllLoans();
             const totals = await loanService.getTotals();
             set({ 

@@ -36,4 +36,5 @@ export interface LoanPayment {
     paidDate: string; // ISO string
     time?: string;
     notes?: string;
+    transactionId?: number;
 }

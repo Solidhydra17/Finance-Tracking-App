@@ -1,6 +1,7 @@
 import type { LoanRepository } from './loanRepository';
 import type { Loan, LoanPayment } from '@/types';
 import { loanRepository } from '@/storage/indexeddb/loanRepository';
+import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 
 export class LoanService {
     constructor(
@@ -23,17 +24,30 @@ export class LoanService {
         return loanId;
     }
 
-    async repayLoan(loanId: number, amount: number, walletAccountId: number, date: string, notes?: string): Promise<void> {
+    async repayLoan(loanId: number, amount: number, walletAccountId: number, date: string, notes?: string, time?: string): Promise<void> {
         const loan = await this.loanRepo.getById(loanId);
         if (!loan) throw new Error("Loan not found");
+
+        const transactionId = await transactionsEngine.create({
+            type: loan.direction === 'outbound' ? 'income' : 'expense',
+            amount,
+            date,
+            time: time || '00:00',
+            categoryId: 0,
+            note: notes || (loan.direction === 'outbound' ? `Repayment received from ${loan.personName}` : `Repayment made to ${loan.personName}`),
+            source: 'loan_payment',
+            walletAccountId
+        });
 
         const payment: Omit<LoanPayment, 'id'> = {
             loanId,
             amount,
             walletAccountId,
             paidDate: date,
-            notes
-        };
+            time: time || '00:00',
+            notes,
+            transactionId
+        } as any;
 
         await this.loanRepo.addPayment(payment);
 

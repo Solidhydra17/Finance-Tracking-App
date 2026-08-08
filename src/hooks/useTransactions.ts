@@ -55,7 +55,9 @@ export function useTransactions(filters: FilterState) {
             categoryId: -1
         }));
         
-        const mappedPayments = loanPayments.map(payment => {
+        const mappedPayments = loanPayments
+            .filter(payment => !(payment as any).transactionId)
+            .map(payment => {
             const loan = loans.find(l => l.id === payment.loanId);
             return {
                 id: `loan_payment_${payment.id}`,
