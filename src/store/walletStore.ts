@@ -14,8 +14,8 @@ interface WalletState {
     createAccount: (account: Omit<WalletAccount, 'id' | 'createdAt' | 'balance'>) => Promise<void>;
     updateAccount: (id: number, updates: Partial<WalletAccount>) => Promise<void>;
     deleteAccount: (id: number) => Promise<void>;
-    payCreditCard: (paymentData: Omit<CreditPayment, 'id' | 'createdAt'>) => Promise<void>;
-    createFundTransfer: (data: { sourceAccountId: number; destinationAccountId: number; amount: number; date: string; notes?: string }) => Promise<void>;
+    payCreditCard: (paymentData: Omit<CreditPayment, 'id' | 'createdAt'> & { time?: string }) => Promise<void>;
+    createFundTransfer: (data: { sourceAccountId: number; destinationAccountId: number; amount: number; date: string; time?: string; notes?: string }) => Promise<void>;
 }
 
 export const useWalletStore = create<WalletState>((set) => ({

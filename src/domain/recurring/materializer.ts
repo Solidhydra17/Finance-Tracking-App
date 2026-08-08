@@ -50,10 +50,12 @@ export const recurringMaterializer = {
           type: rule.type,
           amount: rule.amount,
           date: date,
+          time: rule.time || '00:00',
           categoryId: rule.categoryId,
           note: rule.description || `Recurring ${rule.type}`,
           source: 'recurring',
           recurringRuleId: rule.id,
+          walletAccountId: rule.walletAccountId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           deletedAt: null

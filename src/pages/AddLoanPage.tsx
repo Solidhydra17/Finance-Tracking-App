@@ -24,6 +24,7 @@ export const AddLoanPage: React.FC = () => {
     const [personName, setPersonName] = useState('');
     const [amountDisplay, setAmountDisplay] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
     const [dueDate, setDueDate] = useState('');
     const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
     const [note, setNote] = useState('');
@@ -60,6 +61,7 @@ export const AddLoanPage: React.FC = () => {
                     destinationAccountId: Number(walletAccountId),
                     amount,
                     date,
+                    time,
                     notes: note || undefined,
                 });
                 updateNativeWidget();
@@ -94,6 +96,7 @@ export const AddLoanPage: React.FC = () => {
                 personName,
                 amount,
                 acquiredDate: date,
+                time,
                 dueDate,
                 status: 'active',
                 sourceWalletAccountId: direction === 'outbound' ? Number(walletAccountId) : undefined,
@@ -239,18 +242,38 @@ export const AddLoanPage: React.FC = () => {
                                         required
                                     />
                                 </div>
+                                <div className="flex-1">
+                                    <Input
+                                        label="Time"
+                                        type="time"
+                                        value={time}
+                                        onChange={(e) => setTime(e.target.value)}
+                                        required
+                                    />
+                                </div>
                             </div>
                         </>
                     )}
                     {direction === 'inbound' && loanAccountId && (
-                        <div className="flex-1">
-                            <Input
-                                label="Date"
-                                type="date"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                required
-                            />
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <Input
+                                    label="Date"
+                                    type="date"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <Input
+                                    label="Time"
+                                    type="time"
+                                    value={time}
+                                    onChange={(e) => setTime(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
                     )}
 

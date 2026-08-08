@@ -165,14 +165,14 @@ export class WalletService {
         return { totalWalletBalance, totalCreditDebt, totalWalletLoanDebt };
     }
 
-    async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'>): Promise<number> {
+    async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'> & { time?: string }): Promise<number> {
         return await db.transactions.add({
             type: 'credit_payment',
             walletAccountId: paymentData.sourceWalletAccountId,
             targetWalletAccountId: paymentData.creditCardAccountId,
             amount: paymentData.amount,
             date: paymentData.date,
-            time: '00:00',
+            time: paymentData.time || '00:00',
             note: paymentData.notes || '',
             source: 'manual',
             categoryId: 0, // Placeholder
@@ -186,6 +186,7 @@ export class WalletService {
         destinationAccountId: number;
         amount: number;
         date: string;
+        time?: string;
         notes?: string;
     }): Promise<number> {
         return await db.transactions.add({
@@ -194,7 +195,7 @@ export class WalletService {
             targetWalletAccountId: data.destinationAccountId,
             amount: data.amount,
             date: data.date,
-            time: '00:00',
+            time: data.time || '00:00',
             note: data.notes || '',
             source: 'manual',
             categoryId: 0,

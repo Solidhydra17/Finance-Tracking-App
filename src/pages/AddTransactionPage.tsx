@@ -26,7 +26,7 @@ export const AddTransactionPage: React.FC = () => {
   const [type, setType] = useState<TransactionType>(initialType);
   const [amountDisplay, setAmountDisplay] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [time, _setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
+  const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
   const [categoryId, setCategoryId] = useState<number>(0);
   const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
   const [note, setNote] = useState('');
@@ -72,6 +72,7 @@ export const AddTransactionPage: React.FC = () => {
             setDate(transaction.date);
             setCategoryId(transaction.categoryId);
             setWalletAccountId(transaction.walletAccountId || '');
+            setTime(transaction.time || '00:00');
             setNote(transaction.note);
             if (transaction.recurringRuleId) {
               setRecurringRuleId(transaction.recurringRuleId);
@@ -107,6 +108,9 @@ export const AddTransactionPage: React.FC = () => {
               setCategoryId(rule.categoryId);
               setNote(rule.description);
               setFrequency(rule.frequency);
+              setFrequency(rule.frequency);
+              if (rule.time) setTime(rule.time);
+              if (rule.walletAccountId) setWalletAccountId(rule.walletAccountId);
               if (rule.selectedDays && rule.selectedDays.length > 0) {
                 setCustomDaySelection(rule.selectedDays);
               }
@@ -201,7 +205,9 @@ export const AddTransactionPage: React.FC = () => {
           dayOfWeek: (frequency === 'weekly' || frequency === 'bi-weekly') ? startDate.getDay() : null,
           dayOfMonth: frequency === 'monthly' ? startDate.getDate() : null,
           selectedDays: frequency === 'custom-days' ? customDaySelection : undefined,
-          startDate: date,
+          startDate: startDate.toISOString(),
+          time,
+          walletAccountId: Number(walletAccountId) || undefined,
           endDate: null,
           lastGeneratedDate: null,
           description: note || 'Recurring Transaction',
@@ -358,17 +364,29 @@ export const AddTransactionPage: React.FC = () => {
             />
 
             <div className="flex gap-4">
-                <div className="flex-1">
-                    <Input
-                        label="Date"
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        required
-                        disabled={isConfiguringRecurring}
-                        className={`text-lg ${isConfiguringRecurring ? 'opacity-50' : ''}`}
-                    />
-                </div>
+              <div className="flex-1">
+                <Input
+                  label="Date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                  disabled={isConfiguringRecurring}
+                  className={`text-lg ${isConfiguringRecurring ? 'opacity-50' : ''}`}
+                />
+              </div>
+              <div className="flex-1">
+                <Input
+                  label="Time"
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4">
                 <div className="flex-1">
                     <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Recurring</label>
                     <button
@@ -598,12 +616,14 @@ export const AddTransactionPage: React.FC = () => {
                 setIsConfirmRuleUpdateOpen(false);
                 setIsSubmitting(true);
                 try {
-                  // const { recurringRepository } = await import('@/storage/indexeddb');
                   const amount = displayToCents(amountDisplay);
                   await recurringRepository.update(recurringRuleId!, {
                     amount,
                     frequency,
                     description: note,
+                    time,
+                    walletAccountId: Number(walletAccountId) || undefined,
+                    type: type as 'income' | 'expense',
                     selectedDays: frequency === 'custom-days' ? customDaySelection : undefined,
                   });
                   addToast('success', 'Recurring settings updated');

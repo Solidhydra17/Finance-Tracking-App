@@ -32,6 +32,8 @@ export const WalletAccountsList: React.FC = () => {
     const [payAccount, setPayAccount] = useState<WalletAccount | null>(null);
     const [payAmount, setPayAmount] = useState('');
     const [paySourceAccountId, setPaySourceAccountId] = useState<number | ''>('');
+    const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
+    const [payTime, setPayTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
     const [payNotes, setPayNotes] = useState('');
 
     const cashAccount = accounts.find(a => a.type === 'cash');
@@ -105,6 +107,8 @@ export const WalletAccountsList: React.FC = () => {
         setPayAccount(account);
         setPayAmount((Math.max(0, account.balance) / 100).toString());
         setPaySourceAccountId(cashAccount ? cashAccount.id! : (debitAccounts[0]?.id || ''));
+        setPayDate(new Date().toISOString().split('T')[0]);
+        setPayTime(new Date().toISOString().split('T')[1].substring(0,5));
         setPayNotes('');
         setIsPayModalOpen(true);
     };
@@ -128,7 +132,8 @@ export const WalletAccountsList: React.FC = () => {
                 sourceWalletAccountId: Number(paySourceAccountId),
                 amount: amountCents,
                 notes: payNotes,
-                date: new Date().toISOString().split('T')[0]
+                date: payDate,
+                time: payTime
             });
             addToast('success', 'Credit card paid successfully');
             setIsPayModalOpen(false);
@@ -424,6 +429,27 @@ export const WalletAccountsList: React.FC = () => {
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                 <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <div className="flex-1">
+                            <Input
+                                label="Date"
+                                type="date"
+                                value={payDate}
+                                onChange={(e) => setPayDate(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <Input
+                                label="Time"
+                                type="time"
+                                value={payTime}
+                                onChange={(e) => setPayTime(e.target.value)}
+                                required
+                            />
                         </div>
                     </div>
 
