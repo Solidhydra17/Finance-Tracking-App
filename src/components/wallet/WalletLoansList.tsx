@@ -4,7 +4,7 @@ import { useLoanStore, useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Modal, Input, Button } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
-import { formatDateLocal } from '@/lib/date';
+import { formatDateLocal, getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { Loan } from '@/types';
 
 export const WalletLoansList: React.FC = () => {
@@ -28,8 +28,8 @@ export const WalletLoansList: React.FC = () => {
     const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
     const [repayAmount, setRepayAmount] = useState('');
     const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [time, setTime] = useState(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+    const [date, setDate] = useState(getCurrentLocalDate());
+    const [time, setTime] = useState(getCurrentLocalTime());
 
     const openRepayModal = (loan: Loan) => {
         setSelectedLoan(loan);
@@ -37,8 +37,8 @@ export const WalletLoansList: React.FC = () => {
         const originalWalletId = loan.direction === 'outbound' ? loan.sourceWalletAccountId : loan.destinationWalletAccountId;
         const defaultWallet = accounts.find(a => a.type === 'cash') || accounts.find(a => a.type === 'debit');
         setWalletAccountId(originalWalletId || defaultWallet?.id || '');
-        setDate(new Date().toISOString().split('T')[0]);
-        setTime(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+        setDate(getCurrentLocalDate());
+        setTime(getCurrentLocalTime());
         setIsRepayModalOpen(true);
     };
 

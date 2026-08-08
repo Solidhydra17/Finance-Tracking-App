@@ -4,6 +4,7 @@ import { CalcInput, Input, TextArea, Button, Icon } from '@/components/ui';
 import { useLoanStore, useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, formatCurrency } from '@/lib/money';
+import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 
 export const AddLoanPage: React.FC = () => {
     const navigate = useNavigate();
@@ -22,8 +23,8 @@ export const AddLoanPage: React.FC = () => {
     const [direction, setDirection] = useState<'outbound' | 'inbound'>('outbound');
     const [personName, setPersonName] = useState('');
     const [amountDisplay, setAmountDisplay] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0, 5));
+    const [date, setDate] = useState(getCurrentLocalDate());
+    const [time, setTime] = useState(getCurrentLocalTime());
     const [dueDate, setDueDate] = useState('');
     const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
     const [note, setNote] = useState('');

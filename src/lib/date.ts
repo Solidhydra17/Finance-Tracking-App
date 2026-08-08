@@ -9,6 +9,29 @@ export const formatDateLocal = (date: Date): string => {
 };
 
 /**
+ * Format a Date object to HH:mm string in local time
+ */
+export const formatTimeLocal = (date: Date): string => {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+/**
+ * Get current local date as YYYY-MM-DD
+ */
+export const getCurrentLocalDate = (): string => {
+  return formatDateLocal(new Date());
+};
+
+/**
+ * Get current local time as HH:mm
+ */
+export const getCurrentLocalTime = (): string => {
+  return formatTimeLocal(new Date());
+};
+
+/**
  * Parse a YYYY-MM-DD string to a Date object in local time (at 00:00:00)
  */
 export const parseDateLocal = (dateStr: string): Date => {
