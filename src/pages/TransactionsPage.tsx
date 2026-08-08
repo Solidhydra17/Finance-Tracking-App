@@ -319,8 +319,18 @@ export const TransactionsPage: React.FC = () => {
                                             }
 
                                             const handleClick = () => {
-                                                if (isLoan || isLoanPayment) {
-                                                    navigate(`/wallet`);
+                                                if (isLoan) {
+                                                    // Route to the loan edit screen
+                                                    navigate(`/add-loan?edit=${transaction.originalLoan.id}`);
+                                                } else if (isLoanPayment) {
+                                                    const payment = transaction.originalLoanPayment;
+                                                    if (payment?.transactionId) {
+                                                        // Phase 4: backed by a real transaction — edit it
+                                                        navigate(`/add-transaction?edit=${payment.transactionId}`);
+                                                    } else {
+                                                        // Legacy synthetic payment — no editable record; go to wallet
+                                                        navigate(`/wallet`);
+                                                    }
                                                 } else {
                                                     navigate(`/add-transaction?edit=${transaction.id}`);
                                                 }

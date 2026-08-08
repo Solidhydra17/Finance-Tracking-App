@@ -24,6 +24,34 @@ export class LoanService {
         return loanId;
     }
 
+    async updateLoan(id: number, updates: Partial<Omit<Loan, 'id' | 'createdAt'>>): Promise<void> {
+        const loan = await this.loanRepo.getById(id);
+        if (!loan) throw new Error('Loan not found');
+
+        // Guard: if amount is changing, ensure it is not below what has already been paid
+        if (updates.amount !== undefined && updates.amount !== loan.amount) {
+            const payments = await this.loanRepo.getPaymentsForLoan(id);
+            const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+            if (updates.amount < totalPaid) {
+                throw new Error(
+                    `Cannot set loan amount below total already repaid (${totalPaid} cents). Minimum is ${totalPaid} cents.`
+                );
+            }
+        }
+
+        await this.loanRepo.update(id, updates);
+
+        // Recalculate status from payment history
+        const payments = await this.loanRepo.getPaymentsForLoan(id);
+        const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+        const newAmount = updates.amount ?? loan.amount;
+        const newStatus: Loan['status'] =
+            totalPaid === 0 ? 'active' :
+            totalPaid >= newAmount ? 'paid' : 'partially_paid';
+        await this.loanRepo.update(id, { status: newStatus });
+    }
+
+
     async repayLoan(loanId: number, amount: number, walletAccountId: number, date: string, notes?: string, time?: string): Promise<void> {
         const loan = await this.loanRepo.getById(loanId);
         if (!loan) throw new Error("Loan not found");

@@ -13,6 +13,7 @@ interface LoanState {
 
     fetchLoans: () => Promise<void>;
     createLoan: (loanData: Omit<Loan, 'id' | 'createdAt'>) => Promise<void>;
+    updateLoan: (id: number, updates: Partial<Omit<Loan, 'id' | 'createdAt'>>) => Promise<void>;
     repayLoan: (loanId: number, amount: number, walletAccountId: number, date: string, notes?: string, time?: string) => Promise<void>;
 }
 
@@ -49,6 +50,19 @@ export const useLoanStore = create<LoanState>((set) => ({
             await loanService.createLoan(loanData);
             // refreshFinancialState refreshes both wallets and loans (loan creation
             // affects both wallet balances and loan totals)
+            await refreshFinancialState();
+            set({ isLoading: false });
+        } catch (error: any) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
+    updateLoan: async (id, updates) => {
+        set({ isLoading: true, error: null });
+        try {
+            await loanService.updateLoan(id, updates);
+            // Recompute wallet balances and loan totals
             await refreshFinancialState();
             set({ isLoading: false });
         } catch (error: any) {
