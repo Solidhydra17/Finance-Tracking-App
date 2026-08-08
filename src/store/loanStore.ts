@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { loanService } from '@/domain/loans/loanService';
 import type { Loan } from '@/types';
 import { refreshFinancialState } from '@/lib/financialState';
+import { useWalletStore } from './walletStore';
 
 interface LoanState {
     loans: Loan[];

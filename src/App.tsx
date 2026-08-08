@@ -17,6 +17,8 @@ import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
 import { refreshFinancialState } from '@/lib/financialState';
 import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
+import { useWalletStore, useLoanStore, useUIStore } from '@/store';
+import { refreshWidget } from '@/lib/notificationSettings';
 
 export async function updateNativeWidget(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;

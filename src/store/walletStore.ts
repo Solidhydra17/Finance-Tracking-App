@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { walletService } from '@/domain/wallet/walletService';
 import type { WalletAccount, CreditPayment } from '@/types';
-import { refreshFinancialState } from '@/lib/financialState';
+
 
 interface WalletState {
     accounts: WalletAccount[];

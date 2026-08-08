@@ -37,7 +37,7 @@ export async function syncWidget(): Promise<void> {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
-        const { accounts, totalWalletBalance, totalCreditDebt, walletLoanDebt } = useWalletStore.getState();
+        const { accounts, totalWalletBalance, totalCreditDebt, totalWalletLoanDebt } = useWalletStore.getState();
         const { totalOwedToYou, totalYouOwe } = useLoanStore.getState();
         const { currencySymbol, currencyPosition } = useUIStore.getState();
 
@@ -47,7 +47,7 @@ export async function syncWidget(): Promise<void> {
         const { netWorth, projectedBalance, creditDebt, loanDebt } = calculateBalances({
             totalWalletBalance,
             totalCreditDebt,
-            walletLoanDebt,
+            walletLoanDebt: totalWalletLoanDebt,
             peerLoanDebt: totalYouOwe,
             totalOwedToYou,
         });
