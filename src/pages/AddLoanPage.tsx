@@ -23,7 +23,7 @@ export const AddLoanPage: React.FC = () => {
     const [personName, setPersonName] = useState('');
     const [amountDisplay, setAmountDisplay] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
+    const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0, 5));
     const [dueDate, setDueDate] = useState('');
     const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
     const [note, setNote] = useState('');
@@ -165,30 +165,30 @@ export const AddLoanPage: React.FC = () => {
 
                         {/* Person name - hidden when borrowing from a loan account */}
                         {!(direction === 'inbound' && loanAccountId) && (
-                        <div>
-                            <Input
-                                label={direction === 'outbound' ? "Who did you lend to?" : "Who did you borrow from?"}
-                                placeholder="Name of person or bank"
-                                value={personName}
-                                onChange={(e) => setPersonName(e.target.value)}
-                                required={!(direction === 'inbound' && loanAccountId)}
-                                list={direction === 'inbound' ? "loan-providers" : undefined}
-                            />
-                            {direction === 'inbound' && (
-                                <datalist id="loan-providers">
-                                    <option value="GLoan" />
-                                    <option value="GCredit" />
-                                    <option value="SPayLater" />
-                                    <option value="SLoan" />
-                                    <option value="Maya Credit" />
-                                    <option value="Maya Personal Loan" />
-                                    <option value="Billease" />
-                                    <option value="Tala" />
-                                    <option value="JuanHand" />
-                                    <option value="Home Credit" />
-                                </datalist>
-                            )}
-                        </div>
+                            <div>
+                                <Input
+                                    label={direction === 'outbound' ? "Who did you lend to?" : "Who did you borrow from?"}
+                                    placeholder="Name of person or bank"
+                                    value={personName}
+                                    onChange={(e) => setPersonName(e.target.value)}
+                                    required={!(direction === 'inbound' && loanAccountId)}
+                                    list={direction === 'inbound' ? "loan-providers" : undefined}
+                                />
+                                {direction === 'inbound' && (
+                                    <datalist id="loan-providers">
+                                        <option value="GLoan" />
+                                        <option value="GCredit" />
+                                        <option value="SPayLater" />
+                                        <option value="SLoan" />
+                                        <option value="Maya Credit" />
+                                        <option value="Maya Personal Loan" />
+                                        <option value="Billease" />
+                                        <option value="Tala" />
+                                        <option value="JuanHand" />
+                                        <option value="Home Credit" />
+                                    </datalist>
+                                )}
+                            </div>
                         )}
 
                         {/* Loan Account Source (only for inbound) */}
@@ -217,25 +217,48 @@ export const AddLoanPage: React.FC = () => {
                             </div>
                         )}
 
-                    {/* Hide person/date fields when using a loan account (Option B flow) */}
-                    {!(direction === 'inbound' && loanAccountId) && (
-                        <>
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <Input
-                                        label="Date Given/Received"
-                                        type="date"
-                                        value={date}
-                                        onChange={(e) => setDate(e.target.value)}
-                                        required
-                                    />
+                        {/* Hide person/date fields when using a loan account (Option B flow) */}
+                        {!(direction === 'inbound' && loanAccountId) && (
+                            <>
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <Input
+                                            label="Date Given/Received"
+                                            type="date"
+                                            value={date}
+                                            onChange={(e) => setDate(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <Input
+                                            label="Due Date"
+                                            type="date"
+                                            value={dueDate}
+                                            onChange={(e) => setDueDate(e.target.value)}
+                                            required
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex-1">
                                     <Input
-                                        label="Due Date"
+                                        label="Time"
+                                        type="time"
+                                        value={time}
+                                        onChange={(e) => setTime(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </>
+                        )}
+                        {direction === 'inbound' && loanAccountId && (
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <Input
+                                        label="Date"
                                         type="date"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
+                                        value={date}
+                                        onChange={(e) => setDate(e.target.value)}
                                         required
                                     />
                                 </div>
@@ -249,30 +272,7 @@ export const AddLoanPage: React.FC = () => {
                                     />
                                 </div>
                             </div>
-                        </>
-                    )}
-                    {direction === 'inbound' && loanAccountId && (
-                        <div className="flex gap-4">
-                            <div className="flex-1">
-                                <Input
-                                    label="Date"
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <Input
-                                    label="Time"
-                                    type="time"
-                                    value={time}
-                                    onChange={(e) => setTime(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-                    )}
+                        )}
 
                         {/* Wallet Selection */}
                         <div className="space-y-2">
@@ -315,9 +315,8 @@ export const AddLoanPage: React.FC = () => {
                     <Button
                         type="submit"
                         isLoading={isSubmitting}
-                        className={`w-full py-5 text-xl font-bold rounded-2xl shadow-xl transition-all active:scale-95 ${
-                            direction === 'outbound' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-rose-500 hover:bg-rose-600'
-                        }`}
+                        className={`w-full py-5 text-xl font-bold rounded-2xl shadow-xl transition-all active:scale-95 ${direction === 'outbound' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-rose-500 hover:bg-rose-600'
+                            }`}
                     >
                         Save Loan
                     </Button>

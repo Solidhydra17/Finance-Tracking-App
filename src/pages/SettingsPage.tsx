@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 declare const __APP_VERSION__: string;
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.11';
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.14';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -353,8 +353,8 @@ export const SettingsPage: React.FC = () => {
                   {hasApkUpdate ? 'Update Kuripot on Android' : 'Get Kuripot on Android'}
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
-                  {hasApkUpdate 
-                    ? 'A new version of the app is available. Download and install to get the latest features.' 
+                  {hasApkUpdate
+                    ? 'A new version of the app is available. Download and install to get the latest features.'
                     : 'Download and install the Kuripot app directly on your Android phone for the full native experience.'}
                 </p>
                 <a
