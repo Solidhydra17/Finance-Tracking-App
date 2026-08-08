@@ -28,6 +28,8 @@ export const RecurringPage: React.FC = () => {
       fetchAccounts: state.fetchAccounts
   })));
 
+  const transactionAccounts = accounts.filter(a => a.type !== 'loan');
+
   React.useEffect(() => {
       fetchAccounts();
   }, [fetchAccounts]);
@@ -273,7 +275,7 @@ export const RecurringPage: React.FC = () => {
                   className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
                 >
                   <option value="" disabled>Select Wallet...</option>
-                  {accounts.map(acc => (
+                  {transactionAccounts.map(acc => (
                       <option key={acc.id} value={acc.id}>
                           {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
                       </option>

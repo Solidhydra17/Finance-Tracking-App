@@ -41,6 +41,8 @@ export const AddTransactionPage: React.FC = () => {
       accounts: state.accounts,
       fetchAccounts: state.fetchAccounts
   })));
+  
+  const transactionAccounts = accounts.filter(a => a.type !== 'loan');
 
   useEffect(() => {
       fetchAccounts();
@@ -474,7 +476,7 @@ export const AddTransactionPage: React.FC = () => {
                         className={`w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         <option value="" disabled>Select Wallet...</option>
-                        {accounts.map(account => (
+                        {transactionAccounts.map(account => (
                             <option key={account.id} value={account.id}>
                                 {account.name} ({formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})
                             </option>
