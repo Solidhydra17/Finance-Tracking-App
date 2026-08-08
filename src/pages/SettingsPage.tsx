@@ -13,6 +13,7 @@ import { ReminderSettings } from '@/components/settings/ReminderSettings';
 import { useNavigate } from 'react-router-dom';
 import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
 import { Capacitor } from '@capacitor/core';
+import { refreshFinancialState } from '@/lib/financialState';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -213,6 +214,7 @@ export const SettingsPage: React.FC = () => {
         const data = JSON.parse(text);
         await importData(data);
         resetAllStores();
+        await refreshFinancialState();
         addToast('success', 'Data imported successfully');
         setTimeout(() => {
           navigate('/');
@@ -237,6 +239,7 @@ export const SettingsPage: React.FC = () => {
     try {
       await clearAllData();
       resetAllStores();
+      await refreshFinancialState();
       addToast('success', 'All data cleared');
       setTimeout(() => {
         navigate('/');

@@ -4,6 +4,7 @@ import { useWalletStore, useLoanStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { formatCurrency } from '@/lib/money';
 import { Link } from 'react-router-dom';
+import { calculateBalances } from '@/lib/balances';
 
 export const WalletSummary: React.FC = () => {
     const { totalWalletBalance, totalCreditDebt, totalWalletLoanDebt } = useWalletStore(useShallow(state => ({
@@ -73,7 +74,7 @@ export const WalletSummary: React.FC = () => {
                             <p className={`text-[10px] font-bold uppercase tracking-widest ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit Card Debt</p>
                         </div>
                         <p className={`text-lg font-bold ${hasCreditWarning ? 'text-red-400' : 'text-white'}`}>
-                            {formatCurrency(totalCreditDebt, currencySymbol, currencyPosition)}
+                            {formatCurrency(creditDebt, currencySymbol, currencyPosition)}
                         </p>
                     </div>
                 </div>

@@ -15,9 +15,8 @@ import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
-import { useUIStore, useWalletStore, useLoanStore } from '@/store';
+import { refreshFinancialState } from '@/lib/financialState';
 import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
-import { refreshWidget } from '@/lib/notificationSettings';
 
 export async function updateNativeWidget(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
@@ -101,7 +100,8 @@ export const App: React.FC = () => {
         };
         materialize();
 
-        updateNativeWidget();
+        // Initial financial state sync (stores + widget)
+        refreshFinancialState().catch(console.warn);
 
         // Re-schedule reminders on every app open to refresh the 4-week window
         const reminders = getReminders();

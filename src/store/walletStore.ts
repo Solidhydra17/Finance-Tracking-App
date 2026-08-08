@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { walletService } from '@/domain/wallet/walletService';
 import type { WalletAccount, CreditPayment } from '@/types';
+import { refreshFinancialState } from '@/lib/financialState';
 
 interface WalletState {
     accounts: WalletAccount[];
@@ -26,6 +27,10 @@ export const useWalletStore = create<WalletState>((set) => ({
     isLoading: false,
     error: null,
 
+    /**
+     * Pure read/refresh — fetches accounts and totals from DB, updates Zustand state.
+     * No side effects. Widget sync is NOT triggered here.
+     */
     fetchAccounts: async () => {
         set({ isLoading: true, error: null });
         try {

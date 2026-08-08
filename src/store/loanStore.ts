@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { loanService } from '@/domain/loans/loanService';
 import type { Loan } from '@/types';
-import { useWalletStore } from './walletStore';
+import { refreshFinancialState } from '@/lib/financialState';
 
 interface LoanState {
     loans: Loan[];
@@ -22,16 +22,20 @@ export const useLoanStore = create<LoanState>((set) => ({
     isLoading: false,
     error: null,
 
+    /**
+     * Pure read/refresh — fetches loans and totals from DB, updates Zustand state.
+     * No side effects. Widget sync is NOT triggered here.
+     */
     fetchLoans: async () => {
         set({ isLoading: true, error: null });
         try {
             const loans = await loanService.getAllLoans();
             const totals = await loanService.getTotals();
-            set({ 
-                loans, 
+            set({
+                loans,
                 totalOwedToYou: totals.totalOwedToYou,
                 totalYouOwe: totals.totalYouOwe,
-                isLoading: false 
+                isLoading: false
             });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -42,17 +46,10 @@ export const useLoanStore = create<LoanState>((set) => ({
         set({ isLoading: true, error: null });
         try {
             await loanService.createLoan(loanData);
-            // Re-fetch loans
-            const loans = await loanService.getAllLoans();
-            const totals = await loanService.getTotals();
-            set({ 
-                loans, 
-                totalOwedToYou: totals.totalOwedToYou,
-                totalYouOwe: totals.totalYouOwe,
-                isLoading: false 
-            });
-            // A loan creation impacts wallet balances, so trigger wallet refresh
-            useWalletStore.getState().fetchAccounts();
+            // refreshFinancialState refreshes both wallets and loans (loan creation
+            // affects both wallet balances and loan totals)
+            await refreshFinancialState();
+            set({ isLoading: false });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;
