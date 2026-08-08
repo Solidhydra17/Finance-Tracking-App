@@ -37,7 +37,7 @@ export const AddLoanPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!personName.trim()) {
+        if (!personName.trim() && !(direction === 'inbound' && loanAccountId)) {
             addToast('warning', 'Please enter a person/entity name');
             return;
         }
@@ -139,7 +139,7 @@ export const AddLoanPage: React.FC = () => {
                                 }
                             `}
                         >
-                            I lent money (Outbound)
+                            I lent money — they owe me
                         </button>
                         <button
                             type="button"
@@ -152,7 +152,7 @@ export const AddLoanPage: React.FC = () => {
                                 }
                             `}
                         >
-                            I borrowed (Inbound)
+                            I borrowed — I owe them
                         </button>
                     </div>
 

@@ -103,7 +103,7 @@ export const WalletLoansList: React.FC = () => {
             {/* Outbound Loans */}
             <section className="space-y-3">
                 <div className="flex justify-between items-center px-1">
-                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Owed to You (Outbound)</h3>
+                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Owed to You — You Lent</h3>
                     <button onClick={() => navigate('/add-loan')} className="text-xs font-bold text-midblue">
                         + Add Loan
                     </button>
@@ -121,7 +121,7 @@ export const WalletLoansList: React.FC = () => {
             {/* Inbound Loans */}
             <section className="space-y-3">
                 <div className="flex justify-between items-center px-1">
-                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">You Owe (Inbound)</h3>
+                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">You Owe — You Borrowed</h3>
                     <button onClick={() => navigate('/add-loan')} className="text-xs font-bold text-midblue">
                         + Add Loan
                     </button>
