@@ -52,6 +52,7 @@ export function useTransactions(filters: FilterState) {
             type: 'loan',
             amount: loan.amount,
             date: loan.acquiredDate,
+            time: loan.time ?? '00:00',
             originalLoan: loan,
             categoryId: -1
         }));

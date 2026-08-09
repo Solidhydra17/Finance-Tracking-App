@@ -3,6 +3,7 @@ import { Select, Input, TextArea, Button, Icon } from '@/components/ui';
 import { useCategories, useTransactions } from '@/hooks';
 import { useUIStore } from '@/store';
 import { displayToCents, centsToDisplay } from '@/lib/money';
+import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { TransactionType } from '@/types';
 
 interface AddTransactionModalProps {
@@ -30,8 +31,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [amountDisplay, setAmountDisplay] = useState(
     editTransaction ? centsToDisplay(editTransaction.amount) : ''
   );
-  const [date, setDate] = useState(editTransaction?.date || new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState(editTransaction?.time || new Date().toISOString().split('T')[1].substring(0,5));
+  const [date, setDate] = useState(editTransaction?.date || getCurrentLocalDate());
+  const [time, setTime] = useState(editTransaction?.time || getCurrentLocalTime());
   const [categoryId, setCategoryId] = useState<number>(editTransaction?.categoryId || 0);
   const [note, setNote] = useState(editTransaction?.note || '');
   const [isSubmitting, setIsSubmitting] = useState(false);

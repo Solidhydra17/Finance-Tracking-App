@@ -3,6 +3,7 @@ import { useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Icon, Modal, Input, Button } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
+import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { WalletAccount, WalletAccountType } from '@/types';
 
 export const WalletAccountsList: React.FC = () => {
@@ -32,8 +33,8 @@ export const WalletAccountsList: React.FC = () => {
     const [payAccount, setPayAccount] = useState<WalletAccount | null>(null);
     const [payAmount, setPayAmount] = useState('');
     const [paySourceAccountId, setPaySourceAccountId] = useState<number | ''>('');
-    const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
-    const [payTime, setPayTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
+    const [payDate, setPayDate] = useState(getCurrentLocalDate());
+    const [payTime, setPayTime] = useState(getCurrentLocalTime());
     const [payNotes, setPayNotes] = useState('');
 
     const cashAccount = accounts.find(a => a.type === 'cash');
@@ -107,8 +108,8 @@ export const WalletAccountsList: React.FC = () => {
         setPayAccount(account);
         setPayAmount((Math.max(0, account.balance) / 100).toString());
         setPaySourceAccountId(cashAccount ? cashAccount.id! : (debitAccounts[0]?.id || ''));
-        setPayDate(new Date().toISOString().split('T')[0]);
-        setPayTime(new Date().toISOString().split('T')[1].substring(0,5));
+        setPayDate(getCurrentLocalDate());
+        setPayTime(getCurrentLocalTime());
         setPayNotes('');
         setIsPayModalOpen(true);
     };

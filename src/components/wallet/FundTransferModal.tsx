@@ -3,6 +3,7 @@ import { useWalletStore, useUIStore, useTransactionStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Modal, Input, CalcInput, Button, Icon } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
+import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { WalletAccount } from '@/types';
 
 export const FundTransferModal: React.FC = () => {
@@ -24,8 +25,8 @@ export const FundTransferModal: React.FC = () => {
     const [transferFromId, setTransferFromId] = useState<number | ''>('');
     const [transferToId, setTransferToId] = useState<number | ''>('');
     const [transferAmount, setTransferAmount] = useState('');
-    const [transferDate, setTransferDate] = useState(new Date().toISOString().split('T')[0]);
-    const [transferTime, setTransferTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
+    const [transferDate, setTransferDate] = useState(getCurrentLocalDate());
+    const [transferTime, setTransferTime] = useState(getCurrentLocalTime());
     const [transferNotes, setTransferNotes] = useState('');
 
     const cashAccount = accounts.find(a => a.type === 'cash');
@@ -39,8 +40,8 @@ export const FundTransferModal: React.FC = () => {
             setTransferFromId('');
             setTransferToId('');
             setTransferAmount('');
-            setTransferDate(new Date().toISOString().split('T')[0]);
-            setTransferTime(new Date().toISOString().split('T')[1].substring(0,5));
+            setTransferDate(getCurrentLocalDate());
+            setTransferTime(getCurrentLocalTime());
             setTransferNotes('');
         }
     }, [isTransferOpen]);

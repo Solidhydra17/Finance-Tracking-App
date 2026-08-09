@@ -4,6 +4,7 @@ import { useRecurring } from '@/hooks';
 import { useUIStore, useWalletStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, centsToDisplay, formatCurrency } from '@/lib/money';
+import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { RecurringFrequency } from '@/types';
 
 export const RecurringPage: React.FC = () => {
@@ -17,8 +18,8 @@ export const RecurringPage: React.FC = () => {
   const [customDaySelection, setCustomDaySelection] = useState<number[]>([1, 2, 3, 4, 5]);
   const [dayOfMonth] = useState<number>(1);
   const [dayOfWeek] = useState<number>(1);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
+  const [startDate, setStartDate] = useState(getCurrentLocalDate());
+  const [time, setTime] = useState(getCurrentLocalTime());
   const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

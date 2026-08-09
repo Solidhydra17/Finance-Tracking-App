@@ -9,6 +9,7 @@ import type { TransactionType } from '@/types';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { recurringRepository, categoryRepository } from '@/storage/indexeddb';
 import { db } from '@/storage/indexeddb/database';
+import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 
 export const AddTransactionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,8 +25,8 @@ export const AddTransactionPage: React.FC = () => {
 
   const [type, setType] = useState<TransactionType>(initialType);
   const [amountDisplay, setAmountDisplay] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState(new Date().toISOString().split('T')[1].substring(0,5));
+  const [date, setDate] = useState(getCurrentLocalDate());
+  const [time, setTime] = useState(getCurrentLocalTime());
   const [categoryId, setCategoryId] = useState<number>(0);
   const [walletAccountId, setWalletAccountId] = useState<number | ''>('');
   const [note, setNote] = useState('');
@@ -163,11 +164,6 @@ export const AddTransactionPage: React.FC = () => {
     try {
       if (!amountDisplay) {
         addToast('warning', 'Please enter an amount');
-        return;
-      }
-
-      if (!categoryId || categoryId === 0) {
-        addToast('warning', 'Please select a category');
         return;
       }
 
