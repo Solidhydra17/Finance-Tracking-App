@@ -34,6 +34,15 @@ export class IndexedDBLoanRepository implements LoanRepository {
     async getPaymentsForLoan(loanId: number): Promise<LoanPayment[]> {
         return await db.loanPayments.where('loanId').equals(loanId).toArray();
     }
+
+    async deletePayment(paymentId: number): Promise<void> {
+        await db.loanPayments.delete(paymentId);
+    }
+
+    async getPaymentByTransactionId(transactionId: number): Promise<LoanPayment | undefined> {
+        const payments = await db.loanPayments.where('transactionId').equals(transactionId).toArray();
+        return payments.length > 0 ? payments[0] : undefined;
+    }
 }
 
 export const loanRepository = new IndexedDBLoanRepository();

@@ -1,5 +1,5 @@
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
-import { transactionRepository } from '@/storage/indexeddb';
+import { transactionRepository, loanRepository } from '@/storage/indexeddb';
 import { addCents, subtractCents } from '@/lib/money';
 // import { recurringEngine } from '@/domain/recurring/recurringEngine';
 
@@ -42,6 +42,24 @@ export const transactionsEngine = {
   },
 
   async softDelete(id: number): Promise<void> {
+    const tx = await transactionRepository.getById(id);
+    if (tx && tx.source === 'loan_payment') {
+      const payment = await loanRepository.getPaymentByTransactionId(id);
+      if (payment && payment.id) {
+        await loanRepository.deletePayment(payment.id);
+        
+        // Recalculate loan status
+        const loan = await loanRepository.getById(payment.loanId);
+        if (loan) {
+          const allPayments = await loanRepository.getPaymentsForLoan(loan.id!);
+          const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
+          const newStatus = totalPaid === 0 ? 'active' : totalPaid >= loan.amount ? 'paid' : 'partially_paid';
+          if (loan.status !== newStatus) {
+            await loanRepository.update(loan.id!, { status: newStatus });
+          }
+        }
+      }
+    }
     return transactionRepository.softDelete(id);
   },
 

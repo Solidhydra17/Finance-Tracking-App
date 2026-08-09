@@ -9,4 +9,6 @@ export interface LoanRepository {
     
     addPayment(payment: Omit<LoanPayment, 'id'>): Promise<number>;
     getPaymentsForLoan(loanId: number): Promise<LoanPayment[]>;
+    deletePayment(paymentId: number): Promise<void>;
+    getPaymentByTransactionId(transactionId: number): Promise<LoanPayment | undefined>;
 }
