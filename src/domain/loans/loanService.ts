@@ -56,6 +56,13 @@ export class LoanService {
         const loan = await this.loanRepo.getById(loanId);
         if (!loan) throw new Error("Loan not found");
 
+        // Guard: prevent overpayment
+        const existingPayments = await this.loanRepo.getPaymentsForLoan(loanId);
+        const alreadyPaid = existingPayments.reduce((sum, p) => sum + p.amount, 0);
+        const remaining = loan.amount - alreadyPaid;
+        if (amount <= 0) throw new Error("Repayment amount must be greater than zero");
+        if (amount > remaining) throw new Error(`Repayment of ${amount} exceeds remaining balance of ${remaining}`);
+
         const transactionId = await transactionsEngine.create({
             type: loan.direction === 'outbound' ? 'income' : 'expense',
             amount,
@@ -88,6 +95,7 @@ export class LoanService {
             await this.loanRepo.update(loanId, { status: newStatus });
         }
     }
+
 
     async getTotals(): Promise<{
         totalOwedToYou: number; // Outbound

@@ -167,11 +167,6 @@ export const AddTransactionPage: React.FC = () => {
         return;
       }
 
-      if (!categoryId || categoryId === 0) {
-        addToast('warning', 'Please select a category');
-        return;
-      }
-
       if (!walletAccountId) {
         addToast('warning', 'Please select a wallet account');
         return;

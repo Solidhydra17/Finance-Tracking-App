@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { loanService } from '@/domain/loans/loanService';
-import type { Loan } from '@/types';
+import type { Loan, LoanPayment } from '@/types';
 import { refreshFinancialState } from '@/lib/financialState';
 import { useWalletStore } from './walletStore';
 
@@ -15,6 +15,7 @@ interface LoanState {
     createLoan: (loanData: Omit<Loan, 'id' | 'createdAt'>) => Promise<void>;
     updateLoan: (id: number, updates: Partial<Omit<Loan, 'id' | 'createdAt'>>) => Promise<void>;
     repayLoan: (loanId: number, amount: number, walletAccountId: number, date: string, notes?: string, time?: string) => Promise<void>;
+    getLoanDetails: (loanId: number) => Promise<{ loan: Loan; payments: LoanPayment[] } | undefined>;
 }
 
 export const useLoanStore = create<LoanState>((set) => ({
@@ -89,5 +90,9 @@ export const useLoanStore = create<LoanState>((set) => ({
             set({ error: error.message, isLoading: false });
             throw error;
         }
+    },
+
+    getLoanDetails: async (loanId: number) => {
+        return await loanService.getLoanDetails(loanId);
     }
 }));
