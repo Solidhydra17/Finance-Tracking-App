@@ -38,6 +38,35 @@ export const transactionsEngine = {
     if (!oldTransaction) throw new Error("Transaction not found");
 
     const result = await transactionRepository.update(id, data);
+
+    // If this is a loan repayment, recalculate the linked loan's status.
+    // We read live transaction amounts to keep the loan in sync with the real transaction.
+    // Inlined here (not delegated to loanService) to avoid a circular import.
+    if (oldTransaction.source === 'loan_payment') {
+      const payment = await loanRepository.getPaymentByTransactionId(id);
+      if (payment) {
+        const loan = await loanRepository.getById(payment.loanId);
+        if (loan) {
+          const allPayments = await loanRepository.getPaymentsForLoan(loan.id!);
+          let totalPaid = 0;
+          for (const p of allPayments) {
+            if (p.transactionId) {
+              // transactionRepository.getById returns undefined for soft-deleted records
+              const tx = await transactionRepository.getById(p.transactionId);
+              if (tx) totalPaid += tx.amount;
+            } else {
+              totalPaid += p.amount;
+            }
+          }
+          const newStatus: 'active' | 'partially_paid' | 'paid' =
+            totalPaid === 0 ? 'active' : totalPaid >= loan.amount ? 'paid' : 'partially_paid';
+          if (loan.status !== newStatus) {
+            await loanRepository.update(loan.id!, { status: newStatus });
+          }
+        }
+      }
+    }
+
     return result;
   },
 
@@ -52,7 +81,16 @@ export const transactionsEngine = {
         const loan = await loanRepository.getById(payment.loanId);
         if (loan) {
           const allPayments = await loanRepository.getPaymentsForLoan(loan.id!);
-          const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
+          // Use live transaction amounts (same logic as loanService.computeTotalPaid)
+          let totalPaid = 0;
+          for (const p of allPayments) {
+            if (p.transactionId) {
+              const tx = await transactionRepository.getById(p.transactionId);
+              if (tx) totalPaid += tx.amount;
+            } else {
+              totalPaid += p.amount;
+            }
+          }
           const newStatus = totalPaid === 0 ? 'active' : totalPaid >= loan.amount ? 'paid' : 'partially_paid';
           if (loan.status !== newStatus) {
             await loanRepository.update(loan.id!, { status: newStatus });
