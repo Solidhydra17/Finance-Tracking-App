@@ -17,6 +17,7 @@ interface LoanWithRemaining {
     totalPaid: number;
     remaining: number;
     payments: LoanPayment[];
+    effectiveAmounts: Record<number, number>; // paymentId → live amount
 }
 
 interface InstitutionalPaymentRow {
@@ -58,7 +59,16 @@ export const WalletLoansList: React.FC = () => {
             if (!loan.id) continue;
             const detail = await getLoanDetails(loan.id);
             if (detail) {
-                const totalPaid = detail.payments.reduce((sum, p) => sum + p.amount, 0);
+                // Derive totalPaid from linked transactions (not from stale LoanPayment.amount)
+                let totalPaid = 0;
+                for (const p of detail.payments) {
+                    if (p.transactionId) {
+                        const tx = await db.transactions.get(p.transactionId);
+                        if (tx && !tx.deletedAt) totalPaid += tx.amount;
+                    } else {
+                        totalPaid += p.amount;
+                    }
+                }
                 map.set(loan.id, {
                     totalPaid,
                     remaining: Math.max(0, loan.amount - totalPaid),
@@ -143,13 +153,27 @@ export const WalletLoansList: React.FC = () => {
         if (!loan.id) return;
         const detail = await getLoanDetails(loan.id);
         if (!detail) return;
-        const totalPaid = detail.payments.reduce((sum, p) => sum + p.amount, 0);
+        // Build per-payment effective amounts from linked transactions
+        const effectiveAmounts: Record<number, number> = {};
+        let totalPaid = 0;
+        for (const p of detail.payments) {
+            if (p.id === undefined) continue;
+            let amt: number;
+            if (p.transactionId) {
+                const tx = await db.transactions.get(p.transactionId);
+                amt = (tx && !tx.deletedAt) ? tx.amount : 0;
+            } else {
+                amt = p.amount;
+            }
+            effectiveAmounts[p.id] = amt;
+            totalPaid += amt;
+        }
         const remaining = Math.max(0, loan.amount - totalPaid);
         const sorted = [...detail.payments].sort((a, b) => {
             if (b.paidDate !== a.paidDate) return b.paidDate.localeCompare(a.paidDate);
             return (b.time || '00:00').localeCompare(a.time || '00:00');
         });
-        setDetailLoan({ loan, totalPaid, remaining, payments: sorted });
+        setDetailLoan({ loan, totalPaid, remaining, payments: sorted, effectiveAmounts });
         setDetailInstitutional(null);
         setIsDetailModalOpen(true);
     };
@@ -555,7 +579,7 @@ export const WalletLoansList: React.FC = () => {
             >
                 <div className="p-4 space-y-5">
                     {detailLoan && (() => {
-                        const { loan, totalPaid, remaining, payments } = detailLoan;
+                        const { loan, totalPaid, remaining, payments, effectiveAmounts } = detailLoan;
                         return (
                             <>
                                 {/* Loan summary */}
@@ -605,7 +629,7 @@ export const WalletLoansList: React.FC = () => {
                                                 return (
                                                     <div key={p.id} className="flex justify-between items-start bg-[var(--item-bg)] rounded-xl px-3 py-2.5">
                                                         <div>
-                                                            <p className="text-sm font-bold text-[var(--text-main)]">{fmt(p.amount)}</p>
+                                                            <p className="text-sm font-bold text-[var(--text-main)]">{fmt(effectiveAmounts[p.id!] ?? p.amount)}</p>
                                                             <p className="text-[10px] text-[var(--text-muted)] font-medium">
                                                                 {formatDateLocal(new Date(p.paidDate))} {p.time ? `· ${p.time}` : ''}
                                                             </p>

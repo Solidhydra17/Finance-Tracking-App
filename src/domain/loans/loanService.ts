@@ -8,6 +8,26 @@ export class LoanService {
         private loanRepo: LoanRepository
     ) {}
 
+    /**
+     * Compute the effective totalPaid for a set of LoanPayments.
+     * - Payments WITH transactionId: reads the live transaction amount.
+     *   If the transaction is deleted or missing, contributes 0.
+     * - Legacy payments WITHOUT transactionId: uses LoanPayment.amount.
+     */
+    private async computeTotalPaid(payments: LoanPayment[]): Promise<number> {
+        let total = 0;
+        for (const p of payments) {
+            if (p.transactionId) {
+                // transactionsEngine.getById already returns undefined for soft-deleted records
+                const tx = await transactionsEngine.getById(p.transactionId);
+                if (tx) total += tx.amount;
+            } else {
+                total += p.amount;
+            }
+        }
+        return total;
+    }
+
     async getAllLoans(): Promise<Loan[]> {
         return await this.loanRepo.getAll();
     }
@@ -31,7 +51,7 @@ export class LoanService {
         // Guard: if amount is changing, ensure it is not below what has already been paid
         if (updates.amount !== undefined && updates.amount !== loan.amount) {
             const payments = await this.loanRepo.getPaymentsForLoan(id);
-            const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+            const totalPaid = await this.computeTotalPaid(payments);
             if (updates.amount < totalPaid) {
                 throw new Error(
                     `Cannot set loan amount below total already repaid (${totalPaid} cents). Minimum is ${totalPaid} cents.`
@@ -41,9 +61,9 @@ export class LoanService {
 
         await this.loanRepo.update(id, updates);
 
-        // Recalculate status from payment history
+        // Recalculate status from payment history (using live transaction amounts)
         const payments = await this.loanRepo.getPaymentsForLoan(id);
-        const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+        const totalPaid = await this.computeTotalPaid(payments);
         const newAmount = updates.amount ?? loan.amount;
         const newStatus: Loan['status'] =
             totalPaid === 0 ? 'active' :
@@ -56,9 +76,9 @@ export class LoanService {
         const loan = await this.loanRepo.getById(loanId);
         if (!loan) throw new Error("Loan not found");
 
-        // Guard: prevent overpayment
+        // Guard: prevent overpayment (use live transaction amounts as source of truth)
         const existingPayments = await this.loanRepo.getPaymentsForLoan(loanId);
-        const alreadyPaid = existingPayments.reduce((sum, p) => sum + p.amount, 0);
+        const alreadyPaid = await this.computeTotalPaid(existingPayments);
         const remaining = loan.amount - alreadyPaid;
         if (amount <= 0) throw new Error("Repayment amount must be greater than zero");
         if (amount > remaining) throw new Error(`Repayment of ${amount} exceeds remaining balance of ${remaining}`);
@@ -86,9 +106,9 @@ export class LoanService {
 
         await this.loanRepo.addPayment(payment);
 
-        // Calculate if fully paid
+        // Calculate if fully paid (use live transaction amounts as source of truth)
         const payments = await this.loanRepo.getPaymentsForLoan(loanId);
-        const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+        const totalPaid = await this.computeTotalPaid(payments);
         
         const newStatus = totalPaid >= loan.amount ? 'paid' : 'partially_paid';
         if (loan.status !== newStatus) {
@@ -108,7 +128,7 @@ export class LoanService {
 
         for (const loan of loans) {
             const payments = await this.loanRepo.getPaymentsForLoan(loan.id!);
-            const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+            const totalPaid = await this.computeTotalPaid(payments);
             const remaining = loan.amount - totalPaid;
 
             if (remaining > 0) {
