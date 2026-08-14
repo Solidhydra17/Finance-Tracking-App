@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 declare const __APP_VERSION__: string;
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.17';
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.18';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
