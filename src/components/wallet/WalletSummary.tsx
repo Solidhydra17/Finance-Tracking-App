@@ -47,7 +47,7 @@ export const WalletSummary: React.FC = () => {
                 <div className="flex justify-between items-start">
                     <div>
                         <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">Total Wallet Balance</p>
-                        <h2 className="text-4xl font-extrabold tracking-tight">
+                        <h2 className="text-4xl font-extrabold tracking-tight text-white">
                             {formatCurrency(netWorth, currencySymbol, currencyPosition)}
                         </h2>
                     </div>

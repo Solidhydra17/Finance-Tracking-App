@@ -260,7 +260,7 @@ export const TransactionsPage: React.FC = () => {
                                             const isLoan = transaction.type === 'loan';
                                             const isLoanPayment = transaction.type === 'loan_payment';
 
-                                            let title = category?.name || "Unknown";
+                                            let title = transaction.source === 'loan_payment' ? "Loan Repayment" : (category?.name || "Unknown");
                                             let subtitle = transaction.note || "No note";
                                             let iconName = category?.icon || "BanknotesIcon";
                                             let iconColor = category?.color || "";

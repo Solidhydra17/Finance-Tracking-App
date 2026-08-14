@@ -182,18 +182,8 @@ export async function clearAllData(): Promise<void> {
 }
 
 
-export async function exportAllData(): Promise<{
-  transactions: Transaction[];
-  categories: Category[];
-  loans: Loan[];
-  loanPayments: LoanPayment[];
-  recurringRules: RecurringRule[];
-  budgetPlans: BudgetPlan[];
-  budgetItems: BudgetItem[];
-  walletAccounts: WalletAccount[];
-  creditPayments: CreditPayment[];
-}> {
-  return {
+export async function exportAllData(): Promise<any> {
+  const data = {
     transactions: await db.transactions.toArray(),
     categories: await db.categories.toArray(),
     loans: await db.loans.toArray(),
@@ -204,44 +194,81 @@ export async function exportAllData(): Promise<{
     walletAccounts: await db.walletAccounts.toArray(),
     creditPayments: await db.creditPayments.toArray(),
   };
+
+  return {
+    format: 'kuripot-backup',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data
+  };
 }
 
-export async function importData(data: {
-  transactions?: Transaction[];
-  categories?: Category[];
-  loans?: Loan[];
-  loanPayments?: LoanPayment[];
-  recurringRules?: RecurringRule[];
-  budgetPlans?: BudgetPlan[];
-  budgetItems?: BudgetItem[];
-  walletAccounts?: WalletAccount[];
-  creditPayments?: CreditPayment[];
-}): Promise<void> {
-  if (data.categories?.length) {
-    await db.categories.bulkPut(data.categories);
+export async function importData(payload: any): Promise<void> {
+  // 1. Validation
+  let dataToImport = payload;
+  
+  if (payload && payload.format === 'kuripot-backup') {
+    dataToImport = payload.data;
+  } else if (payload && typeof payload === 'object' && !payload.format) {
+    // Legacy support for bare exports
+    dataToImport = payload;
+    // Check if it at least resembles our tables
+    if (!('transactions' in dataToImport) && !('categories' in dataToImport) && !('walletAccounts' in dataToImport)) {
+      throw new Error('Invalid backup file format');
+    }
+  } else {
+    throw new Error('Invalid backup file format');
   }
-  if (data.transactions?.length) {
-    await db.transactions.bulkPut(data.transactions);
+
+  if (!dataToImport || typeof dataToImport !== 'object') {
+    throw new Error('Invalid backup data');
   }
-  if (data.loans?.length) {
-    await db.loans.bulkPut(data.loans);
-  }
-  if (data.loanPayments?.length) {
-    await db.loanPayments.bulkPut(data.loanPayments);
-  }
-  if (data.recurringRules?.length) {
-    await db.recurringRules.bulkPut(data.recurringRules);
-  }
-  if (data.budgetPlans?.length) {
-    await db.budgetPlans.bulkPut(data.budgetPlans);
-  }
-  if (data.budgetItems?.length) {
-    await db.budgetItems.bulkPut(data.budgetItems);
-  }
-  if (data.walletAccounts?.length) {
-    await db.walletAccounts.bulkPut(data.walletAccounts);
-  }
-  if (data.creditPayments?.length) {
-    await db.creditPayments.bulkPut(data.creditPayments);
-  }
+
+  // 2. Atomic Restore (REPLACE behavior)
+  await db.transaction('rw', 
+    [db.transactions, db.categories, db.loans, db.loanPayments, 
+    db.recurringRules, db.budgetPlans, db.budgetItems, 
+    db.walletAccounts, db.creditPayments], 
+    async () => {
+      // Clear existing data
+      await db.transactions.clear();
+      await db.categories.clear();
+      await db.loans.clear();
+      await db.loanPayments.clear();
+      await db.recurringRules.clear();
+      await db.budgetPlans.clear();
+      await db.budgetItems.clear();
+      await db.walletAccounts.clear();
+      await db.creditPayments.clear();
+
+      // Restore data
+      if (dataToImport.categories?.length) {
+        await db.categories.bulkPut(dataToImport.categories);
+      }
+      if (dataToImport.transactions?.length) {
+        await db.transactions.bulkPut(dataToImport.transactions);
+      }
+      if (dataToImport.loans?.length) {
+        await db.loans.bulkPut(dataToImport.loans);
+      }
+      if (dataToImport.loanPayments?.length) {
+        await db.loanPayments.bulkPut(dataToImport.loanPayments);
+      }
+      if (dataToImport.recurringRules?.length) {
+        await db.recurringRules.bulkPut(dataToImport.recurringRules);
+      }
+      if (dataToImport.budgetPlans?.length) {
+        await db.budgetPlans.bulkPut(dataToImport.budgetPlans);
+      }
+      if (dataToImport.budgetItems?.length) {
+        await db.budgetItems.bulkPut(dataToImport.budgetItems);
+      }
+      if (dataToImport.walletAccounts?.length) {
+        await db.walletAccounts.bulkPut(dataToImport.walletAccounts);
+      }
+      if (dataToImport.creditPayments?.length) {
+        await db.creditPayments.bulkPut(dataToImport.creditPayments);
+      }
+    }
+  );
 }
