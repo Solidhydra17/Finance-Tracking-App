@@ -219,9 +219,9 @@ export const SettingsPage: React.FC = () => {
         setTimeout(() => {
           navigate('/');
         }, 3000);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Import failed:', error);
-        addToast('error', 'Failed to import data');
+        addToast('error', error.message || 'Failed to import data');
         setIsImporting(false);
       }
     };

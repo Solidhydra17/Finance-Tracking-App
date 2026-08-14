@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ui";
 import { AppLayout } from "@/components/layout";
 import { DashboardPage } from "@/pages/DashboardPage";
@@ -12,6 +12,7 @@ import { AddLoanPage } from "@/pages/AddLoanPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 import { walletService } from '@/domain/wallet/walletService';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
@@ -86,6 +87,42 @@ export async function updateNativeWidget(): Promise<void> {
     console.warn('[Widget] updateNativeWidget failed:', e);
   }
 }
+
+const HardwareBackButtonManager: React.FC = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { addToast } = useUIStore();
+    const lastBackPress = React.useRef(0);
+    const pathnameRef = React.useRef(location.pathname);
+
+    React.useEffect(() => {
+        pathnameRef.current = location.pathname;
+    }, [location.pathname]);
+
+    React.useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const listener = CapacitorApp.addListener('backButton', () => {
+            if (pathnameRef.current !== '/') {
+                navigate(-1);
+            } else {
+                const now = Date.now();
+                if (now - lastBackPress.current < 2000) {
+                    CapacitorApp.exitApp();
+                } else {
+                    lastBackPress.current = now;
+                    addToast('info', 'Press back again to exit', 2000);
+                }
+            }
+        });
+
+        return () => {
+            listener.then(l => l.remove());
+        };
+    }, [navigate, addToast]);
+
+    return null;
+};
 
 export const App: React.FC = () => {
     useEffect(() => {
@@ -162,6 +199,7 @@ export const App: React.FC = () => {
     return (
         <ErrorBoundary>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <HardwareBackButtonManager />
                 <Routes>
                     <Route path="/" element={<AppLayout />}>
                         <Route index element={<DashboardPage />} />
