@@ -3,6 +3,7 @@ import { Card, CardBody, Icon } from '@/components/ui';
 import { useWalletStore, useLoanStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { formatCurrency } from '@/lib/money';
+import { calculateBalances } from '@/lib/balances';
 import { Link } from 'react-router-dom';
 
 export const WalletSummary: React.FC = () => {
@@ -23,11 +24,13 @@ export const WalletSummary: React.FC = () => {
         creditWarningThreshold: state.creditWarningThreshold
     })));
 
-    // Net Worth = Physical balance + money owed TO user - all liabilities (credit cards, institutional loans, P2P loans)
-    const netWorth = totalWalletBalance + totalOwedToYou - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
-
-    // Projected Balance = Total Wallet Balance - all outstanding debts that must be paid from wallet
-    const projectedBalance = totalWalletBalance - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
+    const { displayedWalletTotal, projectedBalance } = calculateBalances({
+        totalWalletBalance,
+        totalCreditDebt,
+        walletLoanDebt: totalWalletLoanDebt,
+        peerLoanDebt: totalYouOwe,
+        totalOwedToYou,
+    });
 
     // Warning threshold: credit cards + institutional loan debt relative to available funds
     // Zero-balance guard prevents Infinity / NaN
@@ -48,7 +51,7 @@ export const WalletSummary: React.FC = () => {
                     <div>
                         <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">Total Wallet Balance</p>
                         <h2 className="text-4xl font-extrabold tracking-tight text-white">
-                            {formatCurrency(netWorth, currencySymbol, currencyPosition)}
+                            {formatCurrency(displayedWalletTotal, currencySymbol, currencyPosition)}
                         </h2>
                     </div>
                     <Link to="/settings" className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">

@@ -44,7 +44,7 @@ export async function syncWidget(): Promise<void> {
         const f = (n: number) => fmt(n, currencySymbol, currencyPosition);
 
         // Ensure Widget matches Dashboard and Wallet exactly
-        const { netWorth, projectedBalance, creditDebt, loanDebt } = calculateBalances({
+        const { displayedWalletTotal, projectedBalance, creditDebt, loanDebt } = calculateBalances({
             totalWalletBalance,
             totalCreditDebt,
             walletLoanDebt: totalWalletLoanDebt,
@@ -72,7 +72,7 @@ export async function syncWidget(): Promise<void> {
         const { Preferences } = await import('@capacitor/preferences');
         await Promise.all([
             Preferences.set({ key: 'widget_projectedBalance', value: f(projectedBalance) }),
-            Preferences.set({ key: 'widget_totalBalance',     value: f(netWorth) }),
+            Preferences.set({ key: 'widget_totalBalance',     value: f(displayedWalletTotal) }),
             Preferences.set({ key: 'widget_creditDebt',       value: f(creditDebt) }),
             Preferences.set({ key: 'widget_owedToYou',        value: f(totalOwedToYou) }),
             Preferences.set({ key: 'widget_youOwe',           value: f(loanDebt) }),

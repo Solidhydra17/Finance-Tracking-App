@@ -1,7 +1,14 @@
 /**
  * Financial balance computations.
- * Centralized to ensure Dashboard, Wallet screen, and Widget 
- * all display identically calculated values from raw store inputs.
+ * Centralized so Dashboard, Wallet screen, and Widget display the same values.
+ *
+ * Total Wallet Balance (headline) = cash + debit + e-cash
+ *   + money owed to you
+ *   − institutional loan debt − P2P money you owe
+ * Credit card debt is NOT deducted here; it only affects Projected Balance.
+ *
+ * Projected Balance = cash + debit + e-cash
+ *   − credit card debt − institutional loans − P2P money you owe
  */
 
 export interface BalanceState {
@@ -13,17 +20,17 @@ export interface BalanceState {
 }
 
 export function calculateBalances(state: BalanceState) {
-    const totalLiabilities = state.walletLoanDebt + state.peerLoanDebt;
+    const loanDebt = state.walletLoanDebt + state.peerLoanDebt;
 
     return {
-        // Raw values passed through for convenience if needed
         creditDebt: state.totalCreditDebt,
-        loanDebt: totalLiabilities,
-        
-        // Net Worth = Physical balance + money owed TO user (outbound loans) - money user owes (all inbound loans)
-        netWorth: state.totalWalletBalance + state.totalOwedToYou - totalLiabilities,
-        
-        // Projected Balance = Total Wallet Balance - Unpaid Credit - Unpaid Inbound Loans
-        projectedBalance: state.totalWalletBalance - state.totalCreditDebt - totalLiabilities,
+        loanDebt,
+
+        // Matches the home widget headline: include receivables, exclude credit.
+        displayedWalletTotal:
+            state.totalWalletBalance + state.totalOwedToYou - loanDebt,
+
+        projectedBalance:
+            state.totalWalletBalance - state.totalCreditDebt - loanDebt,
     };
 }

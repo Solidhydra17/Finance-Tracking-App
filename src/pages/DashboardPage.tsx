@@ -5,6 +5,7 @@ import { useDashboard } from '@/hooks';
 import { useUIStore, useWalletStore, useLoanStore } from '@/store';
 import { Icon } from '@/components/ui';
 import { centsToDisplay } from '@/lib/money';
+import { calculateBalances } from '@/lib/balances';
 import { Link } from 'react-router-dom';
 import { ProgressBar } from '@/components/ui';
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
@@ -101,10 +102,13 @@ export const DashboardPage: React.FC = () => {
     totalYouOwe: state.totalYouOwe,
     fetchLoans: state.fetchLoans,
   })));
-  // Net Worth = Physical wallet balance + money others owe you - all liabilities
-  const netWorth = totalWalletBalance + totalOwedToYou - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
-  // Projected Balance = Available cash minus all outstanding debts
-  const projectedBalance = totalWalletBalance - totalCreditDebt - totalWalletLoanDebt - totalYouOwe;
+  const { displayedWalletTotal, projectedBalance } = calculateBalances({
+    totalWalletBalance,
+    totalCreditDebt,
+    walletLoanDebt: totalWalletLoanDebt,
+    peerLoanDebt: totalYouOwe,
+    totalOwedToYou,
+  });
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
 
   useEffect(() => {
@@ -177,7 +181,7 @@ export const DashboardPage: React.FC = () => {
             );
           })()}
           <p className="text-xs text-blue-200/70 font-medium mt-1">
-            Total Wallet Balance: {centsToDisplay(netWorth)}
+            Total Wallet Balance: {centsToDisplay(displayedWalletTotal)}
           </p>
         </div>
 

@@ -13,7 +13,7 @@ import { useUIStore, useWalletStore } from "@/store";
 import { centsToDisplay } from "@/lib/money";
 import { Icon } from "@/components/ui";
 import type { TransactionTypeFilter } from "@/types";
-import { formatDateLocal, parseDateLocal, getMonthRange } from "@/lib/date";
+import { formatDateLocal, parseDateLocal, getMonthRange, formatTime12Hour } from "@/lib/date";
 
 export const TransactionsPage: React.FC = () => {
     const navigate = useNavigate();
@@ -60,7 +60,10 @@ export const TransactionsPage: React.FC = () => {
     };
 
     const getCategoryById = (id: number) => categories.find((c) => c.id === id);
-    const getAccountName = (id?: number) => accounts.find(a => a.id === id)?.name || "Unknown";
+    const getAccountName = (id?: number) => {
+        if (id == null) return "";
+        return accounts.find(a => a.id === id)?.name || "";
+    };
 
     const handleDelete = async (id: number | string) => {
         setConfirmDeleteId(id);
@@ -261,7 +264,6 @@ export const TransactionsPage: React.FC = () => {
                                             const isLoanPayment = transaction.type === 'loan_payment';
 
                                             let title = transaction.source === 'loan_payment' ? "Loan Repayment" : (category?.name || "Unknown");
-                                            let subtitle = transaction.note || "No note";
                                             let iconName = category?.icon || "BanknotesIcon";
                                             let iconColor = category?.color || "";
                                             let bgClass = transaction.type === "income" ? "bg-success-500/10" : "bg-danger-500/10";
@@ -269,16 +271,14 @@ export const TransactionsPage: React.FC = () => {
                                             let amountPrefix = transaction.type === "income" ? "+" : "-";
 
                                             if (isCreditPayment) {
-                                                title = `${getAccountName(transaction.targetWalletAccountId)} Payment`;
-                                                subtitle = `from ${getAccountName(transaction.walletAccountId)}`;
+                                                title = `${getAccountName(transaction.targetWalletAccountId) || "Credit Card"} Payment`;
                                                 iconName = "CreditCardIcon";
                                                 bgClass = "bg-gray-500/10";
                                                 amountColor = "text-[var(--text-main)]";
                                                 iconColor = "gray";
                                                 amountPrefix = "";
                                             } else if (isFundTransfer) {
-                                                title = `${getAccountName(transaction.walletAccountId)} → ${getAccountName(transaction.targetWalletAccountId)}`;
-                                                subtitle = transaction.note || "Fund Transfer";
+                                                title = `${getAccountName(transaction.walletAccountId) || "Account"} → ${getAccountName(transaction.targetWalletAccountId) || "Account"}`;
                                                 iconName = "ArrowsRightLeftIcon";
                                                 bgClass = "bg-blue-500/10";
                                                 amountColor = "text-[var(--text-main)]";
@@ -318,6 +318,30 @@ export const TransactionsPage: React.FC = () => {
                                                 }
                                             }
 
+                                            let walletLabel = getAccountName(transaction.walletAccountId);
+                                            if (isFundTransfer) {
+                                                const from = getAccountName(transaction.walletAccountId);
+                                                const to = getAccountName(transaction.targetWalletAccountId);
+                                                walletLabel = [from, to].filter(Boolean).join(" → ");
+                                            } else if (isLoan && transaction.originalLoan) {
+                                                const loan = transaction.originalLoan;
+                                                walletLabel = getAccountName(
+                                                    loan.direction === "outbound"
+                                                        ? loan.sourceWalletAccountId
+                                                        : loan.destinationWalletAccountId
+                                                );
+                                            } else if (isLoanPayment) {
+                                                walletLabel = getAccountName(
+                                                    transaction.originalLoanPayment?.walletAccountId ?? transaction.walletAccountId
+                                                );
+                                            }
+
+                                            const metaParts = [
+                                                formatTime12Hour(transaction.time),
+                                                walletLabel,
+                                            ].filter(Boolean);
+                                            const subtitle = metaParts.join(" • ");
+
                                             const handleClick = () => {
                                                 if (isLoan) {
                                                     // Route to the loan edit screen
@@ -352,29 +376,29 @@ export const TransactionsPage: React.FC = () => {
                                                             </div>
                                                         </div>
                                                     )}
-                                                    <CardBody className="flex items-center justify-between p-3">
+                                                    <CardBody className="flex items-center gap-3 p-3">
                                                         <div
-                                                            className="flex items-center gap-3 flex-1"
+                                                            className="flex items-center gap-3 min-w-0 flex-1"
                                                             onClick={handleClick}
                                                         >
-                                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${bgClass}`}>
+                                                            <div className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center ${bgClass}`}>
                                                                 {iconColor ? (
                                                                     <Icon name={iconName as any} className="w-6 h-6" style={{ color: iconColor }} />
                                                                 ) : (
                                                                     <Icon name={iconName as any} className="w-6 h-6 text-[var(--text-muted)]" />
                                                                 )}
                                                             </div>
-                                                            <div>
-                                                                <p className="font-bold text-[var(--text-main)] leading-tight">
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="font-bold text-[var(--text-main)] leading-tight truncate">
                                                                     {title}
                                                                 </p>
-                                                                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
+                                                                <p className="text-[10px] font-medium text-[var(--text-muted)] truncate">
                                                                     {subtitle}
                                                                 </p>
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-3 shrink-0">
                                                             <p
                                                                 className={`font-black text-sm ${amountColor}`}
                                                                 onClick={handleClick}
