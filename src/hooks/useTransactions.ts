@@ -66,6 +66,8 @@ export function useTransactions(filters: FilterState) {
                 type: 'loan_payment',
                 amount: payment.amount,
                 date: payment.paidDate,
+                time: payment.time ?? '00:00',
+                walletAccountId: payment.walletAccountId,
                 originalLoanPayment: payment,
                 originalLoan: loan,
                 categoryId: -1

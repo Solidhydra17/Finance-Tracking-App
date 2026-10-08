@@ -32,6 +32,19 @@ export const getCurrentLocalTime = (): string => {
 };
 
 /**
+ * Convert a stored HH:mm (24-hour) time to "hh:mm AM/PM" for display.
+ */
+export const formatTime12Hour = (time?: string | null): string => {
+  if (!time) return '';
+  const [hourStr, minuteStr = '00'] = time.split(':');
+  const hour24 = Number(hourStr);
+  if (Number.isNaN(hour24)) return '';
+  const period = hour24 >= 12 ? 'PM' : 'AM';
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${String(hour12).padStart(2, '0')}:${minuteStr.padStart(2, '0')} ${period}`;
+};
+
+/**
  * Parse a YYYY-MM-DD string to a Date object in local time (at 00:00:00)
  */
 export const parseDateLocal = (dateStr: string): Date => {
