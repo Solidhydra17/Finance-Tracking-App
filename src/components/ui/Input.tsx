@@ -16,7 +16,7 @@ export const Input: React.FC<InputProps> = ({
   ...props
 }) => {
   return (
-    <div className="ui-input-wrapper w-full">
+    <div className="ui-input-wrapper w-full min-w-0">
       {label && (
         <label className="block text-sm font-bold text-[var(--text-main)] mb-1.5 ml-1">
           {label}
@@ -30,7 +30,7 @@ export const Input: React.FC<InputProps> = ({
         )}
         <input
           className={`
-            w-full px-4 py-2.5 rounded-xl border border-[var(--card-border)]
+            w-full max-w-full min-w-0 px-4 py-2.5 rounded-xl border border-[var(--card-border)]
             bg-[var(--card-bg)] text-[var(--text-main)] placeholder:text-[var(--text-muted)]
             focus:outline-none focus:ring-2 focus:ring-midblue focus:border-transparent
             transition-all duration-200

@@ -140,11 +140,15 @@ export const AddTransactionPage: React.FC = () => {
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
 
+  const isUncategorizedName = (name: string) =>
+    name.trim().toLowerCase() === 'uncategorized';
+
   const filteredCategories = categories
     .filter((c) => c.type === type || c.type === 'both')
-    .filter((c) => c.name.toLowerCase().includes(categorySearch.toLowerCase()));
+    .filter((c) => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+    .filter((c) => !isUncategorizedName(c.name));
 
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedCategory = categories.find((c) => c.id === categoryId && !isUncategorizedName(c.name));
 
   const handleCategorySelect = (id: number) => {
     setCategoryId(id);
@@ -169,6 +173,17 @@ export const AddTransactionPage: React.FC = () => {
 
       if (!walletAccountId) {
         addToast('warning', 'Please select a wallet account');
+        return;
+      }
+
+      const category = categories.find((c) => c.id === categoryId);
+      if (
+        !categoryId ||
+        !category ||
+        isUncategorizedName(category.name) ||
+        (category.type !== type && category.type !== 'both')
+      ) {
+        addToast('warning', 'Please select a category');
         return;
       }
 
@@ -277,6 +292,11 @@ export const AddTransactionPage: React.FC = () => {
       return;
     }
 
+    if (isUncategorizedName(newCategoryName)) {
+      addToast('warning', 'Please choose a specific category name');
+      return;
+    }
+
     try {
       await categoryRepository.create({
         name: newCategoryName,
@@ -359,8 +379,8 @@ export const AddTransactionPage: React.FC = () => {
               className="text-3xl font-bold text-[var(--text-main)]"
             />
 
-            <div className="flex gap-4">
-              <div className="flex-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="min-w-0 overflow-hidden">
                 <Input
                   label="Date"
                   type="date"
@@ -368,16 +388,17 @@ export const AddTransactionPage: React.FC = () => {
                   onChange={(e) => setDate(e.target.value)}
                   required
                   disabled={isConfiguringRecurring}
-                  className={`text-lg ${isConfiguringRecurring ? 'opacity-50' : ''}`}
+                  className={`w-full text-sm px-2 ${isConfiguringRecurring ? 'opacity-50' : ''}`}
                 />
               </div>
-              <div className="flex-1">
+              <div className="min-w-0 overflow-hidden">
                 <Input
                   label="Time"
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   required
+                  className="w-full text-sm px-2"
                 />
               </div>
             </div>
@@ -484,7 +505,7 @@ export const AddTransactionPage: React.FC = () => {
 
             {/* Custom Category Picker Trigger */}
             <div id="field-category" className="space-y-2">
-              <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Category</label>
+              <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Category *</label>
               <button
                 type="button"
                 disabled={isConfiguringRecurring}
