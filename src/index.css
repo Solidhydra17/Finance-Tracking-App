@@ -53,6 +53,26 @@
     color: var(--text-muted);
   }
 
+  /* Native date/time pickers have a large intrinsic min-width on mobile WebViews */
+  input[type="date"],
+  input[type="time"] {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="time"]::-webkit-datetime-edit {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    flex-shrink: 0;
+    margin-left: 0.15rem;
+  }
+
   /* Hide scrollbar but keep functionality */
   .scrollbar-hide {
     -ms-overflow-style: none;

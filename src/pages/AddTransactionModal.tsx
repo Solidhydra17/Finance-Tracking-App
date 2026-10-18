@@ -44,7 +44,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!amountDisplay || !categoryId) {
+    const category = categories.find((c) => c.id === categoryId);
+    if (!amountDisplay || !categoryId || !category || category.name.trim().toLowerCase() === 'uncategorized') {
       addToast('warning', 'Please fill in all required fields');
       return;
     }

@@ -245,23 +245,25 @@ export const RecurringPage: React.FC = () => {
             required
           />
 
-            <div className="flex gap-4">
-              <div className="flex-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="min-w-0 overflow-hidden">
                 <Input
                   label="Start Date"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   required
+                  className="text-sm sm:text-base px-2 sm:px-4"
                 />
               </div>
-              <div className="flex-1">
+              <div className="min-w-0 overflow-hidden">
                 <Input
                   label="Time"
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   required
+                  className="text-sm sm:text-base px-2 sm:px-4"
                 />
               </div>
             </div>
