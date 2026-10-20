@@ -5,4 +5,8 @@
     <string name="package_name">com.kuripot.app</string>
     <string name="custom_url_scheme">com.kuripot.app</string>
     <string name="widget_description">KURIPOT wallet balance widget</string>
+    <string name="widget_quickadd_label">QUICK ADD</string>
+    <string name="widget_quickadd_income">+ Income</string>
+    <string name="widget_quickadd_expense">− Expense</string>
+    <string name="widget_quickadd_description">Quickly add income or expense in KURIPOT</string>
 </resources>

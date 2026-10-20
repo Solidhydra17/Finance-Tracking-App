@@ -23,7 +23,8 @@ export const budgetEngine = {
       case 'week':
         return Math.round(amount * 4);
       case 'biweekly':
-        return Math.round((amount * 26) / 12);
+        // Twice per month (budgeting-friendly; not 26/12 annualization)
+        return Math.round(amount * 2);
       case 'month':
         return amount;
       default:

@@ -2,6 +2,7 @@ import type { LoanRepository } from './loanRepository';
 import type { Loan, LoanPayment } from '@/types';
 import { loanRepository } from '@/storage/indexeddb/loanRepository';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
+import { getSystemCategoryId } from '@/storage/indexeddb/categoryRepository';
 
 export class LoanService {
     constructor(
@@ -83,12 +84,13 @@ export class LoanService {
         if (amount <= 0) throw new Error("Repayment amount must be greater than zero");
         if (amount > remaining) throw new Error(`Repayment of ${amount} exceeds remaining balance of ${remaining}`);
 
+        const categoryId = await getSystemCategoryId('LOAN_REPAYMENT');
         const transactionId = await transactionsEngine.create({
             type: loan.direction === 'outbound' ? 'income' : 'expense',
             amount,
             date,
             time: time || '00:00',
-            categoryId: 0,
+            categoryId,
             note: notes || (loan.direction === 'outbound' ? `Repayment received from ${loan.personName}` : `Repayment made to ${loan.personName}`),
             source: 'loan_payment',
             walletAccountId

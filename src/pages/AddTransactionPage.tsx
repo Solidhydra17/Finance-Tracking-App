@@ -5,10 +5,11 @@ import { useCategories, useTransactions } from '@/hooks';
 import { useUIStore, useWalletStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, formatCurrency } from '@/lib/money';
-import type { TransactionType } from '@/types';
+import type { TransactionType, TransactionSource } from '@/types';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { recurringRepository, categoryRepository } from '@/storage/indexeddb';
 import { db } from '@/storage/indexeddb/database';
+import { getSystemCategoryId, isSystemCategoryName } from '@/storage/indexeddb/categoryRepository';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 
 export const AddTransactionPage: React.FC = () => {
@@ -35,6 +36,8 @@ export const AddTransactionPage: React.FC = () => {
   // const [ruleFrequency, setRuleFrequency] = useState<string | null>(null);
   const [isConfiguringRecurring, setIsConfiguringRecurring] = useState(false);
   const [isConfirmRuleUpdateOpen, setIsConfirmRuleUpdateOpen] = useState(false);
+  const [isCategoryLocked, setIsCategoryLocked] = useState(false);
+  const [editSource, setEditSource] = useState<TransactionSource | null>(null);
   
   // Fetch wallet accounts
   const { accounts, fetchAccounts } = useWalletStore(useShallow(state => ({
@@ -69,13 +72,31 @@ export const AddTransactionPage: React.FC = () => {
         try {
           const transaction = await transactionsEngine.getById(Number(editId));
           if (transaction) {
+            const locked =
+              transaction.source === 'loan_payment'
+              || transaction.type === 'credit_payment'
+              || transaction.type === 'fund_transfer';
+
+            let resolvedCategoryId = transaction.categoryId;
+            if (locked && (!resolvedCategoryId || resolvedCategoryId === 0)) {
+              const key =
+                transaction.source === 'loan_payment' ? 'LOAN_REPAYMENT'
+                : transaction.type === 'credit_payment' ? 'CREDIT_PAYMENT'
+                : 'FUND_TRANSFER';
+              resolvedCategoryId = await getSystemCategoryId(key);
+              await db.transactions.update(Number(editId), { categoryId: resolvedCategoryId });
+            }
+
             setType(transaction.type);
             setAmountDisplay((transaction.amount / 100).toString());
             setDate(transaction.date);
-            setCategoryId(transaction.categoryId);
+            setCategoryId(resolvedCategoryId);
             setWalletAccountId(transaction.walletAccountId || '');
             setTime(transaction.time || '00:00');
             setNote(transaction.note);
+            setEditSource(transaction.source);
+            setIsCategoryLocked(locked);
+            await refetchCategories(true);
             if (transaction.recurringRuleId) {
               setRecurringRuleId(transaction.recurringRuleId);
               setIsRecurring(true);
@@ -146,7 +167,8 @@ export const AddTransactionPage: React.FC = () => {
   const filteredCategories = categories
     .filter((c) => c.type === type || c.type === 'both')
     .filter((c) => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
-    .filter((c) => !isUncategorizedName(c.name));
+    .filter((c) => !isUncategorizedName(c.name))
+    .filter((c) => !isSystemCategoryName(c.name));
 
   const selectedCategory = categories.find((c) => c.id === categoryId && !isUncategorizedName(c.name));
 
@@ -176,15 +198,26 @@ export const AddTransactionPage: React.FC = () => {
         return;
       }
 
-      const category = categories.find((c) => c.id === categoryId);
-      if (
-        !categoryId ||
-        !category ||
-        isUncategorizedName(category.name) ||
-        (category.type !== type && category.type !== 'both')
-      ) {
-        addToast('warning', 'Please select a category');
-        return;
+      let resolvedCategoryId = categoryId;
+      if (isCategoryLocked) {
+        const key =
+          editSource === 'loan_payment' ? 'LOAN_REPAYMENT'
+          : type === 'credit_payment' ? 'CREDIT_PAYMENT'
+          : type === 'fund_transfer' ? 'FUND_TRANSFER'
+          : 'LOAN_REPAYMENT';
+        resolvedCategoryId = await getSystemCategoryId(key);
+      } else {
+        const category = categories.find((c) => c.id === categoryId);
+        const categoryTypeOk = category?.type === type || category?.type === 'both';
+        if (
+          !categoryId ||
+          !category ||
+          isUncategorizedName(category.name) ||
+          !categoryTypeOk
+        ) {
+          addToast('warning', 'Please select a category');
+          return;
+        }
       }
 
       const amount = displayToCents(amountDisplay);
@@ -194,7 +227,7 @@ export const AddTransactionPage: React.FC = () => {
       }
 
       setIsSubmitting(true);
-      console.log('Creating transaction...', { type, amount, date, categoryId });
+      console.log('Creating transaction...', { type, amount, date, categoryId: resolvedCategoryId });
 
       let success = false;
       if (editId) {
@@ -203,7 +236,7 @@ export const AddTransactionPage: React.FC = () => {
           amount,
           date,
           time,
-          categoryId,
+          categoryId: resolvedCategoryId,
           walletAccountId: Number(walletAccountId) || undefined,
           note,
         });
@@ -212,7 +245,7 @@ export const AddTransactionPage: React.FC = () => {
         const newRuleId = await recurringRepository.create({
           type,
           amount,
-          categoryId,
+          categoryId: resolvedCategoryId,
           frequency,
           dayOfWeek: (frequency === 'weekly' || frequency === 'bi-weekly') ? startDate.getDay() : null,
           dayOfMonth: frequency === 'monthly' ? startDate.getDate() : null,
@@ -233,7 +266,7 @@ export const AddTransactionPage: React.FC = () => {
           amount,
           date,
           time,
-          categoryId,
+          categoryId: resolvedCategoryId,
           walletAccountId: walletAccountId ? Number(walletAccountId) : undefined,
           note: note || 'Recurring Transaction',
           source: 'recurring' as const,
@@ -261,7 +294,7 @@ export const AddTransactionPage: React.FC = () => {
           amount,
           date,
           time,
-          categoryId,
+          categoryId: resolvedCategoryId,
           walletAccountId: Number(walletAccountId),
           note,
           source: 'manual',
@@ -292,7 +325,7 @@ export const AddTransactionPage: React.FC = () => {
       return;
     }
 
-    if (isUncategorizedName(newCategoryName)) {
+    if (isUncategorizedName(newCategoryName) || isSystemCategoryName(newCategoryName)) {
       addToast('warning', 'Please choose a specific category name');
       return;
     }
@@ -338,7 +371,7 @@ export const AddTransactionPage: React.FC = () => {
           <div id="section-toggle" className="flex bg-[var(--card-bg)] p-1 rounded-2xl shadow-sm border border-[var(--card-border)]">
             <button
               type="button"
-              disabled={isConfiguringRecurring}
+              disabled={isConfiguringRecurring || isCategoryLocked}
               onClick={() => setType('income')}
               className={`
                 flex-1 py-3 rounded-xl font-bold transition-all duration-300
@@ -346,14 +379,14 @@ export const AddTransactionPage: React.FC = () => {
                   ? 'bg-success-500 text-white shadow-lg'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }
-                ${isConfiguringRecurring && type !== 'income' ? 'opacity-30' : ''}
+                ${(isConfiguringRecurring || isCategoryLocked) && type !== 'income' ? 'opacity-30' : ''}
               `}
             >
               Income
             </button>
             <button
               type="button"
-              disabled={isConfiguringRecurring}
+              disabled={isConfiguringRecurring || isCategoryLocked}
               onClick={() => setType('expense')}
               className={`
                 flex-1 py-3 rounded-xl font-bold transition-all duration-300
@@ -361,7 +394,7 @@ export const AddTransactionPage: React.FC = () => {
                   ? 'bg-danger-500 text-white shadow-lg'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }
-                ${isConfiguringRecurring && type !== 'expense' ? 'opacity-30' : ''}
+                ${(isConfiguringRecurring || isCategoryLocked) && type !== 'expense' ? 'opacity-30' : ''}
               `}
             >
               Expense
@@ -508,13 +541,14 @@ export const AddTransactionPage: React.FC = () => {
               <label className="text-sm font-bold text-[var(--text-muted)] ml-1">Category *</label>
               <button
                 type="button"
-                disabled={isConfiguringRecurring}
+                disabled={isConfiguringRecurring || isCategoryLocked}
                 onClick={() => {
+                    if (isCategoryLocked) return;
                     setIsAddingCategory(false);
                     setIsCategoryPickerOpen(true);
                 }}
                 id="btn-category-picker-open"
-                className={`w-full flex items-center justify-between p-4 bg-[var(--item-bg)] border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full flex items-center justify-between p-4 bg-[var(--item-bg)] border-2 border-transparent hover:border-midblue/20 rounded-2xl transition-all ${(isConfiguringRecurring || isCategoryLocked) ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   {selectedCategory ? (
@@ -525,13 +559,20 @@ export const AddTransactionPage: React.FC = () => {
                       >
                         <Icon name={selectedCategory.icon} className="w-6 h-6" />
                       </div>
-                      <span className="text-lg font-bold text-[var(--text-main)]">{selectedCategory.name}</span>
+                      <div className="text-left">
+                        <span className="text-lg font-bold text-[var(--text-main)] block">{selectedCategory.name}</span>
+                        {isCategoryLocked && (
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">System · locked</span>
+                        )}
+                      </div>
                     </>
                   ) : (
                     <span className="text-lg text-[var(--text-muted)] font-medium">Select a category...</span>
                   )}
                 </div>
-                <Icon name="ChevronRightIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                {!isCategoryLocked && (
+                  <Icon name="ChevronRightIcon" className="w-5 h-5 text-[var(--text-muted)]" />
+                )}
               </button>
             </div>
 

@@ -129,6 +129,13 @@ export class FinanceDatabase extends Dexie {
     };
     this.version(15).stores(schemaV15);
 
+    // Index loanPayments.transactionId so repayment ↔ transaction lookups don't throw
+    const schemaV16 = {
+      ...schemaV15,
+      loanPayments: '++id, loanId, walletAccountId, date, transactionId',
+    };
+    this.version(16).stores(schemaV16);
+
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');
     });
@@ -154,6 +161,10 @@ export async function ensureFreshInstallDefaults(): Promise<void> {
   if (categoryCount === 0) {
     const { seedDefaultCategories } = await import('./categoryRepository');
     await seedDefaultCategories();
+  } else {
+    const { ensureSystemCategories, backfillSystemCategoryAssignments } = await import('./categoryRepository');
+    await ensureSystemCategories();
+    await backfillSystemCategoryAssignments();
   }
 }
 

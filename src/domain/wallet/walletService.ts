@@ -3,6 +3,7 @@ import type { WalletAccount } from '@/types';
 import { walletRepository } from '@/storage/indexeddb/walletRepository';
 import { db } from '@/storage/indexeddb/database';
 import type { CreditPayment } from '@/types';
+import { getSystemCategoryId } from '@/storage/indexeddb/categoryRepository';
 
 export class WalletService {
     constructor(private repository: WalletRepository) {}
@@ -167,6 +168,7 @@ export class WalletService {
     }
 
     async payCreditCard(paymentData: Omit<CreditPayment, 'id' | 'createdAt'> & { time?: string }): Promise<number> {
+        const categoryId = await getSystemCategoryId('CREDIT_PAYMENT');
         return await db.transactions.add({
             type: 'credit_payment',
             walletAccountId: paymentData.sourceWalletAccountId,
@@ -176,7 +178,7 @@ export class WalletService {
             time: paymentData.time || '00:00',
             note: paymentData.notes || '',
             source: 'manual',
-            categoryId: 0, // Placeholder
+            categoryId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             deletedAt: null
@@ -190,6 +192,7 @@ export class WalletService {
         time?: string;
         notes?: string;
     }): Promise<number> {
+        const categoryId = await getSystemCategoryId('FUND_TRANSFER');
         return await db.transactions.add({
             type: 'fund_transfer',
             walletAccountId: data.sourceAccountId,
@@ -199,7 +202,7 @@ export class WalletService {
             time: data.time || '00:00',
             note: data.notes || '',
             source: 'manual',
-            categoryId: 0,
+            categoryId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             deletedAt: null

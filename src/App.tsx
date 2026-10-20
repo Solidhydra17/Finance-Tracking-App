@@ -13,6 +13,7 @@ import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 import { walletService } from '@/domain/wallet/walletService';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Preferences } from '@capacitor/preferences';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { scheduleReminders } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
@@ -124,6 +125,48 @@ const HardwareBackButtonManager: React.FC = () => {
     return null;
 };
 
+/** Opens Add Transaction (same form) from the Quick Add home-screen widget. */
+const WidgetDeepLinkManager: React.FC = () => {
+    const navigate = useNavigate();
+
+    React.useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const go = (path: string) => {
+            if (path.startsWith('/')) navigate(path);
+        };
+
+        const consumePending = async () => {
+            try {
+                const { value } = await Preferences.get({ key: 'widget_pending_nav' });
+                if (value) {
+                    await Preferences.remove({ key: 'widget_pending_nav' });
+                    go(value);
+                }
+            } catch (e) {
+                console.warn('[Widget] pending nav failed:', e);
+            }
+        };
+
+        void consumePending();
+        const retry = window.setTimeout(() => { void consumePending(); }, 500);
+
+        const handler = (e: Event) => {
+            const path = (e as CustomEvent<string>).detail;
+            if (typeof path === 'string') go(path);
+        };
+        window.addEventListener('kuripot-widget-nav', handler);
+
+        return () => {
+            window.clearTimeout(retry);
+            window.removeEventListener('kuripot-widget-nav', handler);
+        };
+    }, [navigate]);
+
+    return null;
+};
+
+
 export const App: React.FC = () => {
     useEffect(() => {
         if (Capacitor.isNativePlatform()) {
@@ -200,6 +243,7 @@ export const App: React.FC = () => {
         <ErrorBoundary>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <HardwareBackButtonManager />
+                <WidgetDeepLinkManager />
                 <Routes>
                     <Route path="/" element={<AppLayout />}>
                         <Route index element={<DashboardPage />} />

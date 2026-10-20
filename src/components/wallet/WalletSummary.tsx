@@ -65,7 +65,7 @@ export const WalletSummary: React.FC = () => {
                             <Icon name="ChartBarIcon" className="w-4 h-4 text-blue-200" />
                             <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">Projected Balance</p>
                         </div>
-                        <p className="text-lg font-bold">
+                        <p className="text-lg font-bold text-white">
                             {formatCurrency(projectedBalance, currencySymbol, currencyPosition)}
                         </p>
                     </div>

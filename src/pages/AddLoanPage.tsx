@@ -283,23 +283,20 @@ export const AddLoanPage: React.FC = () => {
                         )}
 
                         {!(direction === 'inbound' && loanAccountId) && (
-                            <div>
+                            <div className="space-y-1">
                                 <Input
                                     label={direction === 'outbound' ? "Who did you lend to?" : "Who did you borrow from?"}
                                     placeholder="Name of person or bank"
                                     value={personName}
-                                    onChange={(e) => setPersonName(e.target.value)}
+                                    onChange={(e) => setPersonName(e.target.value.slice(0, 65))}
                                     required={!(direction === 'inbound' && loanAccountId)}
-                                    list={direction === 'inbound' ? "loan-providers" : undefined}
+                                    maxLength={65}
                                 />
-                                {direction === 'inbound' && (
-                                    <datalist id="loan-providers">
-                                        <option value="GLoan" /><option value="GCredit" /><option value="SPayLater" />
-                                        <option value="SLoan" /><option value="Maya Credit" /><option value="Maya Personal Loan" />
-                                        <option value="Billease" /><option value="Tala" /><option value="JuanHand" />
-                                        <option value="Home Credit" />
-                                    </datalist>
-                                )}
+                                <div className={`text-right text-xs font-bold uppercase tracking-tighter ${
+                                    personName.length === 65 ? 'text-danger-500' : personName.length >= 55 ? 'text-amber-500' : 'text-gray-400'
+                                }`}>
+                                    {personName.length} / 65
+                                </div>
                             </div>
                         )}
 
