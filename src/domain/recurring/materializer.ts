@@ -1,81 +1,95 @@
 import { db } from '@/storage/indexeddb/database';
 import { recurringEngine } from './recurringEngine';
-// import type { RecurringRule, Transaction } from '@/types';
-import { formatDateLocal } from '@/lib/date';
+import { formatDateLocal, formatTimeLocal, parseDateLocal } from '@/lib/date';
 
 let isProcessing = false;
 
 export const recurringMaterializer = {
   /**
    * Checks all recurring rules and generates real transactions for those that are due.
+   * For today's date, the rule's time must have been reached (local clock) before creating.
    */
   async materializeDueTransactions(): Promise<number> {
     if (isProcessing) return 0;
     isProcessing = true;
-    
+
     try {
       const rules = await db.recurringRules.toArray();
-    const today = new Date();
-    const todayStr = formatDateLocal(today);
-    let count = 0;
+      const now = new Date();
+      const todayStr = formatDateLocal(now);
+      const nowTime = formatTimeLocal(now);
+      let count = 0;
 
-    for (const rule of rules) {
-      // Determine the range to check: from the last generated date (or rule start) until today
-      const checkStartStr = rule.lastGeneratedDate || rule.startDate;
-      
-      // If the last generated date is today or later, skip
-      if (rule.lastGeneratedDate && rule.lastGeneratedDate >= todayStr) continue;
+      for (const rule of rules) {
+        // If we already materialized through today, nothing left for this open
+        if (rule.lastGeneratedDate && rule.lastGeneratedDate >= todayStr) continue;
 
-      // Generate all due dates for this rule up to today
-      const dueDates = recurringEngine.generateDates(
-        rule.frequency,
-        rule.dayOfWeek,
-        rule.dayOfMonth,
-        new Date(checkStartStr),
-        today,
-        rule.selectedDays
-      );
+        const checkStartStr = rule.lastGeneratedDate || rule.startDate;
+        const ruleTime = rule.time || '00:00';
 
-      // Filter out dates that have already been generated
-      const newDueDates = dueDates.filter(date => !rule.lastGeneratedDate || date > rule.lastGeneratedDate);
+        // Start from the day after lastGeneratedDate when we have one,
+        // otherwise from the rule start date (inclusive).
+        const rangeStart = rule.lastGeneratedDate
+          ? (() => {
+              const d = parseDateLocal(rule.lastGeneratedDate);
+              d.setDate(d.getDate() + 1);
+              return d;
+            })()
+          : parseDateLocal(checkStartStr);
 
-      if (newDueDates.length === 0) continue;
+        if (rangeStart > now) continue;
 
-      // Create a transaction for each new due date
-      for (const date of newDueDates) {
-        // Note: recurring-materialized transactions have no walletAccountId.
-        // The first transaction (on the startDate) is created with walletAccountId
-        // at rule-creation time in AddTransactionPage.tsx.
-        const transaction: any = {
-          type: rule.type,
-          amount: rule.amount,
-          date: date,
-          time: rule.time || '00:00',
-          categoryId: rule.categoryId,
-          note: rule.description || `Recurring ${rule.type}`,
-          source: 'recurring',
-          recurringRuleId: rule.id,
-          walletAccountId: rule.walletAccountId,
-          createdAt: new Date().toISOString(),
+        const dueDates = recurringEngine.generateDates(
+          rule.frequency,
+          rule.dayOfWeek,
+          rule.dayOfMonth,
+          rangeStart,
+          now,
+          rule.selectedDays
+        );
+
+        // Past days: always due. Today: only after rule.time (local).
+        const newDueDates = dueDates.filter((date) => {
+          if (rule.lastGeneratedDate && date <= rule.lastGeneratedDate) return false;
+          if (date < todayStr) return true;
+          if (date === todayStr) return nowTime >= ruleTime;
+          return false;
+        });
+
+        if (newDueDates.length === 0) continue;
+
+        for (const date of newDueDates) {
+          const transaction: any = {
+            type: rule.type,
+            amount: rule.amount,
+            date: date,
+            time: ruleTime,
+            categoryId: rule.categoryId,
+            note: rule.description || `Recurring ${rule.type}`,
+            source: 'recurring',
+            recurringRuleId: rule.id,
+            walletAccountId: rule.walletAccountId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            deletedAt: null,
+          };
+
+          await db.transactions.add(transaction);
+          count++;
+        }
+
+        // Only advance lastGeneratedDate to dates we actually created
+        // (do not mark today as done if we skipped it for time)
+        const latestDate = newDueDates[newDueDates.length - 1];
+        await db.recurringRules.update(rule.id!, {
+          lastGeneratedDate: latestDate,
           updatedAt: new Date().toISOString(),
-          deletedAt: null
-        };
-
-        await db.transactions.add(transaction);
-        count++;
+        });
       }
 
-      // Update the rule with the latest generated date
-      const latestDate = newDueDates[newDueDates.length - 1];
-      await db.recurringRules.update(rule.id!, {
-        lastGeneratedDate: latestDate,
-        updatedAt: new Date().toISOString()
-      });
-    }
-
-    return count;
+      return count;
     } finally {
       isProcessing = false;
     }
-  }
+  },
 };
