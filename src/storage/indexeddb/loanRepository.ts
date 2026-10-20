@@ -40,8 +40,14 @@ export class IndexedDBLoanRepository implements LoanRepository {
     }
 
     async getPaymentByTransactionId(transactionId: number): Promise<LoanPayment | undefined> {
-        const payments = await db.loanPayments.where('transactionId').equals(transactionId).toArray();
-        return payments.length > 0 ? payments[0] : undefined;
+        // Prefer indexed lookup when available (schema v16+); fall back to scan.
+        try {
+            const indexed = await db.loanPayments.where('transactionId').equals(transactionId).first();
+            if (indexed) return indexed;
+        } catch {
+            // Index may be missing on older DBs mid-migration
+        }
+        return db.loanPayments.filter((p) => p.transactionId === transactionId).first();
     }
 }
 
