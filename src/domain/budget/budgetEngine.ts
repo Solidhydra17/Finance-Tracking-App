@@ -1,5 +1,6 @@
 import type { BudgetItem } from '@/types';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
+import { formatDateLocal, getMonthRange } from '@/lib/date';
 
 export interface PlannedVsActual {
   plannedCents: number;
@@ -50,20 +51,22 @@ export const budgetEngine = {
     return 'Deficit';
   },
 
+  /**
+   * Planned vs actual for a single calendar month (local time).
+   * Actual spend resets automatically when the month rolls over —
+   * only transactions dated in that month count.
+   */
   async getPlannedVsActual(
     items: BudgetItem[],
     workDaysPerWeek: number,
     targetMonth: Date = new Date()
   ): Promise<Map<number, PlannedVsActual>> {
-    // Determine start and end of target month
-    const year = targetMonth.getFullYear();
-    const month = targetMonth.getMonth();
-    const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-    const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    const { start, end } = getMonthRange(targetMonth);
+    const startDate = formatDateLocal(start);
+    const endDate = formatDateLocal(end);
 
-    // Fetch transactions for the target month
     const transactions = await transactionsEngine.getByFilters({
-      dateRange: { preset: 'custom', startDate, endDate },
+      dateRange: { preset: 'month', startDate, endDate },
       categoryId: null,
       transactionType: 'expense',
       loanOnly: false,
@@ -72,9 +75,12 @@ export const budgetEngine = {
 
     const actualMap = new Map<number, number>();
     for (const t of transactions) {
-      if (t.categoryId) {
-        actualMap.set(t.categoryId, (actualMap.get(t.categoryId) || 0) + t.amount);
-      }
+      // Belt-and-suspenders: only this local calendar month, regular expenses
+      if (t.date < startDate || t.date > endDate) continue;
+      if (t.type !== 'expense') continue;
+      if (t.source === 'loan_payment') continue;
+      if (!t.categoryId) continue;
+      actualMap.set(t.categoryId, (actualMap.get(t.categoryId) || 0) + t.amount);
     }
 
     const result = new Map<number, PlannedVsActual>();

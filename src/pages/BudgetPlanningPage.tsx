@@ -446,11 +446,11 @@ export const BudgetPlanningPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Progress Bar for PVA */}
+                  {/* Progress Bar for PVA — current calendar month only */}
                   {item.active && item.type === 'expense' && itemPva && (
                     <div className="pl-8 mt-4 pt-4 border-t border-[var(--card-border)]/50">
                       <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
-                        <span className="text-[var(--text-muted)]">Actual Spent</span>
+                        <span className="text-[var(--text-muted)]">Spent this month</span>
                         <span className={`${
                           pvaPercentage > 100 ? 'text-danger-500' : 
                           pvaPercentage >= 80 ? 'text-warning-500' : 'text-success-500'

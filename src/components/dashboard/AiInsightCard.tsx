@@ -2,10 +2,23 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Icon } from '@/components/ui'
 import type { DashboardData } from '@/domain/dashboard/types'
 import type { PlannedVsActual } from '@/domain/budget/budgetEngine'
-import { buildInsightContext } from '@/lib/insights/buildContext'
+import { buildInsightContext, formatGoalSection, formatTrendSection } from '@/lib/insights/buildContext'
 import { loadInsightForDay } from '@/lib/insights/generateInsight'
 import { formatAvailableAt, isOnline } from '@/lib/insights/insightStorage'
-import type { InsightQuotaStatus, InsightResult, InsightTone } from '@/lib/insights/types'
+import type { InsightContext, InsightQuotaStatus, InsightResult, InsightTone } from '@/lib/insights/types'
+import { composeInsightText, normalizeInsightResult } from '@/lib/insights/types'
+
+const withLiveTrendAndGoal = (insight: InsightResult, ctx: InsightContext): InsightResult => {
+  const base = normalizeInsightResult(insight)
+  const trend = formatTrendSection(ctx)
+  const goal = formatGoalSection(ctx)
+  return {
+    ...base,
+    trend,
+    goal,
+    text: composeInsightText(base.observation, base.suggestion, trend, goal),
+  }
+}
 
 type AiInsightCardProps = {
   data: DashboardData
@@ -23,6 +36,20 @@ const toneStyles: Record<InsightTone, string> = {
   alert: 'border-l-danger-500',
 }
 
+const InsightBlock: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
+  <div className="space-y-1.5">
+    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+      {label}
+    </p>
+    <p className="text-sm leading-relaxed text-[var(--text-main)] font-medium whitespace-pre-line">
+      {children}
+    </p>
+  </div>
+)
+
 export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   data,
   periodPreset,
@@ -39,7 +66,7 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   const [regenHint, setRegenHint] = useState<string | null>(null)
   const [regenerating, setRegenerating] = useState(false)
 
-  const buildCtx = useCallback(() => {
+  const buildCtx = useCallback(async () => {
     const categoryNames = new Map<number, string>()
     data.categoryBreakdown.forEach((c) => {
       categoryNames.set(c.categoryId, c.categoryName)
@@ -62,10 +89,11 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
       setLoading(true)
       setRegenHint(null)
       try {
-        const view = await loadInsightForDay(buildCtx())
+        const ctx = await buildCtx()
+        const view = await loadInsightForDay(ctx)
         if (cancelled) return
         setOfflineEmpty(view.status === 'offline_empty')
-        setInsight(view.insight)
+        setInsight(view.insight ? withLiveTrendAndGoal(view.insight, ctx) : null)
         setCanRegenerate(view.canRegenerate)
         setQuota(view.quota)
       } catch {
@@ -76,8 +104,9 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
           setCanRegenerate(false)
         } else {
           const { generateLocalInsight } = await import('@/lib/insights/localInsight')
+          const ctx = await buildCtx()
           setOfflineEmpty(false)
-          setInsight(generateLocalInsight(buildCtx()))
+          setInsight(withLiveTrendAndGoal(generateLocalInsight(ctx), ctx))
           setCanRegenerate(false)
         }
       } finally {
@@ -102,9 +131,10 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
     setRegenerating(true)
     setRegenHint(null)
     try {
-      const view = await loadInsightForDay(buildCtx(), { force: true })
+      const ctx = await buildCtx()
+      const view = await loadInsightForDay(ctx, { force: true })
       setOfflineEmpty(view.status === 'offline_empty')
-      setInsight(view.insight)
+      setInsight(view.insight ? withLiveTrendAndGoal(view.insight, ctx) : null)
       setCanRegenerate(view.canRegenerate)
       setQuota(view.quota)
     } catch {
@@ -122,6 +152,9 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   }
 
   const tone = insight?.tone ?? 'neutral'
+  const hasSections = Boolean(
+    insight && (insight.observation || insight.suggestion || insight.trend || insight.goal)
+  )
 
   return (
     <section
@@ -174,8 +207,29 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
             Connect once to generate today’s insight. It will be reused for the rest of the day.
           </p>
         </div>
+      ) : hasSections ? (
+        <div className="flex flex-col">
+          {insight?.observation ? (
+            <InsightBlock label="Overview">{insight.observation}</InsightBlock>
+          ) : null}
+          {insight?.suggestion ? (
+            <div className={`${insight.observation ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
+              <InsightBlock label="Suggestion">{insight.suggestion}</InsightBlock>
+            </div>
+          ) : null}
+          {insight?.trend ? (
+            <div className={`${insight.observation || insight.suggestion ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
+              <InsightBlock label="vs Last month">{insight.trend}</InsightBlock>
+            </div>
+          ) : null}
+          {insight?.goal ? (
+            <div className={`${insight.observation || insight.suggestion || insight.trend ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
+              <InsightBlock label="Goal">{insight.goal}</InsightBlock>
+            </div>
+          ) : null}
+        </div>
       ) : (
-        <p className="text-sm leading-relaxed text-[var(--text-main)] font-medium">
+        <p className="text-sm leading-relaxed text-[var(--text-main)] font-medium whitespace-pre-line">
           {insight?.text}
         </p>
       )}
