@@ -286,7 +286,7 @@ export const DashboardPage: React.FC = () => {
       {pva.size > 0 && (
         <div id="section-budget-status" className="bg-[var(--card-bg)] rounded-3xl p-6 border-2 border-[var(--card-border)]">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Budget Status</h3>
+            <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Budget Status · This Month</h3>
           </div>
           <div className="space-y-4">
             {Array.from(pva.entries())

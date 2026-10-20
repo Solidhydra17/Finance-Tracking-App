@@ -175,7 +175,7 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
           </p>
         </div>
       ) : (
-        <p className="text-sm leading-relaxed text-[var(--text-main)] font-medium">
+        <p className="text-sm leading-relaxed text-[var(--text-main)] font-medium whitespace-pre-line">
           {insight?.text}
         </p>
       )}

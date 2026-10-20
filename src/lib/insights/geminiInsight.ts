@@ -44,13 +44,34 @@ const inferTone = (text: string, fallback: InsightTone): InsightTone => {
 const buildPrompt = (ctx: InsightContext): string => {
   return [
     'You are a concise personal finance coach inside KURIPOT, a Philippine peso (₱) budgeting app.',
-    'Write exactly 2 short sentences of practical insight from the JSON snapshot below.',
-    'Focus on spending pace, what looks out of hand, and one concrete observation.',
+    'Write exactly 2 short paragraphs from the JSON snapshot below, separated by a blank line.',
+    'Paragraph 1: a clear observation about spending pace, concentration, or budget pressure.',
+    'Then a blank line.',
+    'Paragraph 2: one concrete suggestion — either what to change for improvement, or what to keep doing if things look healthy.',
     'Use the peso amounts exactly as given. No markdown, bullets, greetings, or emojis.',
     'Do not invent numbers or categories that are not in the data.',
     '',
     JSON.stringify(ctx),
   ].join('\n')
+}
+
+/** Normalize whitespace but keep a blank line between observation and suggestion. */
+const normalizeInsightText = (raw: string): string => {
+  const cleaned = raw.replace(/\r\n/g, '\n').trim()
+  const blocks = cleaned
+    .split(/\n\s*\n/)
+    .map((b) => b.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+
+  if (blocks.length >= 2) {
+    return `${blocks[0]}\n\n${blocks.slice(1).join(' ')}`
+  }
+
+  // Model returned one block — split into first sentence + rest as suggestion when possible
+  const single = blocks[0] || cleaned.replace(/\s+/g, ' ').trim()
+  const match = single.match(/^(.+?[.!?])\s+(.+)$/)
+  if (match) return `${match[1]}\n\n${match[2]}`
+  return single
 }
 
 const isQuotaResponse = (status: number, bodyText: string): boolean => {
@@ -155,7 +176,7 @@ export const generateGeminiInsight = async (
     return {
       ok: true,
       insight: {
-        text: text.replace(/\s+/g, ' ').trim(),
+        text: normalizeInsightText(text),
         tone: inferTone(text, local.tone),
         source: 'gemini',
         generatedAt: new Date().toISOString(),
