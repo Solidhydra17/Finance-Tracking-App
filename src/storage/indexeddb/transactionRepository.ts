@@ -81,7 +81,15 @@ export const transactionRepository: TransactionRepository = {
       collection = collection.and(t => t.categoryId === filters.categoryId);
     }
 
-    if (filters.transactionType !== 'all') {
+    if (filters.transactionType === 'loans') {
+      // Real loan repayments are stored as income/expense with source loan_payment
+      collection = collection.and(t => t.source === 'loan_payment');
+    } else if (filters.transactionType === 'income' || filters.transactionType === 'expense') {
+      // Keep repayments out of Income/Expenses — they belong under Loans
+      collection = collection.and(
+        t => t.type === filters.transactionType && t.source !== 'loan_payment'
+      );
+    } else if (filters.transactionType !== 'all') {
       collection = collection.and(t => t.type === filters.transactionType);
     }
 

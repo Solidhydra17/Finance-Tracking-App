@@ -43,6 +43,7 @@ export function useTransactions(filters: FilterState) {
     try {
       let allTransactions: any[] = [];
       
+      // Loan principals (+ legacy payments without a linked transaction) for All / Loans
       if (filters.transactionType === 'all' || filters.transactionType === 'loans') {
         const loans = await loanRepository.getAll();
         const loanPayments = await db.loanPayments.toArray();
@@ -92,11 +93,12 @@ export function useTransactions(filters: FilterState) {
 
         allTransactions = [...allTransactions, ...loanItems];
       }
-      
-      if (filters.transactionType !== 'loans') {
-        const engineTransactions = await transactionsEngine.getByFilters(filters);
-        allTransactions = [...allTransactions, ...engineTransactions];
-      }
+
+      // Real DB transactions:
+      // - All / Income / Expense / Credit / Transfer: always
+      // - Loans: repayment txs (source loan_payment) via getByFilters
+      const engineTransactions = await transactionsEngine.getByFilters(filters);
+      allTransactions = [...allTransactions, ...engineTransactions];
 
       allTransactions.sort((a, b) => {
         if (a.date !== b.date) return b.date.localeCompare(a.date);
