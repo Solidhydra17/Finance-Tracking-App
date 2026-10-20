@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { ProgressBar } from '@/components/ui';
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
 import { useBudget } from '@/hooks';
+import { AiInsightCard } from '@/components/dashboard/AiInsightCard';
 const LOADING_MESSAGES = [
   "Nagbibilang ng natitirang barya…",
   "Fetching data… at pati utang mo",
@@ -234,6 +235,15 @@ export const DashboardPage: React.FC = () => {
           Year
         </button>
       </div>
+
+      <AiInsightCard
+        data={data}
+        periodPreset={currentPreset}
+        pva={pva}
+        projectedBalance={projectedBalance}
+        creditDebt={totalCreditDebt}
+        youOwe={totalYouOwe}
+      />
 
       {/* Graphs Section */}
       <div id="section-breakdown" className="bg-[var(--card-bg)] rounded-3xl p-6 border-2 border-[var(--card-border)] min-h-[300px]">
