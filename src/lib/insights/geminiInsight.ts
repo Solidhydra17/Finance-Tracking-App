@@ -1,4 +1,6 @@
+import { formatGoalSection, formatTrendSection } from './buildContext'
 import type { InsightContext, InsightResult, InsightTone, InsightQuotaStatus } from './types'
+import { composeInsightText } from './types'
 import { generateLocalInsight } from './localInsight'
 import { nextLocalMidnightIso } from './insightStorage'
 
@@ -48,6 +50,7 @@ const buildPrompt = (ctx: InsightContext): string => {
     'Paragraph 1: a clear observation about spending pace, concentration, or budget pressure.',
     'Then a blank line.',
     'Paragraph 2: one concrete suggestion — either what to change for improvement, or what to keep doing if things look healthy.',
+    'Do NOT write trend or goal sections — those are added separately by the app.',
     'Use the peso amounts exactly as given. No markdown, bullets, greetings, or emojis.',
     'Do not invent numbers or categories that are not in the data.',
     '',
@@ -55,8 +58,8 @@ const buildPrompt = (ctx: InsightContext): string => {
   ].join('\n')
 }
 
-/** Normalize whitespace but keep a blank line between observation and suggestion. */
-const normalizeInsightText = (raw: string): string => {
+/** Split model output into observation + suggestion paragraphs. */
+const parseObservationSuggestion = (raw: string): { observation: string; suggestion: string } => {
   const cleaned = raw.replace(/\r\n/g, '\n').trim()
   const blocks = cleaned
     .split(/\n\s*\n/)
@@ -64,14 +67,13 @@ const normalizeInsightText = (raw: string): string => {
     .filter(Boolean)
 
   if (blocks.length >= 2) {
-    return `${blocks[0]}\n\n${blocks.slice(1).join(' ')}`
+    return { observation: blocks[0], suggestion: blocks.slice(1).join(' ') }
   }
 
-  // Model returned one block — split into first sentence + rest as suggestion when possible
   const single = blocks[0] || cleaned.replace(/\s+/g, ' ').trim()
   const match = single.match(/^(.+?[.!?])\s+(.+)$/)
-  if (match) return `${match[1]}\n\n${match[2]}`
-  return single
+  if (match) return { observation: match[1], suggestion: match[2] }
+  return { observation: single, suggestion: 'Review your top categories and keep what still feels intentional.' }
 }
 
 const isQuotaResponse = (status: number, bodyText: string): boolean => {
@@ -173,10 +175,18 @@ export const generateGeminiInsight = async (
     const text = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
     if (!text) return { ok: false, reason: 'error' }
 
+    const { observation, suggestion } = parseObservationSuggestion(text)
+    const trend = formatTrendSection(ctx)
+    const goal = formatGoalSection(ctx)
+
     return {
       ok: true,
       insight: {
-        text: normalizeInsightText(text),
+        text: composeInsightText(observation, suggestion, trend, goal),
+        observation,
+        suggestion,
+        trend,
+        goal,
         tone: inferTone(text, local.tone),
         source: 'gemini',
         generatedAt: new Date().toISOString(),

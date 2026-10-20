@@ -1,4 +1,6 @@
+import { formatGoalSection, formatTrendSection } from './buildContext'
 import type { InsightContext, InsightResult, InsightTone } from './types'
+import { composeInsightText } from './types'
 
 const buildSuggestion = (ctx: InsightContext, tone: InsightTone): string => {
   const over = ctx.budgetPressures.filter((b) => b.isOver)
@@ -48,8 +50,17 @@ export const generateLocalInsight = (ctx: InsightContext): InsightResult => {
   let tone: InsightTone = 'neutral'
 
   if (ctx.transactionCount === 0) {
+    const observation = `No activity logged ${ctx.periodLabel} yet.`
+    const suggestion =
+      'Add a few expenses or income entries so we can suggest what to change — or keep — next.'
+    const trend = formatTrendSection(ctx)
+    const goal = formatGoalSection(ctx)
     return {
-      text: `No activity logged ${ctx.periodLabel} yet. Add a few expenses or income entries so we can suggest what to change — or keep — next.`,
+      text: composeInsightText(observation, suggestion, trend, goal),
+      observation,
+      suggestion,
+      trend,
+      goal,
       tone: 'neutral',
       source: 'local',
       generatedAt: new Date().toISOString(),
@@ -80,9 +91,7 @@ export const generateLocalInsight = (ctx: InsightContext): InsightResult => {
   const top = ctx.topCategories[0]
   if (top && top.percentage >= 40) {
     if (tone === 'neutral') tone = 'watch'
-    parts.push(
-      `${top.name} is taking the bulk at ${top.percentage}% (${top.amountLabel}).`
-    )
+    parts.push(`${top.name} is taking the bulk at ${top.percentage}% (${top.amountLabel}).`)
   } else if (top) {
     parts.push(`Biggest slice is ${top.name} at ${top.percentage}% (${top.amountLabel}).`)
   }
@@ -94,19 +103,29 @@ export const generateLocalInsight = (ctx: InsightContext): InsightResult => {
     const names = over.map((b) => `${b.name} (${b.percentUsed}%)`).join(', ')
     parts.push(`Budget overrun: ${names}.`)
   } else if (nearing.length > 0) {
-    if (tone === 'positive') tone = 'watch'
-    else if (tone === 'neutral') tone = 'watch'
+    if (tone === 'positive' || tone === 'neutral') tone = 'watch'
     const names = nearing.map((b) => `${b.name} at ${b.percentUsed}%`).join(', ')
     parts.push(`Getting close on budget: ${names}.`)
   }
 
-  // Observation (up to 2 beats), then blank line, then keep/change suggestion
+  if (ctx.trend?.direction === 'up' && (ctx.trend.changePct || 0) >= 15 && tone === 'neutral') {
+    tone = 'watch'
+  }
+  if (ctx.goals && !ctx.goals.onTrack && tone === 'positive') {
+    tone = 'watch'
+  }
+
   const observation = parts.slice(0, 2).join(' ')
   const suggestion = buildSuggestion(ctx, tone)
-  const text = `${observation}\n\n${suggestion}`
+  const trend = formatTrendSection(ctx)
+  const goal = formatGoalSection(ctx)
 
   return {
-    text,
+    text: composeInsightText(observation, suggestion, trend, goal),
+    observation,
+    suggestion,
+    trend,
+    goal,
     tone,
     source: 'local',
     generatedAt: new Date().toISOString(),

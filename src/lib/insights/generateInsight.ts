@@ -1,4 +1,5 @@
 import type { InsightContext, InsightQuotaStatus, InsightResult, InsightViewState } from './types'
+import { normalizeInsightResult } from './types'
 import { generateLocalInsight } from './localInsight'
 import { generateGeminiInsight } from './geminiInsight'
 import {
@@ -64,7 +65,7 @@ export const loadInsightForDay = async (
   if (stored && !options?.force) {
     return {
       status: 'ready',
-      insight: stored.insight,
+      insight: normalizeInsightResult(stored.insight),
       txRevision: stored.txRevision,
       canRegenerate: stored.txRevision !== txRevision,
       quota,
@@ -76,7 +77,7 @@ export const loadInsightForDay = async (
     if (stored) {
       return {
         status: 'ready',
-        insight: stored.insight,
+        insight: normalizeInsightResult(stored.insight),
         txRevision: stored.txRevision,
         canRegenerate: stored.txRevision !== txRevision,
         quota,
@@ -95,7 +96,7 @@ export const loadInsightForDay = async (
   if (options?.force && stored && stored.txRevision === txRevision) {
     return {
       status: 'ready',
-      insight: stored.insight,
+      insight: normalizeInsightResult(stored.insight),
       txRevision: stored.txRevision,
       canRegenerate: false,
       quota,
