@@ -4,7 +4,7 @@ import { useWalletStore, useLoanStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { formatCurrency } from '@/lib/money';
 import { calculateBalances } from '@/lib/balances';
-import { Link } from 'react-router-dom';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export const WalletSummary: React.FC = () => {
     const { totalWalletBalance, totalCreditDebt, totalWalletLoanDebt } = useWalletStore(useShallow(state => ({
@@ -18,10 +18,12 @@ export const WalletSummary: React.FC = () => {
         totalYouOwe: state.totalYouOwe
     })));
 
-    const { currencySymbol, currencyPosition, creditWarningThreshold } = useUIStore(useShallow(state => ({
+    const { currencySymbol, currencyPosition, creditWarningThreshold, balancesHidden, toggleBalancesHidden } = useUIStore(useShallow(state => ({
         currencySymbol: state.currencySymbol,
         currencyPosition: state.currencyPosition,
-        creditWarningThreshold: state.creditWarningThreshold
+        creditWarningThreshold: state.creditWarningThreshold,
+        balancesHidden: state.balancesHidden,
+        toggleBalancesHidden: state.toggleBalancesHidden,
     })));
 
     const { displayedWalletTotal, projectedBalance } = calculateBalances({
@@ -51,12 +53,12 @@ export const WalletSummary: React.FC = () => {
                     <div>
                         <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">Total Wallet Balance</p>
                         <h2 className="text-4xl font-extrabold tracking-tight text-white">
-                            {formatCurrency(displayedWalletTotal, currencySymbol, currencyPosition)}
+                            {balancesHidden ? '••••' : formatCurrency(displayedWalletTotal, currencySymbol, currencyPosition)}
                         </h2>
                     </div>
-                    <Link to="/settings" className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
-                        <Icon name="Cog6ToothIcon" className="w-5 h-5 text-white" />
-                    </Link>
+                    <button type="button" onClick={toggleBalancesHidden} aria-label={balancesHidden ? 'Show balances' : 'Hide balances'} aria-pressed={balancesHidden} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white">
+                        {balancesHidden ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
@@ -66,7 +68,7 @@ export const WalletSummary: React.FC = () => {
                             <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">Projected Balance</p>
                         </div>
                         <p className="text-lg font-bold text-white">
-                            {formatCurrency(projectedBalance, currencySymbol, currencyPosition)}
+                            {balancesHidden ? '••••' : formatCurrency(projectedBalance, currencySymbol, currencyPosition)}
                         </p>
                     </div>
 
@@ -76,7 +78,7 @@ export const WalletSummary: React.FC = () => {
                             <p className={`text-[10px] font-bold uppercase tracking-widest ${hasCreditWarning ? 'text-red-300' : 'text-blue-200'}`}>Credit Card Debt</p>
                         </div>
                         <p className={`text-lg font-bold ${hasCreditWarning ? 'text-red-400' : 'text-white'}`}>
-                            {formatCurrency(totalCreditDebt, currencySymbol, currencyPosition)}
+                            {balancesHidden ? '••••' : formatCurrency(totalCreditDebt, currencySymbol, currencyPosition)}
                         </p>
                     </div>
                 </div>
@@ -88,7 +90,7 @@ export const WalletSummary: React.FC = () => {
                             <p className="text-emerald-300 text-[10px] font-bold uppercase tracking-widest">Owed to You</p>
                         </div>
                         <p className="text-lg font-bold text-emerald-400">
-                            +{formatCurrency(totalOwedToYou, currencySymbol, currencyPosition)}
+                            {balancesHidden ? '••••' : `+${formatCurrency(totalOwedToYou, currencySymbol, currencyPosition)}`}
                         </p>
                     </div>
 
@@ -98,7 +100,7 @@ export const WalletSummary: React.FC = () => {
                             <p className="text-rose-300 text-[10px] font-bold uppercase tracking-widest">Loan Debt</p>
                         </div>
                         <p className="text-lg font-bold text-rose-400">
-                            -{formatCurrency(totalWalletLoanDebt + totalYouOwe, currencySymbol, currencyPosition)}
+                            {balancesHidden ? '••••' : `-${formatCurrency(totalWalletLoanDebt + totalYouOwe, currencySymbol, currencyPosition)}`}
                         </p>
                     </div>
                 </div>

@@ -97,8 +97,7 @@ export const TransactionsPage: React.FC = () => {
         <div id="page-transactions">
             <header className="px-4 pt-4 mb-6">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">KURIPOT</h1>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Transactions</p>
+                    <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Transactions</h1>
                 </div>
             </header>
 

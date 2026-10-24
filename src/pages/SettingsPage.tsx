@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 declare const __APP_VERSION__: string;
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.22';
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.23';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -254,7 +254,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div id="page-settings" className="px-4 space-y-6 pb-20">
       <header className="pt-4">
-        <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">KURIPOT</h1>
+        <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Settings</h1>
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Settings & Preferences</p>
       </header>
 

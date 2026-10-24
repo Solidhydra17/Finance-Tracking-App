@@ -7,3 +7,4 @@ export { AddTransactionModal } from './AddTransactionModal';
 export { AddTransactionPage } from './AddTransactionPage';
 export { BudgetPlanningPage } from './BudgetPlanningPage';
 export { AddLoanPage } from './AddLoanPage';
+export { InsightPage } from './InsightPage';

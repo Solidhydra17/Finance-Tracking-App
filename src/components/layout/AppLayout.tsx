@@ -7,11 +7,13 @@ import { PWAUpdateBanner } from "@/components/ui/PWAUpdateBanner";
 import { useUIStore } from "@/store";
 import { useShallow } from 'zustand/react/shallow';
 import { AddTransactionModal } from "@/pages/AddTransactionModal";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FundTransferModal } from "@/components/wallet/FundTransferModal";
 
 export const AppLayout: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const showNav = ['/', '/transactions', '/wallet', '/settings'].includes(location.pathname);
 
     const {
         isAddTransactionOpen,
@@ -50,11 +52,11 @@ export const AppLayout: React.FC = () => {
 
     return (
         <div id="app-layout" className="min-h-screen bg-[var(--bg-color)] flex flex-col transition-colors duration-200">
-            <main id="app-main-content" className="pb-32 pt-2">
+            <main id="app-main-content" className={`pt-2 ${showNav ? 'pb-36' : 'pb-8'}`}>
                 <Outlet />
             </main>
 
-            <BottomNav onAddClick={() => setAddMenuOpen(true)} />
+            {showNav && <BottomNav onAddClick={() => setAddMenuOpen(true)} />}
 
             <ToastContainer />
             <StatusToast />

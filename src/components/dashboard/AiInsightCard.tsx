@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/components/ui'
 import type { DashboardData } from '@/domain/dashboard/types'
 import type { PlannedVsActual } from '@/domain/budget/budgetEngine'
@@ -27,6 +28,7 @@ type AiInsightCardProps = {
   projectedBalance: number
   creditDebt: number
   youOwe: number
+  presentation?: 'home' | 'page'
 }
 
 const toneStyles: Record<InsightTone, string> = {
@@ -57,6 +59,7 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   projectedBalance,
   creditDebt,
   youOwe,
+  presentation = 'home',
 }) => {
   const [insight, setInsight] = useState<InsightResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -65,7 +68,6 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   const [quota, setQuota] = useState<InsightQuotaStatus | null>(null)
   const [regenHint, setRegenHint] = useState<string | null>(null)
   const [regenerating, setRegenerating] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const buildCtx = useCallback(async () => {
     const categoryNames = new Map<number, string>()
@@ -152,17 +154,6 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
     }
   }
 
-  const handleToggleDetails = () => {
-    setDetailsOpen((open) => !open)
-  }
-
-  const handleToggleDetailsKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleToggleDetails()
-    }
-  }
-
   const tone = insight?.tone ?? 'neutral'
   const hasSections = Boolean(
     insight && (insight.observation || insight.suggestion || insight.trend || insight.goal)
@@ -231,33 +222,23 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
           ) : null}
           {detailSections.length > 0 ? (
             <div className={insight?.observation ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}>
-              <button
-                type="button"
-                onClick={handleToggleDetails}
-                onKeyDown={handleToggleDetailsKeyDown}
-                aria-expanded={detailsOpen}
-                aria-controls="insight-extra-details"
-                aria-label={detailsOpen ? 'Hide insight details' : 'Show insight details'}
-                tabIndex={0}
-                className="w-full min-h-11 flex items-center justify-between gap-3 rounded-xl px-1 text-left text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-[0.99] transition-all"
-              >
-                <span className="text-[10px] font-bold uppercase tracking-wider">
-                  {detailsOpen ? 'Hide details' : 'Show details'}
-                </span>
-                <Icon
-                  name={detailsOpen ? 'ChevronUpIcon' : 'ChevronDownIcon'}
-                  className="w-4 h-4 shrink-0"
-                />
-              </button>
-              {detailsOpen ? (
-                <div id="insight-extra-details" className="mt-3 flex flex-col gap-4">
+              {presentation === 'page' ? (
+                <div id="insight-extra-details" className="flex flex-col gap-4">
                   {detailSections.map((section) => (
                     <InsightBlock key={section.label} label={section.label}>
                       {section.text}
                     </InsightBlock>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <Link
+                  to="/insight"
+                  aria-label="View insight details"
+                  className="flex min-h-11 w-full items-center justify-center rounded-xl bg-midblue text-xs font-bold uppercase tracking-widest text-white active:scale-[0.99]"
+                >
+                  View details
+                </Link>
+              )}
             </div>
           ) : null}
         </div>

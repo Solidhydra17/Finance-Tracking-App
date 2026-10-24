@@ -1,99 +1,91 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-
-import { 
-  HomeIcon, 
-  ArrowsRightLeftIcon, 
-  WalletIcon, 
+import {
+  HomeIcon,
+  ArrowsRightLeftIcon,
+  WalletIcon,
   Cog6ToothIcon,
-  PlusIcon
+  PlusIcon,
 } from '@heroicons/react/24/outline';
 
 interface BottomNavProps {
   onAddClick: () => void;
 }
 
+const navItems = [
+  { path: '/', label: 'Home', icon: HomeIcon },
+  { path: '/transactions', label: 'Transactions', icon: ArrowsRightLeftIcon },
+  { path: '/wallet', label: 'Wallet', icon: WalletIcon },
+  { path: '/settings', label: 'Settings', icon: Cog6ToothIcon },
+];
+
 export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
   const location = useLocation();
   const isAddPage = location.pathname === '/add-transaction';
 
-  const navItems = [
-    { path: '/', label: 'Home', icon: HomeIcon },
-    { path: '/transactions', label: 'Transactions', icon: ArrowsRightLeftIcon },
-    { path: '/wallet', label: 'Wallet', icon: WalletIcon },
-    { path: '/settings', label: 'Settings', icon: Cog6ToothIcon },
-  ];
-
-  const handleFABClick = () => {
-    // Logical lockdown: ignore clicks if on the add page
+  const handleAddClick = () => {
     if (isAddPage) return;
     onAddClick();
   };
 
   return (
-    <nav id="bottom-nav-bar" className="fixed bottom-0 left-0 right-0 bg-[var(--card-bg)] border-t border-[var(--card-border)] safe-area-pb z-40 px-4">
-      <div className="flex items-center justify-between h-20">
-        {/* Left Side Items */}
-        <div id="nav-left-items" className="flex flex-1 justify-around">
+    <nav
+      id="bottom-nav-bar"
+      aria-label="Primary"
+      className="fixed inset-x-4 bottom-[max(0.85rem,env(safe-area-inset-bottom))] z-40 h-[104px]"
+    >
+      <div className="pointer-events-none absolute inset-0 [filter:drop-shadow(0_-2px_5px_rgba(17,24,39,0.18))_drop-shadow(0_-8px_16px_rgba(17,24,39,0.16))_drop-shadow(0_4px_8px_rgba(17,24,39,0.10))] dark:[filter:drop-shadow(0_-6px_16px_rgba(0,0,0,0.6))]">
+        <div className="absolute bottom-0 left-0 top-10 w-[calc(50%-78px)] rounded-l-full bg-[var(--card-bg)]" />
+        <div className="absolute bottom-0 right-0 top-10 w-[calc(50%-78px)] rounded-r-full bg-[var(--card-bg)]" />
+        <svg className="absolute left-1/2 top-0 h-[104px] w-[180px] -translate-x-1/2" viewBox="0 0 180 104" aria-hidden="true">
+          <path fill="var(--card-bg)" d="M0 40 H26 C42 40 48 42 54 54 C62 70 72 76 90 76 C108 76 118 70 126 54 C132 42 138 40 154 40 H180 V104 H0 Z" />
+        </svg>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 flex h-16 items-center">
+        <div className="grid flex-1 grid-cols-2">
           {navItems.slice(0, 2).map((item) => (
-            <NavLink
-              id={`nav-link-${item.label.toLowerCase()}`}
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `
-                flex flex-col items-center justify-center gap-1
-                transition-all duration-300
-                ${isActive ? 'text-midblue dark:text-white scale-110' : 'text-gray-400 dark:text-gray-500 hover:text-midblue/60'}
-              `}
-            >
-              <item.icon className="w-6 h-6" />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
-            </NavLink>
+            <NavItem key={item.path} item={item} />
           ))}
         </div>
-
-        {/* FAB Placeholder Space */}
-        <div className="w-20" />
-
-        {/* Right Side Items */}
-        <div id="nav-right-items" className="flex flex-1 justify-around">
-          {navItems.slice(2, 4).map((item) => (
-            <NavLink
-              id={`nav-link-${item.label.toLowerCase()}`}
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `
-                flex flex-col items-center justify-center gap-1
-                transition-all duration-300
-                ${isActive ? 'text-midblue dark:text-white scale-110' : 'text-gray-400 dark:text-gray-500 hover:text-midblue/60'}
-              `}
-            >
-              <item.icon className="w-6 h-6" />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
-            </NavLink>
+        <div className="w-[4.5rem] shrink-0" />
+        <div className="grid flex-1 grid-cols-2">
+          {navItems.slice(2).map((item) => (
+            <NavItem key={item.path} item={item} />
           ))}
         </div>
       </div>
 
-      {/* FAB Add Button */}
       <button
         id="btn-main-add"
-        onClick={handleFABClick}
+        type="button"
+        aria-label="Add"
+        onClick={handleAddClick}
         disabled={isAddPage}
-        className={`
-          absolute left-1/2 -translate-x-1/2 -top-8
-          w-16 h-16 rounded-full
-          flex items-center justify-center
-          transition-all duration-300
-          border-4 border-[var(--bg-color)] shadow-xl
-          ${isAddPage 
-            ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed scale-95 opacity-80' 
-            : 'bg-midblue text-white shadow-[0_8px_25px_rgba(40,92,204,0.4)] hover:scale-110 active:scale-95'
-          }
-        `}
+        className={`absolute left-1/2 top-1.5 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full transition-all duration-300 ${
+          isAddPage
+            ? 'cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-gray-800'
+            : 'bg-midblue text-white shadow-[0_10px_24px_rgba(40,92,204,0.45)] hover:scale-110 active:scale-95'
+        }`}
       >
-        <PlusIcon className={`w-10 h-10 stroke-[3] ${isAddPage ? 'text-gray-400 dark:text-gray-600' : 'text-white'}`} />
+        <PlusIcon className="h-7 w-7 stroke-[2.5]" />
       </button>
     </nav>
   );
 };
+
+const NavItem = ({ item }: { item: (typeof navItems)[number] }) => (
+  <NavLink
+    id={`nav-link-${item.label.toLowerCase()}`}
+    to={item.path}
+    end={item.path === '/'}
+    aria-label={item.label}
+    className={({ isActive }) =>
+      `flex h-12 items-center justify-center rounded-full transition-all duration-300 ${
+        isActive ? 'scale-110 text-midblue dark:text-white' : 'text-gray-400 dark:text-gray-500'
+      }`
+    }
+  >
+    <item.icon className="h-6 w-6" />
+  </NavLink>
+);

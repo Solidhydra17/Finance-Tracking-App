@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useBudget, useCategories } from '@/hooks';
 import { Input, Select, Button, Card, Icon, Modal, ProgressBar, AVAILABLE_ICONS, CalcInput, DayPicker } from '@/components/ui';
-import { DonutChart } from '@/components/charts';
+import { BudgetRings } from '@/components/charts/BudgetRings';
 import { centsToDisplay, displayToCents } from '@/lib/money';
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
 import type { BudgetItem, BudgetItemType, BudgetItemFrequency } from '@/types';
@@ -165,22 +165,26 @@ export const BudgetPlanningPage: React.FC = () => {
   const unassignedMoney = netSalary - totalAllocated;
   const financialHealth = budgetEngine.calculateFinancialHealth(netSalary, totalAllocated);
 
-  const compositionData = useMemo(() => {
-    let exp = 0; let sav = 0; let inst = 0;
-    items.filter(i => i.active).forEach(i => {
-      const m = budgetEngine.calculateMonthlyAmount(i, workDaysPerWeek);
-      if (i.type === 'expense') exp += m;
-      else if (i.type === 'savings') sav += m;
-      else if (i.type === 'installment') inst += m;
-    });
-    return [
-      { label: 'Expenses', value: exp, color: '#f43f5e' },
-      { label: 'Savings', value: sav, color: '#10b981' },
-      { label: 'Installments', value: inst, color: '#f59e0b' }
-    ].filter(d => d.value > 0);
-  }, [items, workDaysPerWeek]);
+  const budgetRings = useMemo(() => {
+    return items
+      .filter((item) => item.active && item.type === 'expense')
+      .map((item) => {
+        const status = item.categoryId ? pva.get(item.categoryId) : undefined
+        const category = categories.find((entry) => entry.id === item.categoryId)
+        const planned = status?.plannedCents ?? budgetEngine.calculateMonthlyAmount(item, workDaysPerWeek)
+        const actual = status?.actualCents ?? 0
+        return {
+          id: String(item.id ?? item.name),
+          name: category?.name ?? item.name,
+          percentage: planned > 0 ? (actual / planned) * 100 : 0,
+          color: category?.color ?? '#285ccc',
+          actual,
+          plannedCents: planned,
+        }
+      })
+  }, [items, pva, categories, workDaysPerWeek])
+  const budgetSpent = budgetRings.reduce((sum, row) => sum + row.actual, 0)
 
-  // Cutoff Allocations
   const cutoffs = useMemo(() => {
     if (plan?.payFrequency === 'semi-monthly') {
       return budgetEngine.calculateCutoffAllocations(items, workDaysPerWeek, netSalary, plan.cutoff1AmountCents, plan.cutoff2AmountCents);
@@ -249,16 +253,6 @@ export const BudgetPlanningPage: React.FC = () => {
           }`}>{financialHealth}</p>
         </Card>
       </section>
-
-      {/* 3. Budget Composition Chart */}
-      {compositionData.length > 0 && (
-        <section>
-          <h2 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">Budget Composition</h2>
-          <Card className="p-6">
-            <DonutChart data={compositionData} size={220} />
-          </Card>
-        </section>
-      )}
 
       {/* 4. Cutoff Breakdown */}
       {cutoffs && (
@@ -379,10 +373,16 @@ export const BudgetPlanningPage: React.FC = () => {
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Budget Items</h2>
-          <Button variant="primary" size="sm" onClick={() => openItemModal()}>
+          <Button variant="primary" size="sm" onClick={() => openItemModal()} className="h-8 rounded-xl px-3 text-xs">
             <Icon name="PlusIcon" className="w-4 h-4 mr-1" /> Add
           </Button>
         </div>
+
+        {budgetRings.length > 0 && (
+          <Card className="mb-4 p-4">
+            <BudgetRings rows={budgetRings} spentCents={budgetSpent} hidden={false} />
+          </Card>
+        )}
         
         {items.length === 0 ? (
           <div className="text-center py-8 text-[var(--text-muted)] italic text-sm">
