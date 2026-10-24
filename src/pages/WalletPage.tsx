@@ -37,7 +37,7 @@ export const WalletPage: React.FC = () => {
     const isLoading = isWalletLoading || isLoansLoading;
 
     return (
-        <div id="page-wallet" className="px-4 space-y-6 pb-24 pt-4 animate-fade-in">
+        <div id="page-wallet" className="mx-auto w-full max-w-md space-y-6 px-4 pb-24 pt-4 animate-fade-in">
             <header>
                 <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Wallet</h1>
             </header>
