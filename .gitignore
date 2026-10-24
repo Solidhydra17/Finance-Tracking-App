@@ -18,3 +18,7 @@ kuripot-keystore-base64.txt
 
 
 design-mockups/
+
+# Local design mock and references (not part of the app)
+design-mock/
+temp/

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Icon, Modal, Input, Button } from '@/components/ui';
+import { WalletCardDeck } from '@/components/wallet/WalletCardDeck';
 import { formatCurrency } from '@/lib/money';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { WalletAccount, WalletAccountType } from '@/types';
@@ -15,10 +16,11 @@ export const WalletAccountsList: React.FC = () => {
         payCreditCard: state.payCreditCard
     })));
 
-    const { currencySymbol, currencyPosition, addToast } = useUIStore(useShallow(state => ({
+    const { currencySymbol, currencyPosition, addToast, balancesHidden } = useUIStore(useShallow(state => ({
         currencySymbol: state.currencySymbol,
         currencyPosition: state.currencyPosition,
-        addToast: state.addToast
+        addToast: state.addToast,
+        balancesHidden: state.balancesHidden,
     })));
 
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
@@ -224,55 +226,21 @@ export const WalletAccountsList: React.FC = () => {
         <div className="space-y-6">
             {/* Cash Section */}
             <section className="space-y-3">
-                <div className="flex justify-between items-center px-1">
-                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Cash</h3>
-                    {!cashAccount && (
-                        <button onClick={() => openCreateModal('cash')} className="text-xs font-bold text-midblue">
-                            + Initialize Cash
-                        </button>
-                    )}
-                </div>
-                {cashAccount ? renderCard(cashAccount) : (
-                    <div className="text-center p-6 border-2 border-dashed border-[var(--card-border)] rounded-2xl">
-                        <p className="text-sm text-[var(--text-muted)] font-medium">No cash account setup yet.</p>
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-midblue dark:text-white">Wallets</h3>
+                    <div className="flex gap-3">
+                        {!cashAccount && <button type="button" onClick={() => openCreateModal('cash')} className="text-xs font-bold text-midblue">Cash</button>}
+                        <button type="button" onClick={() => openCreateModal('ecash')} className="text-xs font-bold text-midblue">E-cash</button>
+                        <button type="button" onClick={() => openCreateModal('debit')} className="text-xs font-bold text-midblue">Debit</button>
                     </div>
-                )}
-            </section>
-
-            {/* E-Cash Section */}
-            <section className="space-y-3">
-                <div className="flex justify-between items-center px-1">
-                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">E-Cash</h3>
-                    <button onClick={() => openCreateModal('ecash')} className="text-xs font-bold text-midblue">
-                        + Add E-Cash
-                    </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {ecashAccounts.map(renderCard)}
-                    {ecashAccounts.length === 0 && (
-                        <div className="col-span-full text-center p-6 border-2 border-dashed border-[var(--card-border)] rounded-2xl">
-                            <p className="text-sm text-[var(--text-muted)] font-medium">No e-cash accounts found.</p>
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            {/* Debit Section */}
-            <section className="space-y-3">
-                <div className="flex justify-between items-center px-1">
-                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Debit Accounts</h3>
-                    <button onClick={() => openCreateModal('debit')} className="text-xs font-bold text-midblue">
-                        + Add Debit
-                    </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {debitAccounts.map(renderCard)}
-                    {debitAccounts.length === 0 && (
-                        <div className="col-span-full text-center p-6 border-2 border-dashed border-[var(--card-border)] rounded-2xl">
-                            <p className="text-sm text-[var(--text-muted)] font-medium">No debit accounts found.</p>
-                        </div>
-                    )}
-                </div>
+                <WalletCardDeck
+                    accounts={nonCreditAccounts}
+                    hidden={balancesHidden}
+                    currencySymbol={currencySymbol}
+                    currencyPosition={currencyPosition}
+                    onSelect={openEditModal}
+                />
             </section>
 
             {/* Credit Section */}

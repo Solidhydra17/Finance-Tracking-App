@@ -39,8 +39,7 @@ export const WalletPage: React.FC = () => {
     return (
         <div id="page-wallet" className="px-4 space-y-6 pb-24 pt-4 animate-fade-in">
             <header>
-                <h1 className="text-3xl font-extrabold text-midblue tracking-wider dark:text-white">KURIPOT</h1>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Accounts & Loans</p>
+                <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Wallet</h1>
             </header>
 
             {isLoading ? (

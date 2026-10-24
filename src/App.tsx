@@ -9,6 +9,7 @@ import { RecurringPage } from "@/pages/RecurringPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { AddTransactionPage } from "@/pages/AddTransactionPage";
 import { AddLoanPage } from "@/pages/AddLoanPage";
+import { InsightPage } from "@/pages/InsightPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 import { walletService } from '@/domain/wallet/walletService';
 import { Capacitor } from '@capacitor/core';
@@ -92,7 +93,7 @@ export async function updateNativeWidget(): Promise<void> {
 const HardwareBackButtonManager: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { addToast } = useUIStore();
+    const addToast = useUIStore((state) => state.addToast);
     const lastBackPress = React.useRef(0);
     const pathnameRef = React.useRef(location.pathname);
 
@@ -104,16 +105,44 @@ const HardwareBackButtonManager: React.FC = () => {
         if (!Capacitor.isNativePlatform()) return;
 
         const listener = CapacitorApp.addListener('backButton', () => {
-            if (pathnameRef.current !== '/') {
+            const ui = useUIStore.getState();
+            if (ui.isAddMenuOpen) {
+                ui.setAddMenuOpen(false);
+                return;
+            }
+            if (ui.isTransferOpen) {
+                ui.setTransferOpen(false);
+                return;
+            }
+            if (ui.isAddTransactionOpen) {
+                ui.setAddTransactionOpen(false);
+                return;
+            }
+            if (ui.isAddLoanOpen) {
+                ui.setAddLoanOpen(false);
+                return;
+            }
+            if (ui.isAddRecurringOpen) {
+                ui.setAddRecurringOpen(false);
+                return;
+            }
+
+            const historyIndex = window.history.state?.idx;
+            if (typeof historyIndex === 'number' && historyIndex > 0) {
                 navigate(-1);
+                return;
+            }
+            if (pathnameRef.current !== '/') {
+                navigate('/', { replace: true });
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastBackPress.current < 2000) {
+                CapacitorApp.exitApp();
             } else {
-                const now = Date.now();
-                if (now - lastBackPress.current < 2000) {
-                    CapacitorApp.exitApp();
-                } else {
-                    lastBackPress.current = now;
-                    addToast('info', 'Press back again to exit', 2000);
-                }
+                lastBackPress.current = now;
+                addToast('info', 'Press back again to close', 2000);
             }
         });
 
@@ -257,6 +286,7 @@ export const App: React.FC = () => {
                         <Route path="add-transaction" element={<AddTransactionPage />} />
                         <Route path="add-loan" element={<AddLoanPage />} />
                         <Route path="budget-planning" element={<BudgetPlanningPage />} />
+                        <Route path="insight" element={<InsightPage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

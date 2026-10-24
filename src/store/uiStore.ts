@@ -37,6 +37,8 @@ interface UIState {
   // Loan visibility
   showLoans: boolean;
   setShowLoans: (show: boolean) => void;
+  balancesHidden: boolean;
+  toggleBalancesHidden: () => void;
 
   // Loading states
   isLoading: boolean;
@@ -138,6 +140,8 @@ export const useUIStore = create<UIState>((set) => ({
   // Loan visibility
   showLoans: true,
   setShowLoans: (show) => set({ showLoans: show }),
+  balancesHidden: false,
+  toggleBalancesHidden: () => set((state) => ({ balancesHidden: !state.balancesHidden })),
 
   // Loading
   isLoading: false,

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/components/ui'
 import type { DashboardData } from '@/domain/dashboard/types'
 import type { PlannedVsActual } from '@/domain/budget/budgetEngine'
@@ -27,6 +28,7 @@ type AiInsightCardProps = {
   projectedBalance: number
   creditDebt: number
   youOwe: number
+  presentation?: 'home' | 'page'
 }
 
 const toneStyles: Record<InsightTone, string> = {
@@ -57,6 +59,7 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   projectedBalance,
   creditDebt,
   youOwe,
+  presentation = 'home',
 }) => {
   const [insight, setInsight] = useState<InsightResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -155,6 +158,11 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   const hasSections = Boolean(
     insight && (insight.observation || insight.suggestion || insight.trend || insight.goal)
   )
+  const detailSections = [
+    insight?.suggestion ? { label: 'Suggestion', text: insight.suggestion } : null,
+    insight?.trend ? { label: 'vs Last month', text: insight.trend } : null,
+    insight?.goal ? { label: 'Goal', text: insight.goal } : null,
+  ].filter((section): section is { label: string; text: string } => section !== null)
 
   return (
     <section
@@ -212,19 +220,25 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
           {insight?.observation ? (
             <InsightBlock label="Overview">{insight.observation}</InsightBlock>
           ) : null}
-          {insight?.suggestion ? (
-            <div className={`${insight.observation ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
-              <InsightBlock label="Suggestion">{insight.suggestion}</InsightBlock>
-            </div>
-          ) : null}
-          {insight?.trend ? (
-            <div className={`${insight.observation || insight.suggestion ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
-              <InsightBlock label="vs Last month">{insight.trend}</InsightBlock>
-            </div>
-          ) : null}
-          {insight?.goal ? (
-            <div className={`${insight.observation || insight.suggestion || insight.trend ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
-              <InsightBlock label="Goal">{insight.goal}</InsightBlock>
+          {detailSections.length > 0 ? (
+            <div className={insight?.observation ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}>
+              {presentation === 'page' ? (
+                <div id="insight-extra-details" className="flex flex-col gap-4">
+                  {detailSections.map((section) => (
+                    <InsightBlock key={section.label} label={section.label}>
+                      {section.text}
+                    </InsightBlock>
+                  ))}
+                </div>
+              ) : (
+                <Link
+                  to="/insight"
+                  aria-label="View insight details"
+                  className="flex min-h-11 w-full items-center justify-center rounded-xl bg-midblue text-xs font-bold uppercase tracking-widest text-white active:scale-[0.99]"
+                >
+                  View details
+                </Link>
+              )}
             </div>
           ) : null}
         </div>
