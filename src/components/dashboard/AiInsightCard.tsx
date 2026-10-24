@@ -65,6 +65,7 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   const [quota, setQuota] = useState<InsightQuotaStatus | null>(null)
   const [regenHint, setRegenHint] = useState<string | null>(null)
   const [regenerating, setRegenerating] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const buildCtx = useCallback(async () => {
     const categoryNames = new Map<number, string>()
@@ -151,10 +152,26 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
     }
   }
 
+  const handleToggleDetails = () => {
+    setDetailsOpen((open) => !open)
+  }
+
+  const handleToggleDetailsKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleToggleDetails()
+    }
+  }
+
   const tone = insight?.tone ?? 'neutral'
   const hasSections = Boolean(
     insight && (insight.observation || insight.suggestion || insight.trend || insight.goal)
   )
+  const detailSections = [
+    insight?.suggestion ? { label: 'Suggestion', text: insight.suggestion } : null,
+    insight?.trend ? { label: 'vs Last month', text: insight.trend } : null,
+    insight?.goal ? { label: 'Goal', text: insight.goal } : null,
+  ].filter((section): section is { label: string; text: string } => section !== null)
 
   return (
     <section
@@ -212,19 +229,35 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
           {insight?.observation ? (
             <InsightBlock label="Overview">{insight.observation}</InsightBlock>
           ) : null}
-          {insight?.suggestion ? (
-            <div className={`${insight.observation ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
-              <InsightBlock label="Suggestion">{insight.suggestion}</InsightBlock>
-            </div>
-          ) : null}
-          {insight?.trend ? (
-            <div className={`${insight.observation || insight.suggestion ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
-              <InsightBlock label="vs Last month">{insight.trend}</InsightBlock>
-            </div>
-          ) : null}
-          {insight?.goal ? (
-            <div className={`${insight.observation || insight.suggestion || insight.trend ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}`}>
-              <InsightBlock label="Goal">{insight.goal}</InsightBlock>
+          {detailSections.length > 0 ? (
+            <div className={insight?.observation ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}>
+              <button
+                type="button"
+                onClick={handleToggleDetails}
+                onKeyDown={handleToggleDetailsKeyDown}
+                aria-expanded={detailsOpen}
+                aria-controls="insight-extra-details"
+                aria-label={detailsOpen ? 'Hide insight details' : 'Show insight details'}
+                tabIndex={0}
+                className="w-full min-h-11 flex items-center justify-between gap-3 rounded-xl px-1 text-left text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-[0.99] transition-all"
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider">
+                  {detailsOpen ? 'Hide details' : 'Show details'}
+                </span>
+                <Icon
+                  name={detailsOpen ? 'ChevronUpIcon' : 'ChevronDownIcon'}
+                  className="w-4 h-4 shrink-0"
+                />
+              </button>
+              {detailsOpen ? (
+                <div id="insight-extra-details" className="mt-3 flex flex-col gap-4">
+                  {detailSections.map((section) => (
+                    <InsightBlock key={section.label} label={section.label}>
+                      {section.text}
+                    </InsightBlock>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
