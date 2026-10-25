@@ -31,6 +31,8 @@ interface UIState {
   setAddRecurringOpen: (open: boolean) => void;
   isAddMenuOpen: boolean;
   setAddMenuOpen: (open: boolean) => void;
+  isPaymentPlanOpen: boolean;
+  setPaymentPlanOpen: (open: boolean) => void;
   isTransferOpen: boolean;
   setTransferOpen: (open: boolean) => void;
 
@@ -134,6 +136,8 @@ export const useUIStore = create<UIState>((set) => ({
   setAddRecurringOpen: (open) => set({ isAddRecurringOpen: open }),
   isAddMenuOpen: false,
   setAddMenuOpen: (open) => set({ isAddMenuOpen: open }),
+  isPaymentPlanOpen: false,
+  setPaymentPlanOpen: (open) => set({ isPaymentPlanOpen: open }),
   isTransferOpen: false,
   setTransferOpen: (open) => set({ isTransferOpen: open }),
 

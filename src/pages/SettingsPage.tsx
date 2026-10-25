@@ -81,6 +81,7 @@ export const SettingsPage: React.FC = () => {
       isAddLoanOpen: false,
       isAddRecurringOpen: false,
       isAddMenuOpen: false,
+      isPaymentPlanOpen: false,
       isTransferOpen: false,
       isLoading: false,
       isFirstLoad: true,

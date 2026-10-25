@@ -34,11 +34,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddClick }) => {
       aria-label="Primary"
       className="fixed inset-x-4 bottom-[max(0.85rem,env(safe-area-inset-bottom))] z-40 h-[104px]"
     >
-      <div className="pointer-events-none absolute inset-0 [filter:drop-shadow(0_-2px_5px_rgba(17,24,39,0.18))_drop-shadow(0_-8px_16px_rgba(17,24,39,0.16))_drop-shadow(0_4px_8px_rgba(17,24,39,0.10))] dark:[filter:drop-shadow(0_-6px_16px_rgba(0,0,0,0.6))]">
-        <div className="absolute bottom-0 left-0 top-10 w-[calc(50%-78px)] rounded-l-full bg-[var(--card-bg)]" />
-        <div className="absolute bottom-0 right-0 top-10 w-[calc(50%-78px)] rounded-r-full bg-[var(--card-bg)]" />
-        <svg className="absolute left-1/2 top-0 h-[104px] w-[180px] -translate-x-1/2" viewBox="0 0 180 104" aria-hidden="true">
-          <path fill="var(--card-bg)" d="M0 40 H26 C42 40 48 42 54 54 C62 70 72 76 90 76 C108 76 118 70 126 54 C132 42 138 40 154 40 H180 V104 H0 Z" />
+      <div className="pointer-events-none absolute inset-0 [filter:drop-shadow(0_-2px_5px_rgba(17,24,39,0.18))_drop-shadow(0_-8px_16px_rgba(17,24,39,0.16))_drop-shadow(0_4px_8px_rgba(17,24,39,0.10))] dark:[filter:drop-shadow(0_0_1px_rgba(255,255,255,0.18))_drop-shadow(0_-8px_18px_rgba(0,0,0,0.9))]">
+        <div className="absolute bottom-0 left-0 top-10 w-[calc(50%-78px)] rounded-l-full bg-white dark:bg-[#16161c]" />
+        <div className="absolute bottom-0 right-0 top-10 w-[calc(50%-78px)] rounded-r-full bg-white dark:bg-[#16161c]" />
+        <svg className="absolute left-1/2 top-0 h-[104px] w-[180px] -translate-x-1/2 text-white dark:text-[#16161c]" viewBox="0 0 180 104" aria-hidden="true">
+          <path fill="currentColor" d="M0 40 H26 C42 40 48 42 54 54 C62 70 72 76 90 76 C108 76 118 70 126 54 C132 42 138 40 154 40 H180 V104 H0 Z" />
         </svg>
       </div>
 
@@ -82,7 +82,7 @@ const NavItem = ({ item }: { item: (typeof navItems)[number] }) => (
     aria-label={item.label}
     className={({ isActive }) =>
       `flex h-12 items-center justify-center rounded-full transition-all duration-300 ${
-        isActive ? 'scale-110 text-midblue dark:text-white' : 'text-gray-400 dark:text-gray-500'
+        isActive ? 'scale-110 text-midblue dark:text-white' : 'text-gray-400 dark:text-gray-300'
       }`
     }
   >

@@ -1,6 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import type { Reminder } from '@/types/reminder';
+import type { PaymentPlan } from '@/types/paymentPlan';
+import { formatDateLocal } from '@/lib/date';
 
 export function isNotificationsSupported(): boolean {
   if (Capacitor.isNativePlatform()) return true;
@@ -116,6 +118,69 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
           sound: 'kaching.ogg',
         });
       }
+    }
+  }
+
+  if (notifications.length > 0) {
+    await LocalNotifications.schedule({ notifications });
+  }
+}
+
+const addMonths = (date: Date, months: number) => {
+  const day = date.getDate();
+  const next = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+  next.setDate(Math.min(day, lastDay));
+  return next;
+};
+
+export async function schedulePaymentPlans(plans: PaymentPlan[]): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  const pending = await LocalNotifications.getPending();
+  const existing = pending.notifications
+    .filter((item) => item.extra?.type === 'payment-plan')
+    .map((item) => ({ id: item.id }));
+  if (existing.length > 0) {
+    await LocalNotifications.cancel({ notifications: existing });
+  }
+
+  const enabled = plans.filter((plan) => plan.enabled);
+  if (enabled.length === 0) return;
+
+  const permission = await getNotificationPermission();
+  if (permission !== 'granted') return;
+
+  await configureChannels();
+
+  const now = new Date();
+  const notifications: Parameters<typeof LocalNotifications.schedule>[0]['notifications'] = [];
+  let idCounter = 8000;
+
+  for (const plan of enabled) {
+    const firstDue = new Date(`${plan.dueDate}T00:00:00`);
+    if (Number.isNaN(firstDue.getTime())) continue;
+    const lead = Math.max(0, plan.remindDaysBefore);
+
+    for (let month = 0; month < plan.months && notifications.length < 40; month += 1) {
+      const due = addMonths(firstDue, month);
+      const remind = new Date(due);
+      remind.setDate(remind.getDate() - lead);
+      remind.setHours(9, 0, 0, 0);
+      if (remind <= now) continue;
+
+      const dueLabel = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      notifications.push({
+        id: idCounter++,
+        title: plan.name,
+        body: lead === 0 ? `Due today, ${dueLabel}.` : `Due ${dueLabel}, in ${lead} day${lead === 1 ? '' : 's'}.`,
+        schedule: { at: remind },
+        extra: { type: 'payment-plan', planId: plan.id, dueDate: formatDateLocal(due) },
+        smallIcon: 'ic_stat_kuripot',
+        iconColor: '#285ccc',
+        channelId: 'kuripot_reminders',
+        sound: 'kaching.ogg',
+      });
     }
   }
 

@@ -10,7 +10,8 @@ import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine
 import { useBudget } from '@/hooks';
 import { AiInsightCard } from '@/components/dashboard/AiInsightCard';
 import { BudgetRings } from '@/components/charts/BudgetRings';
-import { EyeIcon, EyeSlashIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { SpendingBubbles } from '@/components/charts/SpendingBubbles';
+import { EyeIcon, EyeSlashIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 const LOADING_MESSAGES = [
   "Nagbibilang ng natitirang barya…",
   "Fetching data… at pati utang mo",
@@ -84,14 +85,13 @@ const FunnyLoadingScreen = () => {
 import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/lib/date';
 
 export const DashboardPage: React.FC = () => {
-  const { filters, setFilters, showLoans, isFirstLoad, balancesHidden, toggleBalancesHidden, addToast } = useUIStore(useShallow(state => ({
+  const { filters, setFilters, showLoans, isFirstLoad, balancesHidden, toggleBalancesHidden } = useUIStore(useShallow(state => ({
     filters: state.filters,
     setFilters: state.setFilters,
     showLoans: state.showLoans,
     isFirstLoad: state.isFirstLoad,
     balancesHidden: state.balancesHidden,
     toggleBalancesHidden: state.toggleBalancesHidden,
-    addToast: state.addToast,
   })));
   const { data } = useDashboard(filters, showLoans);
   const { plan, items } = useBudget();
@@ -240,15 +240,10 @@ export const DashboardPage: React.FC = () => {
           <Icon name="SparklesIcon" className="h-5 w-5 text-midblue" />
           Insight
         </Link>
-        <button
-          type="button"
-          aria-disabled="true"
-          onClick={() => addToast('info', 'Coming soon')}
-          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-xs font-bold text-[var(--text-muted)]"
-        >
-          <ClockIcon className="h-5 w-5" />
-          Coming soon
-        </button>
+        <Link to="/payment-planner" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-xs font-bold text-[var(--text-main)]">
+          <CalendarDaysIcon className="h-5 w-5 text-midblue" />
+          Payment Planner
+        </Link>
       </div>
 
       <AiInsightCard
@@ -286,35 +281,25 @@ export const DashboardPage: React.FC = () => {
         style={{ ['--period-shift' as string]: `${periodDirection * 14}px` }}
       >
         <h3 className="mb-6 text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Spending this period</h3>
-        {data.categoryBreakdown.length > 0 ? (
-          <div className="space-y-4">
-            {data.categoryBreakdown.map((cat, index) => (
-              <div key={cat.categoryId} id={`breakdown-item-${cat.categoryId}`} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Icon name={cat.icon} className="h-5 w-5" style={{ color: cat.color }} />
-                    <span className="text-sm font-bold text-[var(--text-main)]">{cat.categoryName}</span>
-                  </div>
-                  <p className="text-sm font-black text-midblue dark:text-white">{money(cat.total)}</p>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[var(--item-bg)]">
-                  <div
-                    className="h-full origin-left animate-bar-fill rounded-full"
-                    style={{ width: `${Math.min(100, cat.percentage)}%`, backgroundColor: cat.color, animationDelay: `${index * 40}ms` }}
-                  />
-                </div>
-              </div>
-            ))}
-            <Link
-              id="btn-view-all-transactions"
-              to="/transactions"
-              className="mt-2 flex w-full items-center justify-center rounded-2xl border-2 border-dashed border-[var(--card-border)] bg-[var(--item-bg)] py-4 text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]"
-            >
-              See more
-            </Link>
-          </div>
-        ) : (
-          <div className="flex h-32 items-center justify-center italic text-[var(--text-muted)]">No spending data yet</div>
+        <SpendingBubbles
+          items={data.categoryBreakdown.map((cat) => ({
+            id: String(cat.categoryId),
+            name: cat.categoryName,
+            color: cat.color,
+            total: cat.total,
+            percentage: cat.percentage,
+          }))}
+          hidden={balancesHidden}
+          period={currentPreset}
+        />
+        {data.categoryBreakdown.length > 0 && (
+          <Link
+            id="btn-view-all-transactions"
+            to="/transactions"
+            className="mt-4 flex w-full items-center justify-center rounded-2xl border-2 border-dashed border-[var(--card-border)] bg-[var(--item-bg)] py-4 text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]"
+          >
+            See more
+          </Link>
         )}
       </div>
 

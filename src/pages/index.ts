@@ -8,3 +8,4 @@ export { AddTransactionPage } from './AddTransactionPage';
 export { BudgetPlanningPage } from './BudgetPlanningPage';
 export { AddLoanPage } from './AddLoanPage';
 export { InsightPage } from './InsightPage';
+export { PaymentPlannerPage } from './PaymentPlannerPage';
