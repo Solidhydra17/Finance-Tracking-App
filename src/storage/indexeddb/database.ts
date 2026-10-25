@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount, CreditPayment } from '@/types';
+import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount, CreditPayment, PaymentPlan } from '@/types';
 
 export class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction, number>;
@@ -11,6 +11,7 @@ export class FinanceDatabase extends Dexie {
   budgetItems!: Table<BudgetItem, number>;
   walletAccounts!: Table<WalletAccount, number>;
   creditPayments!: Table<CreditPayment, number>;
+  paymentPlans!: Table<PaymentPlan, number>;
 
   constructor() {
     super('FinanceTrackerDB');
@@ -136,6 +137,12 @@ export class FinanceDatabase extends Dexie {
     };
     this.version(16).stores(schemaV16);
 
+    const schemaV17 = {
+      ...schemaV16,
+      paymentPlans: '++id, dueDate, enabled',
+    };
+    this.version(17).stores(schemaV17);
+
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');
     });
@@ -177,6 +184,7 @@ export async function clearAllData(): Promise<void> {
   await db.budgetItems.clear();
   await db.walletAccounts.clear();
   await db.creditPayments.clear();
+  await db.paymentPlans.clear();
 
   // Re-add default Cash account
   await db.walletAccounts.add({
@@ -204,6 +212,7 @@ export async function exportAllData(): Promise<any> {
     budgetItems: await db.budgetItems.toArray(),
     walletAccounts: await db.walletAccounts.toArray(),
     creditPayments: await db.creditPayments.toArray(),
+    paymentPlans: await db.paymentPlans.toArray(),
   };
 
   return {
@@ -239,7 +248,7 @@ export async function importData(payload: any): Promise<void> {
   await db.transaction('rw', 
     [db.transactions, db.categories, db.loans, db.loanPayments, 
     db.recurringRules, db.budgetPlans, db.budgetItems, 
-    db.walletAccounts, db.creditPayments], 
+    db.walletAccounts, db.creditPayments, db.paymentPlans], 
     async () => {
       // Clear existing data
       await db.transactions.clear();
@@ -251,6 +260,7 @@ export async function importData(payload: any): Promise<void> {
       await db.budgetItems.clear();
       await db.walletAccounts.clear();
       await db.creditPayments.clear();
+      await db.paymentPlans.clear();
 
       // Restore data
       if (dataToImport.categories?.length) {
@@ -279,6 +289,9 @@ export async function importData(payload: any): Promise<void> {
       }
       if (dataToImport.creditPayments?.length) {
         await db.creditPayments.bulkPut(dataToImport.creditPayments);
+      }
+      if (dataToImport.paymentPlans?.length) {
+        await db.paymentPlans.bulkPut(dataToImport.paymentPlans);
       }
     }
   );

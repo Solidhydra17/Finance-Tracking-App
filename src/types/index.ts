@@ -5,3 +5,4 @@ export * from './wallet';
 export * from './recurring';
 export * from './filter';
 export * from './budget';
+export * from './paymentPlan';

@@ -53,7 +53,9 @@ export const AppLayout: React.FC = () => {
     return (
         <div id="app-layout" className="min-h-screen bg-[var(--bg-color)] flex flex-col transition-colors duration-200">
             <main id="app-main-content" className={`pt-2 ${showNav ? 'pb-36' : 'pb-8'}`}>
-                <Outlet />
+                <div key={location.pathname} className="animate-fade-in">
+                    <Outlet />
+                </div>
             </main>
 
             {showNav && <BottomNav onAddClick={() => setAddMenuOpen(true)} />}

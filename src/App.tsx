@@ -10,16 +10,18 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { AddTransactionPage } from "@/pages/AddTransactionPage";
 import { AddLoanPage } from "@/pages/AddLoanPage";
 import { InsightPage } from "@/pages/InsightPage";
+import { PaymentPlannerPage } from "@/pages/PaymentPlannerPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 import { walletService } from '@/domain/wallet/walletService';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Preferences } from '@capacitor/preferences';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { scheduleReminders } from '@/lib/notifications';
+import { scheduleReminders, schedulePaymentPlans } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
 import { refreshFinancialState } from '@/lib/financialState';
 import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
+import { paymentPlanRepository } from '@/storage';
 import { useWalletStore, useLoanStore, useUIStore } from '@/store';
 import { refreshWidget } from '@/lib/notificationSettings';
 
@@ -106,6 +108,10 @@ const HardwareBackButtonManager: React.FC = () => {
 
         const listener = CapacitorApp.addListener('backButton', () => {
             const ui = useUIStore.getState();
+            if (ui.isPaymentPlanOpen) {
+                ui.setPaymentPlanOpen(false);
+                return;
+            }
             if (ui.isAddMenuOpen) {
                 ui.setAddMenuOpen(false);
                 return;
@@ -217,6 +223,7 @@ export const App: React.FC = () => {
         // Re-schedule reminders on every app open to refresh the 4-week window
         const reminders = getReminders();
         scheduleReminders(reminders).catch(console.warn);
+        paymentPlanRepository.getAll().then(schedulePaymentPlans).catch(console.warn);
     }, []);
 
     useEffect(() => {
@@ -287,6 +294,7 @@ export const App: React.FC = () => {
                         <Route path="add-loan" element={<AddLoanPage />} />
                         <Route path="budget-planning" element={<BudgetPlanningPage />} />
                         <Route path="insight" element={<InsightPage />} />
+                        <Route path="payment-planner" element={<PaymentPlannerPage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

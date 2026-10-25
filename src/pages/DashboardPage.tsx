@@ -11,7 +11,7 @@ import { useBudget } from '@/hooks';
 import { AiInsightCard } from '@/components/dashboard/AiInsightCard';
 import { BudgetRings } from '@/components/charts/BudgetRings';
 import { SpendingBubbles } from '@/components/charts/SpendingBubbles';
-import { EyeIcon, EyeSlashIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 const LOADING_MESSAGES = [
   "Nagbibilang ng natitirang barya…",
   "Fetching data… at pati utang mo",
@@ -85,14 +85,13 @@ const FunnyLoadingScreen = () => {
 import { formatDateLocal, getWeekRange, getMonthRange, getYearRange } from '@/lib/date';
 
 export const DashboardPage: React.FC = () => {
-  const { filters, setFilters, showLoans, isFirstLoad, balancesHidden, toggleBalancesHidden, addToast } = useUIStore(useShallow(state => ({
+  const { filters, setFilters, showLoans, isFirstLoad, balancesHidden, toggleBalancesHidden } = useUIStore(useShallow(state => ({
     filters: state.filters,
     setFilters: state.setFilters,
     showLoans: state.showLoans,
     isFirstLoad: state.isFirstLoad,
     balancesHidden: state.balancesHidden,
     toggleBalancesHidden: state.toggleBalancesHidden,
-    addToast: state.addToast,
   })));
   const { data } = useDashboard(filters, showLoans);
   const { plan, items } = useBudget();
@@ -241,15 +240,10 @@ export const DashboardPage: React.FC = () => {
           <Icon name="SparklesIcon" className="h-5 w-5 text-midblue" />
           Insight
         </Link>
-        <button
-          type="button"
-          aria-disabled="true"
-          onClick={() => addToast('info', 'Coming soon')}
-          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-xs font-bold text-[var(--text-muted)]"
-        >
-          <ClockIcon className="h-5 w-5" />
-          Coming soon
-        </button>
+        <Link to="/payment-planner" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-xs font-bold text-[var(--text-main)]">
+          <CalendarDaysIcon className="h-5 w-5 text-midblue" />
+          Payment Planner
+        </Link>
       </div>
 
       <AiInsightCard
