@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ArrowTrendingDownIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline'
 import { AiInsightCard } from '@/components/dashboard/AiInsightCard'
 import { useBudget, useCategories, useDashboard } from '@/hooks'
 import { centsToDisplay } from '@/lib/money'
-import { formatDateLocal, getMonthRange, getWeekRange, getYearRange } from '@/lib/date'
+import { formatDateLocal, getCurrentLocalDate, getMonthRange, getWeekRange, getYearRange } from '@/lib/date'
 import { transactionRepository } from '@/storage'
 import { useLoanStore, useUIStore, useWalletStore } from '@/store'
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine'
@@ -13,7 +13,40 @@ import { calculateBalances } from '@/lib/balances'
 import type { Transaction } from '@/types'
 
 type Preset = 'week' | 'month' | 'year'
+type FlowMode = 'overall' | 'expense' | 'income'
 type Bucket = { label: string; start: string; end: string; income: number; expense: number }
+
+const FLOW_MODES: Array<{ id: FlowMode; label: string }> = [
+  { id: 'overall', label: 'Overall' },
+  { id: 'expense', label: 'Expense' },
+  { id: 'income', label: 'Income' },
+]
+
+const flowColor = (mode: FlowMode) => (
+  mode === 'income' ? '#16a34a' : mode === 'expense' ? '#ef4444' : '#285ccc'
+)
+
+const bucketValue = (bucket: Bucket, mode: FlowMode) => (
+  mode === 'income' ? bucket.income : mode === 'expense' ? bucket.expense : bucket.income - bucket.expense
+)
+
+const periodTotal = (rows: Transaction[], mode: FlowMode) => {
+  let income = 0
+  let expense = 0
+  rows.forEach((row) => {
+    if (row.deletedAt || row.type === 'fund_transfer' || row.type === 'credit_payment') return
+    if (row.type === 'income') income += row.amount
+    if (row.type === 'expense') expense += row.amount
+  })
+  if (mode === 'income') return income
+  if (mode === 'expense') return expense
+  return income - expense
+}
+
+const changePercent = (current: number, previous: number) => {
+  if (previous === 0) return current === 0 ? 0 : null
+  return Math.round(((current - previous) / Math.abs(previous)) * 1000) / 10
+}
 
 const parseDate = (value: string) => new Date(`${value}T00:00:00`)
 
@@ -105,6 +138,36 @@ const smoothLine = (points: Array<{ x: number; y: number }>) => {
   return path
 }
 
+const smoothArea = (points: Array<{ x: number; y: number }>, baseline: number) => {
+  const line = smoothLine(points)
+  if (!line || points.length === 0) return ''
+  const first = points[0]
+  const last = points[points.length - 1]
+  return `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`
+}
+
+const FLOW_CHART = { left: 40, right: 312, top: 12, bottom: 118, width: 272, height: 106 }
+
+const niceCeilCents = (cents: number) => {
+  if (cents <= 0) return 10000
+  const pesos = cents / 100
+  const magnitude = 10 ** Math.floor(Math.log10(pesos))
+  const normalized = pesos / magnitude
+  const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10
+  return Math.round(nice * magnitude * 100)
+}
+
+const axisMoney = (cents: number, hidden: boolean) => {
+  if (hidden) return '••'
+  const pesos = cents / 100
+  if (pesos >= 1000) {
+    const value = pesos / 1000
+    const text = value >= 10 ? value.toFixed(0) : value.toFixed(1).replace(/\.0$/, '')
+    return `₱${text}k`
+  }
+  return `₱${Math.round(pesos)}`
+}
+
 export const InsightPage = () => {
   const { filters, setFilters, balancesHidden } = useUIStore(useShallow((state) => ({
     filters: state.filters,
@@ -123,6 +186,8 @@ export const InsightPage = () => {
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map())
   const [currentTx, setCurrentTx] = useState<Transaction[]>([])
   const [previousTx, setPreviousTx] = useState<Transaction[]>([])
+  const [flowMode, setFlowMode] = useState<FlowMode>('overall')
+  const [categoryView, setCategoryView] = useState<'graph' | 'list'>('graph')
 
   const preset = (filters.dateRange.preset === 'week' || filters.dateRange.preset === 'year' ? filters.dateRange.preset : 'month') as Preset
 
@@ -148,11 +213,34 @@ export const InsightPage = () => {
     [preset, filters.dateRange.startDate, filters.dateRange.endDate, currentTx],
   )
   const maxBar = Math.max(1, ...buckets.map((bucket) => bucket.expense))
-  const maxFlow = Math.max(1, ...buckets.flatMap((bucket) => [bucket.income, bucket.expense]))
-  const points = (key: 'income' | 'expense') => buckets.map((bucket, index) => ({
-    x: buckets.length === 1 ? 160 : (index / (buckets.length - 1)) * 300 + 10,
-    y: 110 - (bucket[key] / maxFlow) * 90,
+  const seriesValues = buckets.map((bucket) => bucketValue(bucket, flowMode))
+  const seriesMin = Math.min(0, ...seriesValues)
+  const seriesMax = Math.max(0, ...seriesValues)
+  const flowBound = niceCeilCents(Math.max(Math.abs(seriesMin), Math.abs(seriesMax), 1))
+  const yMin = flowMode === 'overall' && seriesMin < 0 ? -flowBound : 0
+  const yMax = flowBound
+  const flowX = (index: number) => (
+    buckets.length === 1
+      ? (FLOW_CHART.left + FLOW_CHART.right) / 2
+      : FLOW_CHART.left + (index / (buckets.length - 1)) * FLOW_CHART.width
+  )
+  const flowY = (cents: number) => FLOW_CHART.bottom - ((cents - yMin) / (yMax - yMin || 1)) * FLOW_CHART.height
+  const flowPoints = buckets.map((bucket, index) => ({
+    x: flowX(index),
+    y: flowY(bucketValue(bucket, flowMode)),
   }))
+  const zeroY = flowY(0)
+  const yTicks = flowMode === 'overall' && yMin < 0
+    ? [yMax, 0, yMin].map((value) => ({ value, y: flowY(value) }))
+    : [1, 0.5, 0].map((ratio) => {
+      const value = Math.round(yMax * ratio)
+      return { value, y: flowY(value) }
+    })
+  const activeColor = flowColor(flowMode)
+  const currentFlowTotal = periodTotal(currentTx, flowMode)
+  const previousFlowTotal = periodTotal(previousTx, flowMode)
+  const flowChange = changePercent(currentFlowTotal, previousFlowTotal)
+  const flowTotalLabel = flowMode === 'income' ? 'Income' : flowMode === 'expense' ? 'Expenses' : 'Net'
 
   const movement = useMemo(() => {
     const totals = (rows: Transaction[]) => {
@@ -175,7 +263,31 @@ export const InsightPage = () => {
     }).filter((row) => row.now > 0 || row.before > 0).sort((a, b) => b.now - a.now).slice(0, 6)
   }, [currentTx, previousTx, categories])
 
+  const categorySeries = useMemo(() => {
+    return movement.map((row) => {
+      const values = buckets.map((bucket) => {
+        let total = 0
+        currentTx.forEach((transaction) => {
+          if (transaction.deletedAt || transaction.categoryId !== row.id) return
+          if (transaction.type !== 'expense' && transaction.type !== 'income') return
+          if (transaction.date < bucket.start || transaction.date > bucket.end) return
+          total += transaction.amount
+        })
+        return total
+      })
+      return { ...row, values }
+    })
+  }, [movement, buckets, currentTx])
+
+  const categoryMax = niceCeilCents(Math.max(1, ...categorySeries.flatMap((series) => series.values)))
+  const categoryY = (cents: number) => FLOW_CHART.bottom - (cents / categoryMax) * FLOW_CHART.height
+  const categoryTicks = [1, 0.5, 0].map((ratio) => {
+    const value = Math.round(categoryMax * ratio)
+    return { value, y: categoryY(value) }
+  })
+
   const money = (cents: number) => (balancesHidden ? '••••' : centsToDisplay(cents))
+  const today = getCurrentLocalDate()
   const { projectedBalance } = calculateBalances({
     totalWalletBalance,
     totalCreditDebt,
@@ -221,47 +333,224 @@ export const InsightPage = () => {
       <section key={`bars-${preset}`} className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Spending by period</h2>
         <div className="flex h-40 items-end gap-2">
-          {buckets.map((bucket, index) => (
-            <div key={bucket.label} className="flex h-full flex-1 flex-col justify-end gap-2">
-              <div className={`w-full origin-bottom animate-bar-rise rounded-t-md ${index === buckets.length - 1 ? 'bg-midblue' : 'bg-midblue/35'}`} style={{ height: bucket.expense === 0 ? '2px' : `${Math.max(8, (bucket.expense / maxBar) * 100)}%`, animationDelay: `${index * 45}ms` }} />
-              <span className="truncate text-center text-[10px] font-bold text-[var(--text-muted)]">{bucket.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section key={`flow-${preset}`} className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Cash flow</h2>
-        <svg viewBox="0 0 320 140" className="h-40 w-full" role="img" aria-label="Income and expense over the selected period">
-          <path d={smoothLine(points('income'))} pathLength={1} fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" className="animate-line-draw" />
-          <path d={smoothLine(points('expense'))} pathLength={1} fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" className="animate-line-draw" style={{ animationDelay: '80ms' }} />
-        </svg>
-        <div className="mt-2 flex gap-4 text-xs font-bold">
-          <span className="text-success-600">Income {money(buckets.reduce((sum, bucket) => sum + bucket.income, 0))}</span>
-          <span className="text-danger-500">Expenses {money(buckets.reduce((sum, bucket) => sum + bucket.expense, 0))}</span>
-        </div>
-      </section>
-
-      <section key={`move-${preset}`} className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Category movement</h2>
-        <div className="space-y-3">
-          {movement.length === 0 && <p className="text-sm italic text-[var(--text-muted)]">No category movement for this period.</p>}
-          {movement.map((row, index) => {
-            const width = Math.min(100, row.before === 0 ? 100 : (row.now / Math.max(row.now, row.before)) * 100)
-            const label = row.change === null ? 'New' : `${row.change > 0 ? '+' : ''}${row.change}%`
+          {buckets.map((bucket, index) => {
+            const isCurrent = today >= bucket.start && today <= bucket.end
             return (
-              <div key={row.id} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-bold text-[var(--text-main)]">{row.name}</span>
-                  <span className="font-bold text-[var(--text-muted)]">{label}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[var(--item-bg)]">
-                  <div className="h-full origin-left animate-bar-fill rounded-full" style={{ width: `${width}%`, backgroundColor: row.color, animationDelay: `${index * 40}ms` }} />
-                </div>
+              <div key={bucket.label} className="flex h-full flex-1 flex-col justify-end gap-2">
+                <div
+                  className={`w-full origin-bottom animate-bar-rise rounded-t-md ${isCurrent ? 'bg-midblue' : 'bg-midblue/35'}`}
+                  style={{ height: bucket.expense === 0 ? '2px' : `${Math.max(8, (bucket.expense / maxBar) * 100)}%`, animationDelay: `${index * 45}ms` }}
+                />
+                <span className={`truncate text-center text-[10px] font-bold ${isCurrent ? 'text-midblue' : 'text-[var(--text-muted)]'}`}>{bucket.label}</span>
               </div>
             )
           })}
         </div>
+      </section>
+
+      <section key={`flow-${preset}-${flowMode}`} className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Cash flow</h2>
+          <div className="flex shrink-0 gap-1 rounded-full bg-[var(--item-bg)] p-1">
+            {FLOW_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => setFlowMode(mode.id)}
+                className={`min-h-8 rounded-full px-2.5 text-[11px] font-bold transition-colors ${
+                  flowMode === mode.id
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-white dark:text-gray-900'
+                    : 'text-[var(--text-muted)]'
+                }`}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <svg viewBox="0 0 320 148" className="w-full text-[var(--text-muted)]" style={{ aspectRatio: '320 / 148' }} preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${flowMode} cash flow over the selected period`}>
+          <defs>
+            <linearGradient id="cashflow-active-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={activeColor} stopOpacity="0.32" />
+              <stop offset="100%" stopColor={activeColor} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {yTicks.map((tick) => (
+            <g key={`${tick.value}-${tick.y}`}>
+              <line x1={FLOW_CHART.left} x2={FLOW_CHART.right} y1={tick.y} y2={tick.y} stroke="currentColor" strokeOpacity="0.22" strokeWidth="1" strokeDasharray={tick.value === 0 && yMin < 0 ? '0' : '3 3'} />
+              <text x={0} y={tick.y + 2.5} textAnchor="start" className="fill-current text-[7px] font-semibold">{axisMoney(tick.value, balancesHidden)}</text>
+            </g>
+          ))}
+          <path d={smoothArea(flowPoints, zeroY)} fill="url(#cashflow-active-fill)" stroke="none" />
+          <path d={smoothLine(flowPoints)} pathLength={1} fill="none" stroke={activeColor} strokeWidth="1.25" strokeLinecap="round" className="animate-line-draw" />
+          {buckets.map((bucket, index) => {
+            const isCurrent = today >= bucket.start && today <= bucket.end
+            return (
+              <text
+                key={bucket.label}
+                x={flowX(index)}
+                y={138}
+                textAnchor="middle"
+                className={`text-[7px] font-semibold ${isCurrent ? 'fill-midblue' : 'fill-current'}`}
+              >
+                {bucket.label}
+              </text>
+            )
+          })}
+        </svg>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <p className="text-[11px] font-bold" style={{ color: activeColor }}>
+            {flowTotalLabel} {money(currentFlowTotal)}
+          </p>
+          <div
+            className={`inline-flex min-h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold ${
+              flowChange === null
+                ? 'bg-[var(--item-bg)] text-[var(--text-muted)]'
+                : flowChange > 0
+                  ? 'bg-success-500/15 text-success-600'
+                  : flowChange < 0
+                    ? 'bg-danger-500/15 text-danger-500'
+                    : 'bg-[var(--item-bg)] text-[var(--text-muted)]'
+            }`}
+          >
+            {flowChange === null ? (
+              'New'
+            ) : (
+              <>
+                {flowChange > 0 ? <ArrowTrendingUpIcon className="h-3.5 w-3.5" /> : flowChange < 0 ? <ArrowTrendingDownIcon className="h-3.5 w-3.5" /> : null}
+                {`${flowChange > 0 ? '+' : ''}${flowChange}%`}
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section key={`move-${preset}`} className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Category movement</h2>
+          <div className="grid shrink-0 grid-cols-2 gap-1 rounded-2xl bg-[var(--item-bg)] p-1" role="group" aria-label="Category movement view">
+            <button
+              type="button"
+              aria-pressed={categoryView === 'graph'}
+              onClick={() => setCategoryView('graph')}
+              className={`min-h-9 rounded-xl px-3 text-[11px] font-bold transition-colors ${categoryView === 'graph' ? 'bg-midblue text-white' : 'text-[var(--text-muted)]'}`}
+            >
+              Graph
+            </button>
+            <button
+              type="button"
+              aria-pressed={categoryView === 'list'}
+              onClick={() => setCategoryView('list')}
+              className={`min-h-9 rounded-xl px-3 text-[11px] font-bold transition-colors ${categoryView === 'list' ? 'bg-midblue text-white' : 'text-[var(--text-muted)]'}`}
+            >
+              List
+            </button>
+          </div>
+        </div>
+
+        {movement.length === 0 && <p className="text-sm italic text-[var(--text-muted)]">No category movement for this period.</p>}
+
+        {categoryView === 'graph' && movement.length > 0 && (
+          <div className="space-y-3">
+            <svg viewBox="0 0 320 148" className="w-full text-[var(--text-muted)]" style={{ aspectRatio: '320 / 148' }} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Category totals over the selected period">
+              <defs>
+                {categorySeries.map((series) => (
+                  <linearGradient key={`fill-${series.id}`} id={`category-fill-${series.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={series.color} stopOpacity="0.22" />
+                    <stop offset="100%" stopColor={series.color} stopOpacity="0" />
+                  </linearGradient>
+                ))}
+              </defs>
+              {categoryTicks.map((tick) => (
+                <g key={`cat-tick-${tick.value}`}>
+                  <line x1={FLOW_CHART.left} x2={FLOW_CHART.right} y1={tick.y} y2={tick.y} stroke="currentColor" strokeOpacity="0.22" strokeWidth="1" strokeDasharray="3 3" />
+                  <text x={0} y={tick.y + 2.5} textAnchor="start" className="fill-current text-[7px] font-semibold">{axisMoney(tick.value, balancesHidden)}</text>
+                </g>
+              ))}
+              {categorySeries.map((series) => {
+                const points = series.values.map((value, index) => ({ x: flowX(index), y: categoryY(value) }))
+                return (
+                  <path
+                    key={`area-${series.id}`}
+                    d={smoothArea(points, FLOW_CHART.bottom)}
+                    fill={`url(#category-fill-${series.id})`}
+                    stroke="none"
+                  />
+                )
+              })}
+              {categorySeries.map((series, index) => {
+                const points = series.values.map((value, pointIndex) => ({ x: flowX(pointIndex), y: categoryY(value) }))
+                return (
+                  <g key={`series-${series.id}`}>
+                    <path
+                      d={smoothLine(points)}
+                      pathLength={1}
+                      fill="none"
+                      stroke={series.color}
+                      strokeWidth="1.25"
+                      strokeLinecap="round"
+                      className="animate-line-draw"
+                      style={{ animationDelay: `${index * 60}ms` }}
+                    />
+                    {points.map((point, pointIndex) => (
+                      <circle
+                        key={`dot-${series.id}-${pointIndex}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r="2"
+                        fill={series.color}
+                        stroke="var(--card-bg)"
+                        strokeWidth="0.75"
+                      />
+                    ))}
+                  </g>
+                )
+              })}
+              {buckets.map((bucket, index) => {
+                const isCurrent = today >= bucket.start && today <= bucket.end
+                return (
+                  <text
+                    key={`cat-x-${bucket.label}`}
+                    x={flowX(index)}
+                    y={138}
+                    textAnchor="middle"
+                    className={`text-[7px] font-semibold ${isCurrent ? 'fill-midblue' : 'fill-current'}`}
+                  >
+                    {bucket.label}
+                  </text>
+                )
+              })}
+            </svg>
+            <div className="flex flex-wrap gap-x-3 gap-y-2">
+              {categorySeries.map((series) => (
+                <div key={`legend-${series.id}`} className="flex min-h-8 items-center gap-1.5">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: series.color }} aria-hidden="true" />
+                  <span className="text-[11px] font-bold text-[var(--text-main)]">{series.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {categoryView === 'list' && movement.length > 0 && (
+          <div className="space-y-3">
+            {movement.map((row, index) => {
+              const width = Math.min(100, row.before === 0 ? 100 : (row.now / Math.max(row.now, row.before)) * 100)
+              const label = row.change === null ? 'New' : `${row.change > 0 ? '+' : ''}${row.change}%`
+              return (
+                <div key={row.id} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-bold text-[var(--text-main)]">{row.name}</span>
+                    <span className="font-bold text-[var(--text-muted)]">{label}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-[var(--item-bg)]">
+                    <div className="h-full origin-left animate-bar-fill rounded-full" style={{ width: `${width}%`, backgroundColor: row.color, animationDelay: `${index * 40}ms` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </section>
     </div>
   )
