@@ -41,6 +41,7 @@ export const TransactionsPage: React.FC = () => {
         setTimeout(() => {
             const date = new Date(year, month, 1);
             const range = getMonthRange(date);
+            setPage(1);
             setFilters({
                 dateRange: {
                     preset: 'custom',
@@ -165,6 +166,7 @@ export const TransactionsPage: React.FC = () => {
                             const current = parseDateLocal(filters.dateRange.startDate);
                             const prev = new Date(current.getFullYear(), current.getMonth() - 1, 1);
                             const range = getMonthRange(prev);
+                            setPage(1);
                             setFilters({
                                 dateRange: {
                                     preset: 'custom',
@@ -202,6 +204,7 @@ export const TransactionsPage: React.FC = () => {
                             const current = parseDateLocal(filters.dateRange.startDate);
                             const next = new Date(current.getFullYear(), current.getMonth() + 1, 1);
                             const range = getMonthRange(next);
+                            setPage(1);
                             setFilters({
                                 dateRange: {
                                     preset: 'custom',

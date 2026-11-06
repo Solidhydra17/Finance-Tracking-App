@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount, CreditPayment, PaymentPlan } from '@/types';
+import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount, CreditPayment, PaymentPlan, BankRule } from '@/types';
 
 export class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction, number>;
@@ -12,6 +12,7 @@ export class FinanceDatabase extends Dexie {
   walletAccounts!: Table<WalletAccount, number>;
   creditPayments!: Table<CreditPayment, number>;
   paymentPlans!: Table<PaymentPlan, number>;
+  bankRules!: Table<BankRule, number>;
 
   constructor() {
     super('FinanceTrackerDB');
@@ -143,6 +144,13 @@ export class FinanceDatabase extends Dexie {
     };
     this.version(17).stores(schemaV17);
 
+    const schemaV18 = {
+      ...schemaV17,
+      transactions: '++id, type, date, categoryId, source, deletedAt, recurringRuleId, walletAccountId, targetWalletAccountId, bankRuleId',
+      bankRules: '++id, kind, accountId, active',
+    };
+    this.version(18).stores(schemaV18);
+
     this.on('blocked', () => {
         console.warn('Database is blocked by another tab. Please close other tabs.');
     });
@@ -172,6 +180,8 @@ export async function ensureFreshInstallDefaults(): Promise<void> {
     const { ensureSystemCategories, backfillSystemCategoryAssignments } = await import('./categoryRepository');
     await ensureSystemCategories();
     await backfillSystemCategoryAssignments();
+    const { ensureYieldCategories } = await import('./categoryRepository');
+    await ensureYieldCategories();
   }
 }
 
@@ -185,6 +195,7 @@ export async function clearAllData(): Promise<void> {
   await db.walletAccounts.clear();
   await db.creditPayments.clear();
   await db.paymentPlans.clear();
+  await db.bankRules.clear();
 
   // Re-add default Cash account
   await db.walletAccounts.add({
@@ -213,6 +224,7 @@ export async function exportAllData(): Promise<any> {
     walletAccounts: await db.walletAccounts.toArray(),
     creditPayments: await db.creditPayments.toArray(),
     paymentPlans: await db.paymentPlans.toArray(),
+    bankRules: await db.bankRules.toArray(),
   };
 
   return {
@@ -248,7 +260,7 @@ export async function importData(payload: any): Promise<void> {
   await db.transaction('rw', 
     [db.transactions, db.categories, db.loans, db.loanPayments, 
     db.recurringRules, db.budgetPlans, db.budgetItems, 
-    db.walletAccounts, db.creditPayments, db.paymentPlans], 
+    db.walletAccounts, db.creditPayments, db.paymentPlans, db.bankRules], 
     async () => {
       // Clear existing data
       await db.transactions.clear();
@@ -261,6 +273,7 @@ export async function importData(payload: any): Promise<void> {
       await db.walletAccounts.clear();
       await db.creditPayments.clear();
       await db.paymentPlans.clear();
+      await db.bankRules.clear();
 
       // Restore data
       if (dataToImport.categories?.length) {
@@ -292,6 +305,9 @@ export async function importData(payload: any): Promise<void> {
       }
       if (dataToImport.paymentPlans?.length) {
         await db.paymentPlans.bulkPut(dataToImport.paymentPlans);
+      }
+      if (dataToImport.bankRules?.length) {
+        await db.bankRules.bulkPut(dataToImport.bankRules);
       }
     }
   );

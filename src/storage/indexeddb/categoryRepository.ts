@@ -65,6 +65,8 @@ export function isSystemCategoryName(name: string): boolean {
 export const defaultCategories: Omit<Category, 'id'>[] = [
   // ── INCOME ──
   { name: 'Salary',      type: 'income',  color: '#059669', icon: 'BriefcaseIcon',       isCustom: false },
+  { name: 'Interest',    type: 'income',  color: '#16a34a', icon: 'BanknotesIcon',        isCustom: false },
+  { name: 'Cashback',    type: 'income',  color: '#285ccc', icon: 'ReceiptPercentIcon',   isCustom: false },
   { name: 'Investment',  type: 'income',  color: '#3b82f6', icon: 'ArrowTrendingUpIcon',  isCustom: false },
   { name: 'Allowance',   type: 'income',  color: '#10b981', icon: 'AcademicCapIcon',      isCustom: false },
   { name: 'Gift',        type: 'income',  color: '#f59e0b', icon: 'GiftIcon',             isCustom: false },
@@ -93,6 +95,37 @@ export const defaultCategories: Omit<Category, 'id'>[] = [
 
   ...systemCategories,
 ];
+
+const yieldCategories: Omit<Category, 'id'>[] = [
+  { name: 'Interest', type: 'income', color: '#16a34a', icon: 'BanknotesIcon', isCustom: false },
+  { name: 'Cashback', type: 'income', color: '#285ccc', icon: 'ReceiptPercentIcon', isCustom: false },
+  { name: 'Fees & Charges', type: 'expense', color: '#71717a', icon: 'ReceiptPercentIcon', isCustom: false },
+];
+
+export async function ensureYieldCategories(): Promise<void> {
+  for (const cat of yieldCategories) {
+    const existing = await db.categories
+      .filter((entry) => entry.name.trim().toLowerCase() === cat.name.toLowerCase() && entry.type === cat.type)
+      .first();
+    if (!existing) {
+      try {
+        await db.categories.add({ ...cat });
+      } catch {
+        // Unique index race.
+      }
+    }
+  }
+}
+
+export async function getYieldCategoryId(name: 'Interest' | 'Cashback' | 'Fees & Charges'): Promise<number> {
+  await ensureYieldCategories();
+  const type = name === 'Fees & Charges' ? 'expense' : 'income';
+  const cat = await db.categories
+    .filter((entry) => entry.name.trim().toLowerCase() === name.toLowerCase() && entry.type === type)
+    .first();
+  if (!cat?.id) throw new Error(`Category "${name}" is missing`);
+  return cat.id;
+}
 
 export async function seedDefaultCategories(): Promise<void> {
   const count = await db.categories.count();

@@ -2,7 +2,7 @@
  * Financial balance computations.
  * Centralized so Dashboard, Wallet screen, and Widget display the same values.
  *
- * Total Wallet Balance = cash + debit + e-cash + money owed to you.
+ * Total Wallet Balance = cash + debit + e-cash + time deposits + money owed to you.
  * Credit and loan debts are NOT deducted here.
  *
  * Projected Balance = cash + debit + e-cash
