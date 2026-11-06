@@ -12,6 +12,7 @@ import { AddLoanPage } from "@/pages/AddLoanPage";
 import { InsightPage } from "@/pages/InsightPage";
 import { PaymentPlannerPage } from "@/pages/PaymentPlannerPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
+import { BankRulesPage } from "@/pages/BankRulesPage";
 import { walletService } from '@/domain/wallet/walletService';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -73,6 +74,11 @@ export async function updateNativeWidget(): Promise<void> {
         name: a.name,
         type: 'LOAN',
         balance: fmt(a.balance), // debt owed on this loan
+      })),
+      ...accounts.filter(a => a.type === 'deposit').map(a => ({
+        name: a.name,
+        type: 'DEPOSIT',
+        balance: fmt(a.balance),
       })),
     ];
 
@@ -208,17 +214,15 @@ export const App: React.FC = () => {
             SplashScreen.hide();
         }
 
-        // Seed defaults on every startup (safe — checks count before inserting)
-        ensureFreshInstallDefaults().catch(console.warn);
-
-        const materialize = async () => {
+        const boot = async () => {
+            await ensureFreshInstallDefaults();
             const { recurringMaterializer } = await import('@/domain/recurring/materializer');
             await recurringMaterializer.materializeDueTransactions();
+            const { materializeBankRules } = await import('@/domain/yield/materializer');
+            await materializeBankRules();
+            await refreshFinancialState();
         };
-        materialize();
-
-        // Initial financial state sync (stores + widget)
-        refreshFinancialState().catch(console.warn);
+        boot().catch(console.warn);
 
         // Re-schedule reminders on every app open to refresh the 4-week window
         const reminders = getReminders();
@@ -295,6 +299,7 @@ export const App: React.FC = () => {
                         <Route path="budget-planning" element={<BudgetPlanningPage />} />
                         <Route path="insight" element={<InsightPage />} />
                         <Route path="payment-planner" element={<PaymentPlannerPage />} />
+                        <Route path="bank-rules" element={<BankRulesPage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

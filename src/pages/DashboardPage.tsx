@@ -12,6 +12,7 @@ import { AiInsightCard } from '@/components/dashboard/AiInsightCard';
 import { BudgetRings } from '@/components/charts/BudgetRings';
 import { SpendingBubbles } from '@/components/charts/SpendingBubbles';
 import { EyeIcon, EyeSlashIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { BankRulesHome } from '@/components/bank/BankRulesHome';
 const LOADING_MESSAGES = [
   "Nagbibilang ng natitirang barya…",
   "Fetching data… at pati utang mo",
@@ -245,6 +246,8 @@ export const DashboardPage: React.FC = () => {
           Payment Planner
         </Link>
       </div>
+
+      <BankRulesHome />
 
       <AiInsightCard
         data={data}

@@ -6,3 +6,4 @@ export * from './recurring';
 export * from './filter';
 export * from './budget';
 export * from './paymentPlan';
+export * from './bankRule';

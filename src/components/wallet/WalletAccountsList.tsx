@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Icon, Modal, Input, Button } from '@/components/ui';
@@ -8,6 +9,7 @@ import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { WalletAccount, WalletAccountType } from '@/types';
 
 export const WalletAccountsList: React.FC = () => {
+    const navigate = useNavigate();
     const { accounts, createAccount, updateAccount, deleteAccount, payCreditCard } = useWalletStore(useShallow(state => ({
         accounts: state.accounts,
         createAccount: state.createAccount,
@@ -44,7 +46,9 @@ export const WalletAccountsList: React.FC = () => {
     const ecashAccounts = accounts.filter(a => a.type === 'ecash');
     const creditAccounts = accounts.filter(a => a.type === 'credit');
     const loanAccounts = accounts.filter(a => a.type === 'loan');
+    const depositAccounts = accounts.filter(a => a.type === 'deposit');
     const nonCreditAccounts = [cashAccount, ...debitAccounts, ...ecashAccounts].filter(Boolean) as WalletAccount[];
+    const paySourceAccounts = [...nonCreditAccounts, ...depositAccounts];
 
     const totalDebitBalance = (cashAccount?.balance || 0) + debitAccounts.reduce((sum, a) => sum + a.balance, 0) + ecashAccounts.reduce((sum, a) => sum + a.balance, 0);
 
@@ -165,6 +169,7 @@ export const WalletAccountsList: React.FC = () => {
                                 account.type === 'debit' ? 'bg-blue-500/10 text-blue-500' :
                                     account.type === 'ecash' ? 'bg-teal-500/10 text-teal-500' :
                                         account.type === 'loan' ? 'bg-rose-500/10 text-rose-500' :
+                                            account.type === 'deposit' ? 'bg-amber-500/10 text-amber-600' :
                                             'bg-purple-500/10 text-purple-500'
                             }`}>
                             <Icon name={
@@ -172,12 +177,15 @@ export const WalletAccountsList: React.FC = () => {
                                     account.type === 'debit' ? 'BuildingLibraryIcon' :
                                         account.type === 'ecash' ? 'DevicePhoneMobileIcon' :
                                             account.type === 'loan' ? 'DocumentTextIcon' :
+                                                account.type === 'deposit' ? 'BuildingLibraryIcon' :
                                                 'CreditCardIcon'
                             } className="w-5 h-5" />
                         </div>
                         <div>
                             <p className="font-bold text-[var(--text-main)] leading-tight">{account.name}</p>
-                            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{account.type === 'ecash' ? 'E-Cash' : account.type}</p>
+                            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">
+                                {account.type === 'ecash' ? 'E-Cash' : account.type === 'deposit' ? 'Time deposit' : account.type === 'loan' ? 'Principal plus interest' : account.type}
+                            </p>
                         </div>
                     </div>
                     <div className="text-right">
@@ -243,6 +251,23 @@ export const WalletAccountsList: React.FC = () => {
                 />
             </section>
 
+            <section className="space-y-3">
+                <div className="flex justify-between items-center px-1">
+                    <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Time deposits</h3>
+                    <button type="button" onClick={() => openCreateModal('deposit')} className="text-xs font-bold text-midblue">
+                        + Add time deposit
+                    </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {depositAccounts.map(renderCard)}
+                    {depositAccounts.length === 0 && (
+                        <div className="col-span-full text-center p-6 border-2 border-dashed border-[var(--card-border)] rounded-2xl">
+                            <p className="text-sm text-[var(--text-muted)] font-medium">No time deposits yet.</p>
+                        </div>
+                    )}
+                </div>
+            </section>
+
             {/* Credit Section */}
             <section className="space-y-3">
                 <div className="flex justify-between items-center px-1">
@@ -296,6 +321,7 @@ export const WalletAccountsList: React.FC = () => {
                                 accountType === 'debit' ? "e.g., Main Savings" :
                                     accountType === 'ecash' ? "e.g., GCash, Maya" :
                                         accountType === 'loan' ? "e.g., GLoan, Billease" :
+                                            accountType === 'deposit' ? "e.g., UNOearn" :
                                             "e.g., BDO Visa"
                             }
                             required
@@ -323,6 +349,20 @@ export const WalletAccountsList: React.FC = () => {
                             Save
                         </Button>
                     </div>
+
+                    {editingAccount && (
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            className="w-full"
+                            onClick={() => {
+                                setIsManageModalOpen(false);
+                                navigate('/bank-rules');
+                            }}
+                        >
+                            Bank rules
+                        </Button>
+                    )}
 
                     {editingAccount && editingAccount.type !== 'cash' && (
                         <div className="pt-4 border-t border-[var(--card-border)]">
@@ -389,7 +429,7 @@ export const WalletAccountsList: React.FC = () => {
                                 className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
                             >
                                 <option value="" disabled>Select Source...</option>
-                                {nonCreditAccounts.map(acc => (
+                                {paySourceAccounts.map(acc => (
                                     <option key={acc.id} value={acc.id}>
                                         {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
                                     </option>

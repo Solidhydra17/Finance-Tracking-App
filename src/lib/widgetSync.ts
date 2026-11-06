@@ -67,6 +67,7 @@ export async function syncWidget(): Promise<void> {
             ...credit.map(a => ({ name: a.name, type: 'CREDIT', balance: f(a.balance) })),
             // Loan: show outstanding debt
             ...loan.map(a   => ({ name: a.name, type: 'LOAN',   balance: f(a.balance) })),
+            ...accounts.filter(a => a.type === 'deposit').map(a => ({ name: a.name, type: 'DEPOSIT', balance: f(a.balance) })),
         ];
 
         const { Preferences } = await import('@capacitor/preferences');

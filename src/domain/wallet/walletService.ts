@@ -24,7 +24,7 @@ export class WalletService {
     private async computeBalance(acc: WalletAccount): Promise<void> {
         if (!acc.id) return;
 
-        if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
+        if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash' || acc.type === 'deposit') {
             let balance = 0;
             
             // Transactions
@@ -152,7 +152,7 @@ export class WalletService {
         let totalWalletLoanDebt = 0;
 
         accounts.forEach(acc => {
-            if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash') {
+            if (acc.type === 'cash' || acc.type === 'debit' || acc.type === 'ecash' || acc.type === 'deposit') {
                 totalWalletBalance += acc.balance;
             } else if (acc.type === 'credit') {
                 // Credit card debt — kept strictly separate from loan account debt

@@ -32,7 +32,8 @@ export const FundTransferModal: React.FC = () => {
     const cashAccount = accounts.find(a => a.type === 'cash');
     const debitAccounts = accounts.filter(a => a.type === 'debit');
     const ecashAccounts = accounts.filter(a => a.type === 'ecash');
-    const nonCreditAccounts = [cashAccount, ...debitAccounts, ...ecashAccounts].filter(Boolean) as WalletAccount[];
+    const depositAccounts = accounts.filter(a => a.type === 'deposit');
+    const nonCreditAccounts = [cashAccount, ...debitAccounts, ...ecashAccounts, ...depositAccounts].filter(Boolean) as WalletAccount[];
 
     // Reset form states when modal is opened
     useEffect(() => {

@@ -44,6 +44,10 @@ export function useDashboard(filters: FilterState, showLoans: boolean = false) {
 
       const { recurringMaterializer } = await import('@/domain/recurring/materializer');
       await recurringMaterializer.materializeDueTransactions();
+      const { materializeBankRules } = await import('@/domain/yield/materializer');
+      await materializeBankRules();
+      const { refreshFinancialState } = await import('@/lib/financialState');
+      await refreshFinancialState();
 
       const dashboardData = await dashboardEngine.getDashboardData(filters, showLoans);
       
