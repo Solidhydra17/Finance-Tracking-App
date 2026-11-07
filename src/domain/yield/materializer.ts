@@ -2,7 +2,7 @@ import { db } from '@/storage/indexeddb/database';
 import { getYieldCategoryId } from '@/storage/indexeddb/categoryRepository';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { BankRule, Transaction } from '@/types';
-import { loanQuote, previewBankRule, writesLedgerRow } from './calculator';
+import { loanQuote, planCashback, previewBankRule, writesLedgerRow } from './calculator';
 import { walletService } from '@/domain/wallet/walletService';
 
 let isProcessing = false;
@@ -91,6 +91,84 @@ const syncAddonLoan = async (rule: BankRule, today: string) => {
   await upsertRole(rule, 'loan-interest', interest, rule.accountId, 'expense', 'Fees & Charges', `${rule.name} · interest`, rule.startDate);
 };
 
+const purchaseNote = (rule: BankRule, expenseId: number) => `${rule.name} cashback · purchase:${expenseId}`;
+
+const syncCashback = async (rule: BankRule, accountType: string, today: string) => {
+  const [transactions, categories] = await Promise.all([
+    db.transactions.toArray(),
+    db.categories.toArray(),
+  ]);
+  const plan = planCashback(rule, accountType, transactions, categories).filter((row) => row.date <= today);
+  const wanted = new Map(plan.map((row) => [row.expenseId, row]));
+  const existing = transactions.filter((txn) => !txn.deletedAt && txn.bankRuleId === rule.id && txn.bankRuleRole === 'cashback' && txn.note.includes('purchase:'));
+  let count = 0;
+  const categoryId = plan.length > 0 || existing.length > 0 ? await getYieldCategoryId('Cashback') : 0;
+  const creditCard = accountType === 'credit';
+
+  for (const txn of existing) {
+    const match = /purchase:(\d+)/.exec(txn.note);
+    const expenseId = match ? Number(match[1]) : 0;
+    const next = wanted.get(expenseId);
+    if (!next && typeof txn.id === 'number') {
+      await db.transactions.update(txn.id, { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      wanted.delete(expenseId);
+    }
+  }
+
+  for (const row of wanted.values()) {
+    const note = purchaseNote(rule, row.expenseId);
+    const current = existing.find((txn) => txn.note.endsWith(`purchase:${row.expenseId}`));
+    if (current && typeof current.id === 'number') {
+      if (current.amount !== row.amountCents || current.date !== row.date) {
+        await db.transactions.update(current.id, {
+          amount: row.amountCents,
+          date: row.date,
+          note,
+          categoryId,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      continue;
+    }
+    if (creditCard) {
+      await db.transactions.add({
+        type: 'credit_payment',
+        amount: row.amountCents,
+        date: row.date,
+        time: '00:00',
+        categoryId,
+        note,
+        source: 'bank_rule',
+        bankRuleId: rule.id,
+        bankRuleRole: 'cashback',
+        walletAccountId: rule.accountId,
+        targetWalletAccountId: rule.accountId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+    } else {
+      await db.transactions.add({
+        type: 'income',
+        amount: row.amountCents,
+        date: row.date,
+        time: '00:00',
+        categoryId,
+        note,
+        source: 'bank_rule',
+        bankRuleId: rule.id,
+        bankRuleRole: 'cashback',
+        walletAccountId: rule.accountId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+    }
+    count++;
+  }
+  return count;
+};
+
 export const materializeBankRules = async (): Promise<number> => {
   if (isProcessing) return 0;
   isProcessing = true;
@@ -108,6 +186,11 @@ export const materializeBankRules = async (): Promise<number> => {
         continue;
       }
       if (!writesLedgerRow(rule)) continue;
+      if (rule.kind === 'cashback') {
+        const account = accounts.find((entry) => entry.id === rule.accountId);
+        if (account) count += await syncCashback(rule, account.type, today);
+        continue;
+      }
       const preview = previewBankRule(rule, accounts, transactions, today);
       if (!preview || preview.amountCents <= 0 || !preview.periodKey) continue;
       if (preview.date > today) continue;

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Card, CardBody, Icon, Modal, Input } from '@/components/ui';
 import { useCategories } from '@/hooks';
 import { categoryRepository } from '@/storage/indexeddb';
@@ -62,8 +64,11 @@ export const CustomCategorySettings: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between px-1">
-        <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Custom Categories</h3>
+      <div className="flex items-center gap-3 px-1">
+        <Link to="/" aria-label="Back to home" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--card-bg)] text-[var(--text-main)]">
+          <ArrowLeftIcon className="h-5 w-5" />
+        </Link>
+        <h1 className="min-w-0 flex-1 text-2xl font-extrabold text-midblue dark:text-white">Custom categories</h1>
         <span className="text-[10px] font-black text-midblue dark:text-white bg-[var(--item-bg)] px-3 py-1 rounded-full border border-[var(--card-border)]">
           {customCategories.length} TOTAL
         </span>

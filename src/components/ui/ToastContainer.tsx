@@ -40,6 +40,20 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
         <Icon name={getToastIcon(toast.type)} className="w-5 h-5" />
       </div>
       <span className="flex-1 text-sm font-bold tracking-tight">{toast.message}</span>
+      {toast.action && (
+        <button
+          type="button"
+          className="min-h-11 shrink-0 rounded-xl px-3 text-sm font-black uppercase tracking-wide text-white"
+          onClick={(event) => {
+            event.stopPropagation();
+            const run = toast.action?.onClick;
+            onRemove(toast.id);
+            void run?.();
+          }}
+        >
+          {toast.action.label}
+        </button>
+      )}
     </div>
   );
 };

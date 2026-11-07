@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { ArrowLeftIcon, ArrowTrendingDownIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline'
 import { AiInsightCard } from '@/components/dashboard/AiInsightCard'
+import { BudgetRings } from '@/components/charts/BudgetRings'
 import { useBudget, useCategories, useDashboard } from '@/hooks'
 import { centsToDisplay } from '@/lib/money'
 import { formatDateLocal, getCurrentLocalDate, getMonthRange, getWeekRange, getYearRange } from '@/lib/date'
@@ -157,6 +158,12 @@ const niceCeilCents = (cents: number) => {
   return Math.round(nice * magnitude * 100)
 }
 
+const healthChip = {
+  Healthy: 'bg-success-500/10 text-success-700',
+  Tight: 'bg-warning-500/10 text-warning-700',
+  Deficit: 'bg-danger-500/10 text-danger-700',
+}
+
 const axisMoney = (cents: number, hidden: boolean) => {
   if (hidden) return '••'
   const pesos = cents / 100
@@ -192,7 +199,10 @@ export const InsightPage = () => {
   const preset = (filters.dateRange.preset === 'week' || filters.dateRange.preset === 'year' ? filters.dateRange.preset : 'month') as Preset
 
   useEffect(() => {
-    if (items.length === 0) return
+    if (items.length === 0) {
+      setPva(new Map())
+      return
+    }
     budgetEngine.getPlannedVsActual(items, plan?.workDaysPerWeek || 5).then(setPva)
   }, [items, plan?.workDaysPerWeek])
 
@@ -287,6 +297,25 @@ export const InsightPage = () => {
   })
 
   const money = (cents: number) => (balancesHidden ? '••••' : centsToDisplay(cents))
+  const workDays = plan?.workDaysPerWeek || 5
+  const totalAllocated = useMemo(() => budgetEngine.calculateAllocated(items, workDays), [items, workDays])
+  const financialHealth = budgetEngine.calculateFinancialHealth(plan?.netSalaryCents || 0, totalAllocated)
+  const budgetRings = useMemo(() => {
+    return Array.from(pva.entries())
+      .filter(([, status]) => status.plannedCents > 0)
+      .map(([categoryId, status]) => {
+        const category = categories.find((entry) => entry.id === categoryId)
+        return {
+          id: String(categoryId),
+          name: category?.name ?? 'Category',
+          percentage: (status.actualCents / status.plannedCents) * 100,
+          color: category?.color ?? '#285ccc',
+          actual: status.actualCents,
+          plannedCents: status.plannedCents,
+        }
+      })
+  }, [pva, categories])
+  const budgetSpent = budgetRings.reduce((sum, row) => sum + row.actual, 0)
   const today = getCurrentLocalDate()
   const { projectedBalance } = calculateBalances({
     totalWalletBalance,
@@ -316,6 +345,32 @@ export const InsightPage = () => {
           presentation="page"
         />
       )}
+
+      <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Budget · This month</h2>
+          {budgetRings.length > 0 && (
+            <p className={`shrink-0 rounded-2xl px-3 py-2 text-sm font-black ${healthChip[financialHealth]}`}>{financialHealth}</p>
+          )}
+        </div>
+        {budgetRings.length === 0 && (
+          <p className="text-sm text-[var(--text-muted)]">No budget yet. Open the planner to add categories.</p>
+        )}
+        {budgetRings.length > 0 && <BudgetRings rows={budgetRings} spentCents={budgetSpent} hidden={balancesHidden} />}
+        {budgetRings.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {budgetRings.map((row) => (
+              <div key={row.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate font-bold text-[var(--text-main)]">{row.name}</span>
+                <span className="shrink-0 font-black text-[var(--text-main)]">
+                  {money(row.actual)}
+                  <span className="text-xs font-bold text-[var(--text-muted)]"> / {money(row.plannedCents)}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="flex gap-2">
         {(['week', 'month', 'year'] as const).map((option) => (

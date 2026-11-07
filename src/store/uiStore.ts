@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Toast, ToastType } from '@/lib/toast';
+import type { Toast, ToastAction, ToastType } from '@/lib/toast';
 import type { FilterState, DateRange } from '@/types';
 import type { DashboardData } from '@/domain/dashboard/types';
 import { formatDateLocal } from '@/lib/date';
@@ -7,7 +7,7 @@ import { formatDateLocal } from '@/lib/date';
 interface UIState {
   // Toasts
   toasts: Toast[];
-  addToast: (type: ToastType, message: string, duration?: number) => void;
+  addToast: (type: ToastType, message: string, duration?: number, action?: ToastAction) => string;
   removeToast: (id: string) => void;
 
   // Filters
@@ -94,12 +94,13 @@ let toastId = 0;
 export const useUIStore = create<UIState>((set) => ({
   // Toasts
   toasts: [],
-  addToast: (type, message, duration) => {
+  addToast: (type, message, duration, action) => {
     const minDuration = type === 'error' ? 5000 : 3000;
     const finalDuration = duration !== undefined ? Math.max(duration, minDuration) : minDuration;
     const id = `toast-${++toastId}-${Date.now()}`;
-    const toast: Toast = { id, type, message, duration: finalDuration };
+    const toast: Toast = { id, type, message, duration: finalDuration, action };
     set((state) => ({ toasts: [...state.toasts, toast] }));
+    return id;
   },
   removeToast: (id) => {
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));

@@ -8,9 +8,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { formatCurrency } from '@/lib/money';
 import { getCurrentLocalDate } from '@/lib/date';
 import { refreshFinancialState } from '@/lib/financialState';
-import type { BankRule, BankRuleKind, Transaction, WalletAccount } from '@/types';
-import { bankRulePresets, emptyBankRule, previewBankRule } from '@/domain/yield/calculator';
+import type { BankRule, BankRuleKind, Category, Transaction, WalletAccount } from '@/types';
+import { bankRulePresets, cashbackScopeOf, emptyBankRule, previewBankRule } from '@/domain/yield/calculator';
 import { materializeBankRules, payLoanEarly } from '@/domain/yield/materializer';
+import { offerUndo } from '@/lib/undo';
 
 const kindLabel: Record<BankRuleKind, string> = {
   savings: 'Interest',
@@ -43,16 +44,19 @@ export const BankRulesPage: React.FC = () => {
   const invalidateCache = useTransactionStore((state) => state.invalidateCache);
   const [rules, setRules] = useState<BankRule[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [draft, setDraft] = useState<BankRule | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
-    const [nextRules, nextTransactions] = await Promise.all([
+    const [nextRules, nextTransactions, nextCategories] = await Promise.all([
       db.bankRules.toArray(),
       db.transactions.toArray(),
+      db.categories.toArray(),
     ]);
     setRules(nextRules);
     setTransactions(nextTransactions);
+    setCategories(nextCategories);
     await fetchAccounts();
   };
 
@@ -92,8 +96,14 @@ export const BankRulesPage: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
+    const rule = await db.bankRules.get(id);
     await db.bankRules.delete(id);
     await refresh();
+    if (!rule) return;
+    offerUndo('Bank rule deleted', async () => {
+      await db.bankRules.add(rule);
+      await refresh();
+    });
   };
 
   const handlePayEarly = async () => {
@@ -112,8 +122,8 @@ export const BankRulesPage: React.FC = () => {
   };
 
   const preview = useMemo(
-    () => (draft ? previewBankRule(draft, accounts, transactions, today) : null),
-    [draft, accounts, transactions, today],
+    () => (draft ? previewBankRule(draft, accounts, transactions, today, categories) : null),
+    [draft, accounts, transactions, today, categories],
   );
   const choices = draft ? accountsFor(draft, accounts) : [];
   const wallets = accounts.filter((account) => account.type === 'cash' || account.type === 'debit' || account.type === 'ecash' || account.type === 'deposit');
@@ -125,12 +135,12 @@ export const BankRulesPage: React.FC = () => {
           type="button"
           onClick={() => (draft ? setDraft(null) : navigate(-1))}
           aria-label="Back"
-          className="flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--text-main)] hover:bg-[var(--item-bg)]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--card-bg)] text-[var(--text-main)]"
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </button>
-        <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-midblue dark:text-white">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-extrabold text-midblue dark:text-white">
             {draft ? (draft.id ? 'Edit rule' : 'New rule') : 'Bank rules'}
           </h1>
           <p className="text-sm text-[var(--text-muted)]">
@@ -151,7 +161,7 @@ export const BankRulesPage: React.FC = () => {
           )}
           <ul className="flex flex-col gap-2">
             {rules.map((rule) => {
-              const view = previewBankRule(rule, accounts, transactions, today);
+              const view = previewBankRule(rule, accounts, transactions, today, categories);
               return (
                 <li key={rule.id} className="flex items-center gap-3 rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-3">
                   <button type="button" onClick={() => setDraft(rule)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
@@ -164,7 +174,7 @@ export const BankRulesPage: React.FC = () => {
                     </span>
                   </button>
                   <span className="shrink-0 text-sm font-extrabold text-[var(--text-main)]">
-                    {view ? formatCurrency(view.amountCents, currencySymbol, currencyPosition) : ''}
+                    {view && view.amountCents > 0 ? formatCurrency(view.amountCents, currencySymbol, currencyPosition) : ''}
                   </span>
                   <button
                     type="button"
@@ -186,7 +196,7 @@ export const BankRulesPage: React.FC = () => {
           <div className="rounded-3xl border-2 border-midblue bg-midblue px-5 py-5 text-white">
             <p className="text-xs font-bold uppercase tracking-widest text-blue-100">{preview?.headline ?? 'Set up'}</p>
             <p className="mt-1 text-3xl font-black tracking-tight">
-              {preview ? formatCurrency(preview.amountCents, currencySymbol, currencyPosition) : '—'}
+              {preview && preview.amountCents > 0 ? formatCurrency(preview.amountCents, currencySymbol, currencyPosition) : '—'}
             </p>
             <p className="mt-2 text-sm text-blue-100">{preview?.summary ?? 'Choose the account and the rate.'}</p>
           </div>
@@ -243,7 +253,34 @@ export const BankRulesPage: React.FC = () => {
             )}
           </label>
 
-          {draft.kind === 'savings' && (
+          {draft.kind === 'savings' && draft.tierStyle === 'whole' && (
+            <>
+              <p className="text-sm text-[var(--text-muted)]">The matching rate covers the entire balance.</p>
+              <Input label="Yearly rate below the first step %" type="number" step="0.01" value={draft.ratePct} onChange={(event) => setDraft({ ...draft, ratePct: Number(event.target.value), preset: 'custom' })} />
+              <Input label="First step starts at" type="number" step="0.01" value={draft.tierFromCents / 100} onChange={(event) => setDraft({ ...draft, tierFromCents: pesosToCents(event.target.value), preset: 'custom' })} />
+              <Input label="Yearly rate from the first step %" type="number" step="0.01" value={draft.tierRatePct} onChange={(event) => setDraft({ ...draft, tierRatePct: Number(event.target.value), preset: 'custom' })} />
+              <Input label="Next step starts at" type="number" step="0.01" value={(draft.tierTopFromCents ?? 0) / 100} onChange={(event) => setDraft({ ...draft, tierTopFromCents: pesosToCents(event.target.value), preset: 'custom' })} />
+              <Input label="Yearly rate from the next step %" type="number" step="0.01" value={draft.tierTopRatePct ?? 0} onChange={(event) => setDraft({ ...draft, tierTopRatePct: Number(event.target.value), preset: 'custom' })} />
+              <Input label="Minimum balance" type="number" step="0.01" value={draft.minBalanceCents / 100} onChange={(event) => setDraft({ ...draft, minBalanceCents: pesosToCents(event.target.value), preset: 'custom' })} />
+              <Input label="Tax %" type="number" step="0.01" value={draft.taxPct} onChange={(event) => setDraft({ ...draft, taxPct: Number(event.target.value), preset: 'custom' })} />
+              <label className="flex flex-col gap-1.5 text-sm font-bold text-[var(--text-main)]">
+                Day count
+                <select value={draft.dayCount} onChange={(event) => setDraft({ ...draft, dayCount: Number(event.target.value) === 360 ? 360 : 365 })} className={selectClass}>
+                  <option value={365}>365</option>
+                  <option value={360}>360</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-bold text-[var(--text-main)]">
+                Credit
+                <select value={draft.creditWhen} onChange={(event) => setDraft({ ...draft, creditWhen: event.target.value === 'month-end' ? 'month-end' : 'daily' })} className={selectClass}>
+                  <option value="daily">Every day</option>
+                  <option value="month-end">Month-end</option>
+                </select>
+              </label>
+            </>
+          )}
+
+          {draft.kind === 'savings' && draft.tierStyle !== 'whole' && (
             <>
               <Input label="Yearly rate %" type="number" step="0.01" value={draft.ratePct} onChange={(event) => setDraft({ ...draft, ratePct: Number(event.target.value), preset: 'custom' })} />
               <Input label="Higher rate on the excess %" type="number" step="0.01" value={draft.tierRatePct} onChange={(event) => setDraft({ ...draft, tierRatePct: Number(event.target.value), preset: 'custom' })} />
@@ -271,6 +308,24 @@ export const BankRulesPage: React.FC = () => {
             <>
               <Input label="Cashback %" type="number" step="0.01" value={draft.cashbackPct} onChange={(event) => setDraft({ ...draft, cashbackPct: Number(event.target.value), preset: 'custom' })} />
               <Input label="Monthly cap" type="number" step="0.01" value={draft.monthlyCapCents / 100} onChange={(event) => setDraft({ ...draft, monthlyCapCents: pesosToCents(event.target.value), preset: 'custom' })} />
+              {(accounts.find((account) => account.id === draft.accountId)?.type === 'credit' || cashbackScopeOf(draft) === 'group') && (
+                <Input
+                  label="Statement day"
+                  type="number"
+                  value={draft.dueDay}
+                  onChange={(event) => setDraft({ ...draft, dueDay: Math.min(28, Math.max(1, Number(event.target.value) || 1)), preset: 'custom' })}
+                />
+              )}
+              {draft.cashbackNames === 'maribank' && cashbackScopeOf(draft) === 'group' && (
+                <p className="text-sm text-[var(--text-muted)]">
+                  Groceries, drugstores, and fuel share the monthly cap. Other eligible purchases have no cap. Utilities, transportation, donations, taxes, and fees earn nothing. The cashback pays the card down on the statement day.
+                </p>
+              )}
+              {draft.cashbackNames === 'maribank' && cashbackScopeOf(draft) !== 'group' && (
+                <p className="text-sm text-[var(--text-muted)]">
+                  Each eligible purchase earns cashback the same day, up to the monthly cap. Utilities, transportation, donations, taxes, and fees earn nothing.
+                </p>
+              )}
             </>
           )}
 

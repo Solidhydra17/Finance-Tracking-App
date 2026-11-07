@@ -7,6 +7,12 @@ import type { TransactionCreate, TransactionUpdate, FilterState } from '@/types'
 import { useUIStore, useTransactionStore } from '@/store';
 import { paginateItems, type PaginationResult } from '@/lib/pagination';
 import { refreshFinancialState } from '@/lib/financialState';
+import { offerUndo } from '@/lib/undo';
+
+const syncCashbackRules = async () => {
+  const { materializeBankRules } = await import('@/domain/yield/materializer');
+  await materializeBankRules();
+};
 
 export function useTransactions(filters: FilterState) {
   const { 
@@ -130,7 +136,7 @@ export function useTransactions(filters: FilterState) {
     async (data: TransactionCreate) => {
       try {
         await transactionsEngine.create(data);
-        // Refresh stores + widget, then reload transaction list
+        await syncCashbackRules();
         await refreshFinancialState();
         await loadTransactions(true);
         addToast('success', 'Transaction added successfully');
@@ -148,7 +154,7 @@ export function useTransactions(filters: FilterState) {
     async (id: number, data: TransactionUpdate) => {
       try {
         await transactionsEngine.update(id, data);
-        // Refresh stores + widget, then reload transaction list
+        await syncCashbackRules();
         await refreshFinancialState();
         await loadTransactions(true);
         addToast('success', 'Transaction updated successfully');
@@ -165,23 +171,56 @@ export function useTransactions(filters: FilterState) {
   const deleteTransaction = useCallback(
     async (id: number | string) => {
       try {
+        const restore = async () => {
+          await syncCashbackRules();
+          await refreshFinancialState();
+          await loadTransactions(true);
+        };
+
         if (typeof id === 'string') {
           if (id.startsWith('loan_payment_')) {
             const paymentId = parseInt(id.replace('loan_payment_', ''), 10);
+            const payment = await db.loanPayments.get(paymentId);
             await db.loanPayments.delete(paymentId);
+            if (payment) {
+              offerUndo('Payment deleted', async () => {
+                await db.loanPayments.add(payment);
+                await restore();
+              });
+            }
           } else if (id.startsWith('loan_')) {
             const loanId = parseInt(id.replace('loan_', ''), 10);
+            const loan = await loanRepository.getById(loanId);
             await loanRepository.delete(loanId);
+            if (loan) {
+              offerUndo('Loan deleted', async () => {
+                await db.loans.add(loan);
+                await restore();
+              });
+            }
           }
         } else {
+          const tx = await db.transactions.get(id);
+          const payment = tx?.source === 'loan_payment'
+            ? await loanRepository.getPaymentByTransactionId(id)
+            : undefined;
+          const loan = payment ? await loanRepository.getById(payment.loanId) : undefined;
+          const previousStatus = loan?.status;
           await transactionsEngine.softDelete(id);
+          offerUndo('Transaction deleted', async () => {
+            await db.transactions.update(id, { deletedAt: null });
+            if (payment?.id && !(await db.loanPayments.get(payment.id))) {
+              await db.loanPayments.add(payment);
+            }
+            if (loan?.id && previousStatus) {
+              await loanRepository.update(loan.id, { status: previousStatus });
+            }
+            await restore();
+          });
         }
-        // Optimistically remove from transaction list for instant UI feedback
-        setTransactions(transactions.filter(t => t.id !== id));
-        setTotal(Math.max(0, totalTransactions - 1));
-        // Refresh wallet balances (previously stale after delete) + widget
+        await syncCashbackRules();
         await refreshFinancialState();
-        addToast('success', 'Transaction deleted');
+        await loadTransactions(true);
         return true;
       } catch (error) {
         console.error('Failed to delete transaction:', error);
@@ -189,7 +228,7 @@ export function useTransactions(filters: FilterState) {
         return false;
       }
     },
-    [addToast, transactions, totalTransactions, setTransactions, setTotal]
+    [addToast, loadTransactions]
   );
 
   return {

@@ -7,6 +7,8 @@ export { Pagination } from './Pagination';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Badge } from './Badge';
 export { Icon, AVAILABLE_ICONS } from './Icon';
+export { SwipeRow } from './SwipeRow';
+export type { SwipeAction } from './SwipeRow';
 export { ProgressBar } from './ProgressBar';
 export { CalcInput } from './CalcInput';
 export { DayPicker } from './DayPicker';

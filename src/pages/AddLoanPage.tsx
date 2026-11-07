@@ -327,11 +327,11 @@ export const AddLoanPage: React.FC = () => {
 
                         {!(direction === 'inbound' && loanAccountId) && (
                             <>
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="min-w-0">
                                         <Input label="Date Given/Received" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="min-w-0">
                                         <Input label="Due Date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
                                     </div>
                                 </div>
@@ -341,11 +341,11 @@ export const AddLoanPage: React.FC = () => {
                             </>
                         )}
                         {!isEditMode && direction === 'inbound' && loanAccountId && (
-                            <div className="flex gap-4">
-                                <div className="flex-1">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="min-w-0">
                                     <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
                                 </div>
-                                <div className="flex-1">
+                                <div className="min-w-0">
                                     <Input label="Time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
                                 </div>
                             </div>

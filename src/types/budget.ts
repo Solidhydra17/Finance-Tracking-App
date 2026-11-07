@@ -13,8 +13,14 @@ export interface BudgetPlan {
   firstPayDay?: number;
   secondPayDay?: number;
   workDaysPerWeek: number; // New field
+  monthCovers?: BudgetMonthCovers;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BudgetMonthCovers {
+  month: string;
+  shifts: Record<string, number>;
 }
 
 export interface BudgetItem {
@@ -27,6 +33,9 @@ export interface BudgetItem {
   workDays?: number[];
   type: BudgetItemType;
   dueDay?: number;
+  targetCents?: number;
+  dueDate?: string;
+  heldCents?: number;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -34,4 +43,8 @@ export interface BudgetItem {
 
 export type BudgetPlanUpdate = Partial<Omit<BudgetPlan, 'id' | 'createdAt' | 'updatedAt'>>;
 export type BudgetItemCreate = Omit<BudgetItem, 'id' | 'createdAt' | 'updatedAt'>;
-export type BudgetItemUpdate = Partial<Omit<BudgetItem, 'id' | 'createdAt' | 'updatedAt'>>;
+export type BudgetItemUpdate = Partial<Omit<BudgetItem, 'id' | 'createdAt' | 'updatedAt' | 'targetCents' | 'dueDate' | 'heldCents'>> & {
+  targetCents?: number | null;
+  dueDate?: string | null;
+  heldCents?: number | null;
+};

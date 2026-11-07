@@ -7,7 +7,9 @@ import { getCurrentLocalDate } from '@/lib/date';
 import { requestNotificationPermission, schedulePaymentPlans } from '@/lib/notifications';
 import { Capacitor } from '@capacitor/core';
 import { paymentPlanRepository } from '@/storage';
+import { db } from '@/storage/indexeddb/database';
 import { useUIStore } from '@/store';
+import { offerUndo } from '@/lib/undo';
 import type { PaymentPlan } from '@/types';
 
 const addMonths = (date: Date, months: number) => {
@@ -153,6 +155,7 @@ export const PaymentPlannerPage = () => {
   };
 
   const handleDelete = async (id: number) => {
+    const plan = await db.paymentPlans.get(id);
     await paymentPlanRepository.delete(id);
     const stored = await load();
     await schedulePaymentPlans(stored);
@@ -160,7 +163,12 @@ export const PaymentPlannerPage = () => {
       setSheetOpen(false);
       resetForm();
     }
-    addToast('info', 'Bill removed');
+    if (!plan) return;
+    offerUndo('Bill removed', async () => {
+      await db.paymentPlans.add(plan);
+      const next = await load();
+      await schedulePaymentPlans(next);
+    });
   };
 
   return (

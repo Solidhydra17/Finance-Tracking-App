@@ -1,7 +1,7 @@
 {
   "name": "finance-tracking-app",
   "private": true,
-  "version": "1.0.28",
+  "version": "1.0.29",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -22,8 +22,11 @@
     "@capacitor/preferences": "^6.0.2",
     "@capacitor/splash-screen": "^6.0.4",
     "@heroicons/react": "^2.2.0",
+    "@hugeicons/core-free-icons": "^4.4.0",
+    "@hugeicons/react": "^1.1.10",
     "chart.js": "^4.5.1",
     "dexie": "^4.0.10",
+    "motion": "^14.10.1",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",

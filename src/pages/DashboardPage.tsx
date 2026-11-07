@@ -12,7 +12,6 @@ import { AiInsightCard } from '@/components/dashboard/AiInsightCard';
 import { BudgetRings } from '@/components/charts/BudgetRings';
 import { SpendingBubbles } from '@/components/charts/SpendingBubbles';
 import { EyeIcon, EyeSlashIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
-import { BankRulesHome } from '@/components/bank/BankRulesHome';
 const LOADING_MESSAGES = [
   "Nagbibilang ng natitirang barya…",
   "Fetching data… at pati utang mo",
@@ -233,21 +232,31 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <Link to="/budget-planning" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-xs font-bold text-[var(--text-main)]">
+        <Link to="/budget-planning" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-2 text-center text-xs font-bold leading-tight text-[var(--text-main)]">
           <Icon name="DocumentChartBarIcon" className="h-5 w-5 text-midblue" />
           Budget
         </Link>
-        <Link to="/insight" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-xs font-bold text-[var(--text-main)]">
+        <Link to="/insight" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-2 text-center text-xs font-bold leading-tight text-[var(--text-main)]">
           <Icon name="SparklesIcon" className="h-5 w-5 text-midblue" />
           Insight
         </Link>
-        <Link to="/payment-planner" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-xs font-bold text-[var(--text-main)]">
+        <Link to="/payment-planner" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-2 text-center text-xs font-bold leading-tight text-[var(--text-main)]">
           <CalendarDaysIcon className="h-5 w-5 text-midblue" />
           Payment Planner
         </Link>
+        <Link to="/bank-rules" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-2 text-center text-xs font-bold leading-tight text-[var(--text-main)]">
+          <Icon name="BuildingLibraryIcon" className="h-5 w-5 text-midblue" />
+          Bank rules
+        </Link>
+        <Link to="/custom-categories" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-2 text-center text-xs font-bold leading-tight text-[var(--text-main)]">
+          <Icon name="TagIcon" className="h-5 w-5 text-midblue" />
+          Custom categories
+        </Link>
+        <Link to="/recurring-series" className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-2 text-center text-xs font-bold leading-tight text-[var(--text-main)]">
+          <Icon name="ArrowPathIcon" className="h-5 w-5 text-midblue" />
+          Recurring series
+        </Link>
       </div>
-
-      <BankRulesHome />
 
       <AiInsightCard
         data={data}
