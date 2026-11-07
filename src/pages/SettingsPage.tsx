@@ -1,14 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 declare const __APP_VERSION__: string;
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.28';
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.29';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
-import { RecurringSettings } from '@/components/settings/RecurringSettings';
-import { CustomCategorySettings } from '@/components/settings/CustomCategorySettings';
 import { ReminderSettings } from '@/components/settings/ReminderSettings';
 import { useNavigate } from 'react-router-dom';
 import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
@@ -335,8 +333,6 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {Capacitor.isNativePlatform() && <ReminderSettings />}
-      <RecurringSettings />
-      <CustomCategorySettings />
 
       {/* Download App */}
       {(!Capacitor.isNativePlatform() || hasApkUpdate) && (

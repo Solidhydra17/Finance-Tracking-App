@@ -179,5 +179,28 @@ export const budgetEngine = {
         variableItems: c2Variable
       }
     };
-  }
+  },
+
+  /**
+   * A cutoff has arrived when a Salary income is dated inside its window
+   * and on or before today. The 15th looks at the 15th–20th. The 30th
+   * looks at the 28th through the end of the month.
+   */
+  salaryArrived(
+    transactions: Array<{ type: string; date: string; categoryId?: number; deletedAt?: string | null }>,
+    salaryCategoryIds: Set<number>,
+    start: string,
+    end: string,
+    today: string,
+  ): boolean {
+    return transactions.some((txn) =>
+      txn.deletedAt == null &&
+      txn.type === 'income' &&
+      txn.categoryId != null &&
+      salaryCategoryIds.has(txn.categoryId) &&
+      txn.date >= start &&
+      txn.date <= end &&
+      txn.date <= today
+    );
+  },
 };

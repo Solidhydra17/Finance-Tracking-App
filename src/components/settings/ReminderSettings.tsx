@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardBody, Modal, Button, Icon } from '@/components/ui';
 import { DayPicker } from '@/components/ui/DayPicker';
-import { useReminders } from '@/hooks/useReminders';
+import { getReminders, useReminders } from '@/hooks/useReminders';
+import { offerUndo } from '@/lib/undo';
 import {
   isNotificationsSupported,
   requestNotificationPermission,
@@ -133,7 +134,7 @@ function PermissionRow() {
 }
 
 export const ReminderSettings: React.FC = () => {
-  const { reminders, addReminder, updateReminder, deleteReminder } = useReminders();
+  const { reminders, addReminder, updateReminder, deleteReminder, saveReminders } = useReminders();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -197,6 +198,7 @@ export const ReminderSettings: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const snapshot = reminders.find((reminder) => reminder.id === id);
     deleteReminder(id);
     setTimeout(() => {
       const stored: import('@/types/reminder').Reminder[] = JSON.parse(
@@ -204,6 +206,15 @@ export const ReminderSettings: React.FC = () => {
       );
       scheduleReminders(stored).catch(console.error);
     }, 50);
+    if (!snapshot) return;
+    offerUndo('Reminder deleted', async () => {
+      const current = getReminders();
+      if (!current.some((reminder) => reminder.id === snapshot.id)) {
+        const next = [...current, snapshot];
+        saveReminders(next);
+        await scheduleReminders(next);
+      }
+    });
   };
 
   return (

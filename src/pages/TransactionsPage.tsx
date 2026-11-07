@@ -1,12 +1,13 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    Card,
-    CardBody,
     Pagination,
     Input,
     Modal,
+    SwipeRow,
 } from "@/components/ui";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Delete02Icon } from "@hugeicons/core-free-icons";
 import { FilterBar, FilterChip } from "@/components/layout";
 import { useTransactions, useCategories, useDebouncedValue } from "@/hooks";
 import { useUIStore, useWalletStore } from "@/store";
@@ -15,9 +16,113 @@ import { Icon } from "@/components/ui";
 import type { TransactionTypeFilter } from "@/types";
 import { formatDateLocal, parseDateLocal, getMonthRange, formatTime12Hour } from "@/lib/date";
 
+const deleteIcon = <HugeiconsIcon icon={Delete02Icon} size={20} />;
+
+type TransactionSwipeRowProps = {
+    title: string;
+    subtitle: string;
+    iconName: string;
+    iconColor: string;
+    bgClass: string;
+    amountColor: string;
+    amountLabel: string;
+    recurring: boolean;
+    darkMode: boolean;
+    onOpen: () => void;
+    onHold: () => void;
+    onDelete: () => void;
+};
+
+const TransactionSwipeRow: React.FC<TransactionSwipeRowProps> = ({
+    title,
+    subtitle,
+    iconName,
+    iconColor,
+    bgClass,
+    amountColor,
+    amountLabel,
+    recurring,
+    darkMode,
+    onOpen,
+    onHold,
+    onDelete,
+}) => {
+    const skipClick = useRef(false);
+
+    const handleOpenChange = (next: boolean) => {
+        if (next) return;
+        skipClick.current = true;
+        window.setTimeout(() => {
+            skipClick.current = false;
+        }, 0);
+    };
+
+    const handleRowClick = () => {
+        if (skipClick.current) return;
+        onOpen();
+    };
+
+    const handleRowKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        handleRowClick();
+    };
+
+    return (
+        <div className="relative">
+            {recurring && (
+                <div className="absolute -top-2.5 right-4 z-10">
+                    <div className="bg-midblue text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1 border border-white">
+                        <Icon name="ArrowPathIcon" className="w-2.5 h-2.5" />
+                        RECURRING
+                    </div>
+                </div>
+            )}
+            <SwipeRow
+                actions={[{ id: "delete", label: "Delete", icon: deleteIcon }]}
+                onCommit={onDelete}
+                onOpenChange={handleOpenChange}
+                actionColor="#ef4444"
+                drawerColor={darkMode ? "#1f2937" : "#e5e7eb"}
+                rowColor={darkMode ? "#0a0a0a" : "#ffffff"}
+                textColor={darkMode ? "#f8fafc" : "#111827"}
+                height={72}
+                radius={16}
+                actionWidth={84}
+                direction="left"
+                label={title}
+                onHold={onHold}
+                style={recurring ? { boxShadow: "inset 0 0 0 2px #285ccc" } : undefined}
+            >
+                <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${title}`}
+                    onClick={handleRowClick}
+                    onKeyDown={handleRowKeyDown}
+                    className="flex w-full min-w-0 items-center gap-3"
+                >
+                    <div className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center ${bgClass}`}>
+                        {iconColor ? (
+                            <Icon name={iconName as never} className="w-6 h-6" style={{ color: iconColor }} />
+                        ) : (
+                            <Icon name={iconName as never} className="w-6 h-6 text-[var(--text-muted)]" />
+                        )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="font-bold text-[var(--text-main)] leading-tight truncate">{title}</p>
+                        <p className="text-[10px] font-medium text-[var(--text-muted)] truncate">{subtitle}</p>
+                    </div>
+                    <p className={`shrink-0 font-black text-sm ${amountColor}`}>{amountLabel}</p>
+                </div>
+            </SwipeRow>
+        </div>
+    );
+};
+
 export const TransactionsPage: React.FC = () => {
     const navigate = useNavigate();
-    const { filters, setFilters } = useUIStore();
+    const { filters, setFilters, darkMode } = useUIStore();
     const { categories } = useCategories("both");
     const { accounts, fetchAccounts } = useWalletStore();
     const { transactions, pagination, isLoading, deleteTransaction, setPage } =
@@ -25,8 +130,16 @@ export const TransactionsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
     const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
-    const [confirmDeleteId, setConfirmDeleteId] = useState<number | string | null>(null);
-
+    const [detail, setDetail] = useState<{
+        title: string;
+        typeLabel: string;
+        amountLabel: string;
+        amountColor: string;
+        dateLabel: string;
+        timeLabel: string;
+        accountLabel: string;
+        note: string;
+    } | null>(null);
     useEffect(() => {
         setFilters({ searchQuery: debouncedSearchTerm });
     }, [debouncedSearchTerm, setFilters]);
@@ -64,18 +177,6 @@ export const TransactionsPage: React.FC = () => {
     const getAccountName = (id?: number) => {
         if (id == null) return "";
         return accounts.find(a => a.id === id)?.name || "";
-    };
-
-    const handleDelete = async (id: number | string) => {
-        setConfirmDeleteId(id);
-    };
-
-    const confirmDelete = async () => {
-        if (confirmDeleteId !== null) {
-            await deleteTransaction(confirmDeleteId);
-            // walletStore refresh + widget sync handled inside deleteTransaction
-            setConfirmDeleteId(null);
-        }
     };
 
     // Group transactions by date
@@ -363,63 +464,45 @@ export const TransactionsPage: React.FC = () => {
                                             };
 
                                             return (
-                                                <Card
+                                                <TransactionSwipeRow
                                                     key={transaction.id}
-                                                    className={`transition-all cursor-pointer overflow-visible relative ${transaction.source === 'recurring'
-                                                        ? 'border-2 border-midblue shadow-md'
-                                                        : 'border-0 shadow-soft'
-                                                        }`}
-                                                >
-                                                    {transaction.source === 'recurring' && (
-                                                        <div className="absolute -top-2.5 right-4 z-10">
-                                                            <div className="bg-midblue text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1 border border-white">
-                                                                <Icon name="ArrowPathIcon" className="w-2.5 h-2.5" />
-                                                                RECURRING
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    <CardBody className="flex items-center gap-3 p-3">
-                                                        <div
-                                                            className="flex items-center gap-3 min-w-0 flex-1"
-                                                            onClick={handleClick}
-                                                        >
-                                                            <div className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center ${bgClass}`}>
-                                                                {iconColor ? (
-                                                                    <Icon name={iconName as any} className="w-6 h-6" style={{ color: iconColor }} />
-                                                                ) : (
-                                                                    <Icon name={iconName as any} className="w-6 h-6 text-[var(--text-muted)]" />
-                                                                )}
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="font-bold text-[var(--text-main)] leading-tight truncate">
-                                                                    {title}
-                                                                </p>
-                                                                <p className="text-[10px] font-medium text-[var(--text-muted)] truncate">
-                                                                    {subtitle}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex items-center gap-3 shrink-0">
-                                                            <p
-                                                                className={`font-black text-sm ${amountColor}`}
-                                                                onClick={handleClick}
-                                                            >
-                                                                {amountPrefix}
-                                                                {centsToDisplay(transaction.amount)}
-                                                            </p>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDelete(transaction.id!);
-                                                                }}
-                                                                className="p-1.5 rounded-xl hover:bg-danger-50 text-gray-300 hover:text-danger-500 transition-all z-10"
-                                                            >
-                                                                <Icon name="TrashIcon" className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    </CardBody>
-                                                </Card>
+                                                    title={title}
+                                                    subtitle={subtitle}
+                                                    iconName={iconName}
+                                                    iconColor={iconColor}
+                                                    bgClass={bgClass}
+                                                    amountColor={amountColor}
+                                                    amountLabel={`${amountPrefix}${centsToDisplay(transaction.amount)}`}
+                                                    recurring={transaction.source === 'recurring'}
+                                                    darkMode={darkMode}
+                                                    onOpen={handleClick}
+                                                    onHold={() => {
+                                                        const note = String(transaction.note || transaction.originalLoan?.notes || "").trim();
+                                                        setDetail({
+                                                            title,
+                                                            typeLabel: isCreditPayment
+                                                                ? "Credit payment"
+                                                                : isFundTransfer
+                                                                    ? "Transfer"
+                                                                    : isLoan
+                                                                        ? "Loan"
+                                                                        : isLoanPayment
+                                                                            ? "Loan payment"
+                                                                            : transaction.type === "income"
+                                                                                ? "Income"
+                                                                                : "Expense",
+                                                            amountLabel: `${amountPrefix}${centsToDisplay(transaction.amount)}`,
+                                                            amountColor,
+                                                            dateLabel: date,
+                                                            timeLabel: formatTime12Hour(transaction.time),
+                                                            accountLabel: walletLabel,
+                                                            note,
+                                                        });
+                                                    }}
+                                                    onDelete={() => {
+                                                        if (transaction.id != null) void deleteTransaction(transaction.id);
+                                                    }}
+                                                />
                                             );
                                         })}
                                     </div>
@@ -438,6 +521,46 @@ export const TransactionsPage: React.FC = () => {
                     </div>
                 )}
             </div>
+            <Modal
+                isOpen={detail != null}
+                onClose={() => setDetail(null)}
+                title="Transaction"
+                position="bottom"
+            >
+                {detail && (
+                    <div className="space-y-5">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">{detail.typeLabel}</p>
+                            <p className="mt-1 text-2xl font-black text-[var(--text-main)]">{detail.title}</p>
+                            <p className={`mt-1 text-xl font-black ${detail.amountColor}`}>{detail.amountLabel}</p>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Date</span>
+                                <span className="text-sm font-bold text-[var(--text-main)]">{detail.dateLabel}</span>
+                            </div>
+                            {detail.timeLabel && (
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Time</span>
+                                    <span className="text-sm font-bold text-[var(--text-main)]">{detail.timeLabel}</span>
+                                </div>
+                            )}
+                            {detail.accountLabel && (
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Account</span>
+                                    <span className="text-right text-sm font-bold text-[var(--text-main)]">{detail.accountLabel}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="rounded-2xl bg-[var(--item-bg)] px-4 py-3">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Note</p>
+                            <p className={`mt-1 whitespace-pre-wrap text-sm font-semibold ${detail.note ? "text-[var(--text-main)]" : "italic text-[var(--text-muted)]"}`}>
+                                {detail.note || "No note"}
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </Modal>
             {/* Month Picker Modal */}
             <Modal
                 isOpen={isMonthPickerOpen}
@@ -479,36 +602,6 @@ export const TransactionsPage: React.FC = () => {
                             </div>
                         </div>
                     ))}
-                </div>
-            </Modal>
-
-            {/* Deletion Confirmation Modal */}
-            <Modal
-                isOpen={confirmDeleteId !== null}
-                onClose={() => setConfirmDeleteId(null)}
-                title="Confirm Deletion"
-                size="sm"
-                position="bottom"
-            >
-                <div className="space-y-4 pt-2 pb-6 px-2">
-                    <p className="text-[var(--text-main)] text-center font-bold">
-                        Are you sure you want to delete this transaction?
-                        <span className="block text-sm text-[var(--text-muted)] font-medium mt-1">This action cannot be undone.</span>
-                    </p>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setConfirmDeleteId(null)}
-                            className="flex-1 py-4 rounded-2xl bg-[var(--item-bg)] text-[var(--text-main)] font-bold hover:bg-[var(--card-border)] border border-[var(--card-border)] transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={confirmDelete}
-                            className="flex-1 py-4 rounded-2xl bg-danger-500 text-white font-bold hover:bg-danger-600 shadow-lg shadow-danger-500/20 transition-colors"
-                        >
-                            Delete
-                        </button>
-                    </div>
                 </div>
             </Modal>
         </div>

@@ -11,6 +11,7 @@ import { recurringRepository, categoryRepository } from '@/storage/indexeddb';
 import { db } from '@/storage/indexeddb/database';
 import { getSystemCategoryId, isSystemCategoryName } from '@/storage/indexeddb/categoryRepository';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
+import { refreshFinancialState } from '@/lib/financialState';
 
 export const AddTransactionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -285,6 +286,9 @@ export const AddTransactionPage: React.FC = () => {
         // Run the materializer to catch any other past-due dates beyond startDate
         const { recurringMaterializer } = await import('@/domain/recurring/materializer');
         await recurringMaterializer.materializeDueTransactions();
+        const { materializeBankRules } = await import('@/domain/yield/materializer');
+        await materializeBankRules();
+        await refreshFinancialState();
 
         addToast('success', 'Recurring rule created and first transaction added');
         success = true;

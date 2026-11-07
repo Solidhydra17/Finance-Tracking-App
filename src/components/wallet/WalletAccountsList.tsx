@@ -7,6 +7,9 @@ import { WalletCardDeck } from '@/components/wallet/WalletCardDeck';
 import { formatCurrency } from '@/lib/money';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { WalletAccount, WalletAccountType } from '@/types';
+import { db } from '@/storage/indexeddb/database';
+import { refreshFinancialState } from '@/lib/financialState';
+import { offerUndo } from '@/lib/undo';
 
 export const WalletAccountsList: React.FC = () => {
     const navigate = useNavigate();
@@ -101,10 +104,14 @@ export const WalletAccountsList: React.FC = () => {
     const handleDelete = async () => {
         if (!editingAccount) return;
         try {
-            await deleteAccount(editingAccount.id!);
-            addToast('success', 'Account deleted');
+            const snapshot = { ...editingAccount };
+            await deleteAccount(snapshot.id!);
             setIsConfirmDeleteOpen(false);
             setIsManageModalOpen(false);
+            offerUndo('Account deleted', async () => {
+              await db.walletAccounts.add(snapshot);
+              await refreshFinancialState();
+            });
         } catch (error: any) {
             addToast('error', error.message);
         }

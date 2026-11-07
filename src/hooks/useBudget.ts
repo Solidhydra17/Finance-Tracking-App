@@ -3,6 +3,8 @@ import { budgetRepository } from '@/storage/indexeddb/budgetRepository';
 import type { BudgetPlanUpdate, BudgetItemCreate, BudgetItemUpdate, BudgetPlan } from '@/types';
 import { useBudgetStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
+import { db } from '@/storage/indexeddb/database';
+import { offerUndo } from '@/lib/undo';
 
 export function useBudget() {
   const { plan, items, isLoading, setPlan, setItems, setLoading } = useBudgetStore(useShallow(state => ({
@@ -74,12 +76,48 @@ export function useBudget() {
     }
   }, [addToast, loadData]);
 
+  const saveCovers = useCallback(async (month: string, shifts: Record<string, number>) => {
+    const monthCovers = { month, shifts };
+    const now = new Date().toISOString();
+    const current = useBudgetStore.getState().plan;
+    if (current?.id) {
+      await db.budgetPlans.update(current.id, { monthCovers, updatedAt: now });
+      setPlan({ ...current, monthCovers, updatedAt: now });
+      return;
+    }
+    const id = await budgetRepository.savePlan({
+      grossSalaryCents: 0,
+      netSalaryCents: 0,
+      payFrequency: 'monthly',
+      workDaysPerWeek: 5,
+      monthCovers,
+    });
+    setPlan({
+      id,
+      grossSalaryCents: 0,
+      netSalaryCents: 0,
+      payFrequency: 'monthly',
+      workDaysPerWeek: 5,
+      monthCovers,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }, [setPlan]);
+
   const deleteItem = useCallback(async (id: number) => {
     try {
+      const item = items.find((entry) => entry.id === id) ?? await db.budgetItems.get(id);
       await budgetRepository.deleteItem(id);
-      // Optimistically remove from store — no loading spinner
       setItems(items.filter(i => i.id !== id));
-      addToast('success', 'Budget item deleted');
+      if (item) {
+        offerUndo('Budget item deleted', async () => {
+          await db.budgetItems.add(item);
+          const current = useBudgetStore.getState().items;
+          if (!current.some((entry) => entry.id === item.id)) {
+            useBudgetStore.getState().setItems([...current, item]);
+          }
+        });
+      }
       return true;
     } catch (error) {
       console.error('Failed to delete budget item:', error);
@@ -95,6 +133,7 @@ export function useBudget() {
     savePlan,
     createItem,
     updateItem,
+    saveCovers,
     deleteItem,
     refetch: loadData,
   };

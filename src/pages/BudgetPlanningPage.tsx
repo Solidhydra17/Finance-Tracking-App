@@ -1,18 +1,24 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useBudget, useCategories } from '@/hooks';
 import { Input, Select, Button, Card, Icon, Modal, ProgressBar, AVAILABLE_ICONS, CalcInput, DayPicker } from '@/components/ui';
 import { BudgetRings } from '@/components/charts/BudgetRings';
 import { centsToDisplay, displayToCents } from '@/lib/money';
+import { getCurrentLocalDate } from '@/lib/date';
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
 import type { BudgetItem, BudgetItemType, BudgetItemFrequency } from '@/types';
-import { categoryRepository } from '@/storage/indexeddb';
+import { categoryRepository, db } from '@/storage/indexeddb';
+import { useUIStore } from '@/store';
 
 export const BudgetPlanningPage: React.FC = () => {
-  const { plan, items, isLoading, savePlan, createItem, updateItem, deleteItem } = useBudget();
+  const { plan, items, isLoading, savePlan, createItem, updateItem, deleteItem, saveCovers } = useBudget();
+  const addToast = useUIStore((state) => state.addToast);
   const { categories, refetch: refetchCategories } = useCategories('expense'); 
   
   const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
 
   // Salary Form State
@@ -35,6 +41,10 @@ export const BudgetPlanningPage: React.FC = () => {
   const [newCategoryName, setNewCategoryName] = useState(''); 
   const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
   const [newCategoryIcon, setNewCategoryIcon] = useState(AVAILABLE_ICONS[0]);
+  const [saveUpTo, setSaveUpTo] = useState('');
+  const [savingsDue, setSavingsDue] = useState('');
+  const [coverId, setCoverId] = useState<number | null>(null);
+  const [payIn, setPayIn] = useState({ first: false, second: false });
 
   // Expandable Cutoff States
   const [isCutoff1Expanded, setIsCutoff1Expanded] = useState(false);
@@ -48,12 +58,39 @@ export const BudgetPlanningPage: React.FC = () => {
   const [pva, setPva] = useState<Map<number, PlannedVsActual>>(new Map());
 
   const workDaysPerWeek = plan?.workDaysPerWeek || 5;
+  const selectedBudgetCategory = categories.find((category) => category.id?.toString() === categoryId);
 
   useEffect(() => {
     if (!isLoading && items.length > 0) {
       budgetEngine.getPlannedVsActual(items, workDaysPerWeek).then(setPva);
     }
   }, [items, workDaysPerWeek, isLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPay = async () => {
+      const today = getCurrentLocalDate();
+      const month = today.slice(0, 7);
+      const [storedCategories, transactions] = await Promise.all([
+        db.categories.toArray(),
+        db.transactions.where('date').between(`${month}-01`, `${month}-31`, true, true).toArray(),
+      ]);
+      if (cancelled) return;
+      const salaryIds = new Set(
+        storedCategories
+          .filter((category) => category.type !== 'expense' && category.name.trim().toLowerCase() === 'salary' && category.id != null)
+          .map((category) => category.id as number),
+      );
+      setPayIn({
+        first: budgetEngine.salaryArrived(transactions, salaryIds, `${month}-15`, `${month}-20`, today),
+        second: budgetEngine.salaryArrived(transactions, salaryIds, `${month}-28`, `${month}-31`, today),
+      });
+    };
+    void loadPay();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const openSalaryModal = () => {
     setGrossInput(plan ? (plan.grossSalaryCents / 100).toString() : '');
@@ -93,6 +130,8 @@ export const BudgetPlanningPage: React.FC = () => {
       setUseWorkSchedule(item.useWorkSchedule || false);
       setWorkDaySelection(item.workDays && item.workDays.length > 0 ? item.workDays : [1, 2, 3, 4, 5]);
       setItemType(item.type || 'expense');
+      setSaveUpTo(item.targetCents ? (item.targetCents / 100).toString() : '');
+      setSavingsDue(item.dueDate ?? '');
     } else {
       setEditingItem(null);
       setItemName('');
@@ -103,8 +142,11 @@ export const BudgetPlanningPage: React.FC = () => {
       setUseWorkSchedule(false);
       setWorkDaySelection([1, 2, 3, 4, 5]);
       setItemType('expense');
+      setSaveUpTo('');
+      setSavingsDue('');
     }
     setNewCategoryName('');
+    setIsCategoryPickerOpen(false);
     setIsItemModalOpen(true);
   };
 
@@ -134,6 +176,8 @@ export const BudgetPlanningPage: React.FC = () => {
 
     if (!finalName) return;
 
+    const targetCents = itemType === 'savings' && saveUpTo ? displayToCents(saveUpTo) : 0;
+    const hasTarget = itemType === 'savings' && targetCents > 0;
     const data = {
       name: finalName,
       categoryId: finalCategoryId,
@@ -147,9 +191,17 @@ export const BudgetPlanningPage: React.FC = () => {
     };
 
     if (editingItem && editingItem.id) {
-      await updateItem(editingItem.id, data);
+      await updateItem(editingItem.id, {
+        ...data,
+        targetCents: hasTarget ? targetCents : null,
+        dueDate: hasTarget && savingsDue ? savingsDue : null,
+        heldCents: hasTarget ? (editingItem.heldCents ?? amount) : null,
+      });
     } else {
-      await createItem(data);
+      await createItem({
+        ...data,
+        ...(hasTarget ? { targetCents, dueDate: savingsDue || undefined, heldCents: amount } : {}),
+      });
     }
     setIsItemModalOpen(false);
   };
@@ -160,9 +212,13 @@ export const BudgetPlanningPage: React.FC = () => {
   };
 
   const netSalary = plan?.netSalaryCents || 0;
+  const today = getCurrentLocalDate();
+  const shifts = plan?.monthCovers?.month === today.slice(0, 7) ? plan.monthCovers.shifts : {};
+  const shiftTotal = Object.values(shifts).reduce((sum, value) => sum + value, 0);
+  const planFor = (id: number | undefined, planned: number) => planned + (id == null ? 0 : (shifts[String(id)] ?? 0));
   
   const totalAllocated = useMemo(() => budgetEngine.calculateAllocated(items, workDaysPerWeek), [items, workDaysPerWeek]);
-  const unassignedMoney = netSalary - totalAllocated;
+  const unassignedMoney = netSalary - totalAllocated - shiftTotal;
   const financialHealth = budgetEngine.calculateFinancialHealth(netSalary, totalAllocated);
 
   const budgetRings = useMemo(() => {
@@ -171,7 +227,7 @@ export const BudgetPlanningPage: React.FC = () => {
       .map((item) => {
         const status = item.categoryId ? pva.get(item.categoryId) : undefined
         const category = categories.find((entry) => entry.id === item.categoryId)
-        const planned = status?.plannedCents ?? budgetEngine.calculateMonthlyAmount(item, workDaysPerWeek)
+        const planned = planFor(item.id, budgetEngine.calculateMonthlyAmount(item, workDaysPerWeek))
         const actual = status?.actualCents ?? 0
         return {
           id: String(item.id ?? item.name),
@@ -182,7 +238,7 @@ export const BudgetPlanningPage: React.FC = () => {
           plannedCents: planned,
         }
       })
-  }, [items, pva, categories, workDaysPerWeek])
+  }, [items, pva, categories, workDaysPerWeek, shifts])
   const budgetSpent = budgetRings.reduce((sum, row) => sum + row.actual, 0)
 
   const cutoffs = useMemo(() => {
@@ -194,6 +250,35 @@ export const BudgetPlanningPage: React.FC = () => {
 
   const simulatedAmount = displayToCents(simAmount);
   const remainingAfterSim = unassignedMoney - simulatedAmount;
+  const coverItem = items.find((item) => item.id === coverId) ?? null;
+  const coverMonthly = coverItem ? budgetEngine.calculateMonthlyAmount(coverItem, workDaysPerWeek) : 0;
+  const coverPlan = coverItem ? planFor(coverItem.id, coverMonthly) : 0;
+  const coverActual = coverItem?.categoryId ? (pva.get(coverItem.categoryId)?.actualCents ?? 0) : 0;
+  const coverGap = Math.max(0, coverActual - coverPlan);
+  const coverSources = items.flatMap((item) => {
+    if (!coverItem || item.id === coverItem.id || item.type !== 'expense' || !item.active || item.id == null) return [];
+    const planned = planFor(item.id, budgetEngine.calculateMonthlyAmount(item, workDaysPerWeek));
+    const actual = item.categoryId ? (pva.get(item.categoryId)?.actualCents ?? 0) : 0;
+    const room = planned - actual;
+    if (room < coverGap) return [];
+    return [{ id: item.id, name: item.name, room }];
+  });
+  const [coverYear, coverMonth] = today.split('-').map(Number);
+  const nextMonthLabel = new Date(coverYear, coverMonth, 1).toLocaleDateString('en-US', { month: 'long' });
+
+  const handleCover = async (sourceId: number | 'remaining', sourceName: string) => {
+    if (!coverItem?.id || coverGap <= 0) return;
+    const next = { ...shifts };
+    const key = String(coverItem.id);
+    next[key] = (next[key] ?? 0) + coverGap;
+    if (sourceId !== 'remaining') {
+      const sourceKey = String(sourceId);
+      next[sourceKey] = (next[sourceKey] ?? 0) - coverGap;
+    }
+    await saveCovers(today.slice(0, 7), next);
+    setCoverId(null);
+    addToast('success', `Covered from ${sourceName}. This month only.`);
+  };
 
   if (isLoading) {
     return <div className="p-4 flex justify-center items-center h-full">Loading...</div>;
@@ -201,9 +286,14 @@ export const BudgetPlanningPage: React.FC = () => {
 
   return (
     <div id="page-budget" className="px-4 py-6 space-y-8 max-w-lg mx-auto pb-24">
-      <header>
-        <h1 className="text-2xl font-extrabold text-midblue dark:text-white tracking-wider">Budget Planning</h1>
-        <p className="text-sm text-[var(--text-muted)] font-bold mt-1">Plan your salary before you spend it.</p>
+      <header className="space-y-1">
+        <div className="flex items-center gap-3">
+          <Link to="/" aria-label="Back to home" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--card-bg)] text-[var(--text-main)]">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Link>
+          <h1 className="min-w-0 flex-1 text-2xl font-extrabold text-midblue dark:text-white tracking-wider">Budget Planning</h1>
+        </div>
+        <p className="pl-14 text-sm text-[var(--text-muted)] font-bold">Plan your salary before you spend it.</p>
       </header>
 
       {/* 1. Salary Summary */}
@@ -224,6 +314,12 @@ export const BudgetPlanningPage: React.FC = () => {
               <p className="text-xs font-bold text-white/80 uppercase mb-1">{plan?.workDaysPerWeek || 5} days/week</p>
             </div>
           </div>
+          {cutoffs && !payIn.first && (
+            <p className="mt-2 text-sm font-bold text-blue-100">{centsToDisplay(cutoffs.cutoff1.incomeCents)} still coming on the 15th</p>
+          )}
+          {cutoffs && !payIn.second && (
+            <p className="mt-2 text-sm font-bold text-blue-100">{centsToDisplay(cutoffs.cutoff2.incomeCents)} still coming on the 30th</p>
+          )}
         </Card>
       </section>
 
@@ -261,26 +357,28 @@ export const BudgetPlanningPage: React.FC = () => {
           <div className="space-y-4">
             {/* Cutoff 1 */}
             <Card className="p-0 overflow-hidden border-l-4 border-l-midblue">
-              <div 
-                className="p-4 flex items-center justify-between cursor-pointer hover:bg-[var(--item-bg)] transition-colors"
+              <button
+                type="button"
+                className="p-4 flex w-full items-center justify-between gap-3 text-left cursor-pointer hover:bg-[var(--item-bg)] transition-colors"
                 onClick={() => setIsCutoff1Expanded(!isCutoff1Expanded)}
               >
-                <div>
-                  <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">15th Cutoff</p>
-                  <p className="text-sm font-black text-[var(--text-main)]">Income: {centsToDisplay(cutoffs.cutoff1.incomeCents)}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-danger-500 uppercase">Reserved</p>
-                    <p className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(cutoffs.cutoff1.reservedCents)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-success-500 uppercase">Free</p>
-                    <p className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(cutoffs.cutoff1.freeCents)}</p>
-                  </div>
+                <span>
+                  <span className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">15th Cutoff</span>
+                  <span className="mt-1 block text-sm font-black text-[var(--text-main)]">Income: {centsToDisplay(cutoffs.cutoff1.incomeCents)}</span>
+                  <span className={`mt-1 block text-[10px] font-bold uppercase ${payIn.first ? 'text-success-600' : 'text-warning-600'}`}>{payIn.first ? 'In' : 'Not in yet'}</span>
+                </span>
+                <span className="flex items-center gap-4">
+                  <span className="text-right">
+                    <span className="block text-[10px] font-bold text-danger-500 uppercase">Reserved</span>
+                    <span className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(cutoffs.cutoff1.reservedCents)}</span>
+                  </span>
+                  <span className="text-right">
+                    <span className={`block text-[10px] font-bold uppercase ${payIn.first ? 'text-success-500' : 'text-warning-600'}`}>{payIn.first ? 'Free' : 'Waiting'}</span>
+                    <span className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(payIn.first ? cutoffs.cutoff1.freeCents : cutoffs.cutoff1.reservedCents)}</span>
+                  </span>
                   <Icon name={isCutoff1Expanded ? "ChevronUpIcon" : "ChevronDownIcon"} className="w-5 h-5 text-[var(--text-muted)]" />
-                </div>
-              </div>
+                </span>
+              </button>
               {isCutoff1Expanded && (
                 <div className="p-4 pt-0 border-t border-[var(--card-border)] bg-[var(--item-bg)]/50 space-y-2 mt-2">
                   <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mt-2">Fixed Bills (Due 16th to end of month)</p>
@@ -306,26 +404,28 @@ export const BudgetPlanningPage: React.FC = () => {
 
             {/* Cutoff 2 */}
             <Card className="p-0 overflow-hidden border-l-4 border-l-purple-500">
-              <div 
-                className="p-4 flex items-center justify-between cursor-pointer hover:bg-[var(--item-bg)] transition-colors"
+              <button
+                type="button"
+                className="p-4 flex w-full items-center justify-between gap-3 text-left cursor-pointer hover:bg-[var(--item-bg)] transition-colors"
                 onClick={() => setIsCutoff2Expanded(!isCutoff2Expanded)}
               >
-                <div>
-                  <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">30th Cutoff</p>
-                  <p className="text-sm font-black text-[var(--text-main)]">Income: {centsToDisplay(cutoffs.cutoff2.incomeCents)}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-danger-500 uppercase">Reserved</p>
-                    <p className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(cutoffs.cutoff2.reservedCents)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-success-500 uppercase">Free</p>
-                    <p className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(cutoffs.cutoff2.freeCents)}</p>
-                  </div>
+                <span>
+                  <span className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">30th Cutoff</span>
+                  <span className="mt-1 block text-sm font-black text-[var(--text-main)]">Income: {centsToDisplay(cutoffs.cutoff2.incomeCents)}</span>
+                  <span className={`mt-1 block text-[10px] font-bold uppercase ${payIn.second ? 'text-success-600' : 'text-warning-600'}`}>{payIn.second ? 'In' : 'Not in yet'}</span>
+                </span>
+                <span className="flex items-center gap-4">
+                  <span className="text-right">
+                    <span className="block text-[10px] font-bold text-danger-500 uppercase">Reserved</span>
+                    <span className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(cutoffs.cutoff2.reservedCents)}</span>
+                  </span>
+                  <span className="text-right">
+                    <span className={`block text-[10px] font-bold uppercase ${payIn.second ? 'text-success-500' : 'text-warning-600'}`}>{payIn.second ? 'Free' : 'Waiting'}</span>
+                    <span className="text-xs font-bold text-[var(--text-main)]">{centsToDisplay(payIn.second ? cutoffs.cutoff2.freeCents : cutoffs.cutoff2.reservedCents)}</span>
+                  </span>
                   <Icon name={isCutoff2Expanded ? "ChevronUpIcon" : "ChevronDownIcon"} className="w-5 h-5 text-[var(--text-muted)]" />
-                </div>
-              </div>
+                </span>
+              </button>
               {isCutoff2Expanded && (
                 <div className="p-4 pt-0 border-t border-[var(--card-border)] bg-[var(--item-bg)]/50 space-y-2 mt-2">
                   <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mt-2">Fixed Bills (Due 1st to 15th)</p>
@@ -392,13 +492,15 @@ export const BudgetPlanningPage: React.FC = () => {
           <div className="space-y-3">
             {items.map((item) => {
               const monthlyCents = budgetEngine.calculateMonthlyAmount(item, workDaysPerWeek);
-              const allocPercentage = netSalary > 0 ? ((monthlyCents / netSalary) * 100).toFixed(1) : 0;
+              const moved = item.id == null ? 0 : (shifts[String(item.id)] ?? 0);
+              const monthPlan = planFor(item.id, monthlyCents);
+              const allocPercentage = netSalary > 0 ? ((monthPlan / netSalary) * 100).toFixed(1) : 0;
               const itemPva = item.categoryId ? pva.get(item.categoryId) : null;
-              
-              let pvaPercentage = 0;
-              if (itemPva && itemPva.plannedCents > 0) {
-                pvaPercentage = (itemPva.actualCents / itemPva.plannedCents) * 100;
-              }
+              const actualCents = itemPva?.actualCents ?? 0;
+              const pvaPercentage = monthPlan > 0 ? (actualCents / monthPlan) * 100 : (actualCents > 0 ? 101 : 0);
+              const heldLabel = item.dueDate
+                ? new Date(`${item.dueDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                : '';
 
               return (
                 <Card key={item.id} className={`p-4 transition-opacity ${!item.active ? 'opacity-50' : ''}`}>
@@ -438,7 +540,7 @@ export const BudgetPlanningPage: React.FC = () => {
                   <div className="pl-8 mb-3 flex justify-between items-end">
                     <div>
                       <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Monthly Eq.</p>
-                      <p className="text-sm font-black text-[var(--text-main)]">{centsToDisplay(monthlyCents)}</p>
+                      <p className="text-sm font-black text-[var(--text-main)]">{centsToDisplay(monthPlan)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Allocated</p>
@@ -446,7 +548,20 @@ export const BudgetPlanningPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Progress Bar for PVA — current calendar month only */}
+                  {item.active && item.type === 'savings' && item.targetCents && item.dueDate && (
+                    <div className="pl-8 mt-4 pt-4 border-t border-[var(--card-border)]/50 space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold uppercase">
+                        <span className="text-[var(--text-muted)]">Held for {heldLabel}</span>
+                        <span className="text-midblue">{centsToDisplay(item.amountCents)} this month</span>
+                      </div>
+                      <ProgressBar percentage={item.targetCents > 0 ? ((item.heldCents ?? 0) / item.targetCents) * 100 : 0} height={8} />
+                      <div className="flex justify-between text-[10px] font-bold">
+                        <span className="text-[var(--text-main)]">{centsToDisplay(item.heldCents ?? 0)} / {centsToDisplay(item.targetCents)}</span>
+                        <span className="text-[var(--text-muted)]">Still to set aside {centsToDisplay(Math.max(0, item.targetCents - (item.heldCents ?? 0)))}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {item.active && item.type === 'expense' && itemPva && (
                     <div className="pl-8 mt-4 pt-4 border-t border-[var(--card-border)]/50">
                       <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
@@ -462,9 +577,17 @@ export const BudgetPlanningPage: React.FC = () => {
                       </div>
                       <ProgressBar percentage={pvaPercentage} height={8} className="mb-1" />
                       <div className="flex justify-between text-[10px] font-bold">
-                        <span className="text-[var(--text-main)]">{centsToDisplay(itemPva.actualCents)} / {centsToDisplay(itemPva.plannedCents)}</span>
+                        <span className="text-[var(--text-main)]">{centsToDisplay(actualCents)} / {centsToDisplay(monthPlan)}</span>
                         <span className="text-[var(--text-muted)]">{pvaPercentage.toFixed(0)}%</span>
                       </div>
+                      {moved !== 0 && (
+                        <p className="mt-2 text-[10px] font-bold text-[var(--text-muted)]">This month only. Next month goes back to {centsToDisplay(monthlyCents)}.</p>
+                      )}
+                      {pvaPercentage > 100 && item.id != null && (
+                        <Button className="w-full mt-3" onClick={() => setCoverId(item.id ?? null)}>
+                          Cover {centsToDisplay(actualCents - monthPlan)}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </Card>
@@ -582,16 +705,30 @@ export const BudgetPlanningPage: React.FC = () => {
 
           {itemType === 'expense' ? (
             <>
-              <Select 
-                label="Category" 
-                value={categoryId} 
-                onChange={(e) => setCategoryId(e.target.value)}
-                options={[
-                  { value: '', label: 'Select a category...' },
-                  ...categories.map(c => ({ value: c.id!.toString(), label: c.name })),
-                  { value: 'new', label: '+ Create New Category' }
-                ]}
-              />
+              <div className="space-y-1.5">
+                <span className="text-sm font-bold text-[var(--text-main)]">Category</span>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryPickerOpen(true)}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 text-left"
+                >
+                  {categoryId === 'new' ? (
+                    <span className="text-base font-bold text-[var(--text-main)]">New category</span>
+                  ) : selectedBudgetCategory ? (
+                    <>
+                      <span
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black text-white"
+                        style={{ backgroundColor: selectedBudgetCategory.color }}
+                      >
+                        {selectedBudgetCategory.name.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <span className="text-base font-bold text-[var(--text-main)]">{selectedBudgetCategory.name}</span>
+                    </>
+                  ) : (
+                    <span className="text-base font-medium text-[var(--text-muted)]">Select a category...</span>
+                  )}
+                </button>
+              </div>
               {categoryId === 'new' && (
                 <div className="space-y-4 p-3 bg-[var(--item-bg)] border border-[var(--card-border)] rounded-xl mt-2">
                   <Input 
@@ -637,8 +774,26 @@ export const BudgetPlanningPage: React.FC = () => {
               label="Item Name" 
               value={itemName} 
               onChange={(e) => setItemName(e.target.value)} 
-              placeholder={itemType === 'savings' ? 'e.g. Emergency Fund' : 'e.g. Car Loan'}
+              placeholder={itemType === 'savings' ? 'e.g. Christmas' : 'e.g. Car Loan'}
             />
+          )}
+
+          {itemType === 'savings' && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input
+                label="Save up to"
+                value={saveUpTo}
+                onChange={(e) => setSaveUpTo(e.target.value)}
+                placeholder="6000"
+                inputMode="decimal"
+              />
+              <Input
+                label="Due"
+                type="date"
+                value={savingsDue}
+                onChange={(e) => setSavingsDue(e.target.value)}
+              />
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
@@ -703,6 +858,73 @@ export const BudgetPlanningPage: React.FC = () => {
           )}
 
           <Button className="w-full mt-4" onClick={handleSaveItem}>Save Item</Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isCategoryPickerOpen} onClose={() => setIsCategoryPickerOpen(false)} title="Select Expense Category" position="bottom">
+        <div className="grid grid-cols-3 gap-3 pb-4">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => {
+                setCategoryId(category.id?.toString() || '');
+                setIsCategoryPickerOpen(false);
+              }}
+              className={`flex min-h-11 flex-col items-center gap-2 rounded-2xl py-2 ${category.id?.toString() === categoryId ? 'bg-midblue/10' : ''}`}
+            >
+              <span
+                className="flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-black text-white"
+                style={{ backgroundColor: category.color }}
+              >
+                {category.name.trim().charAt(0).toUpperCase()}
+              </span>
+              <span className="px-1 text-center text-xs font-bold leading-tight text-[var(--text-main)]">{category.name}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setCategoryId('new');
+              setIsCategoryPickerOpen(false);
+            }}
+            className="flex min-h-11 flex-col items-center gap-2 rounded-2xl py-2"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-dashed border-[var(--card-border)] text-xl font-black text-midblue">+</span>
+            <span className="px-1 text-center text-xs font-bold leading-tight text-[var(--text-main)]">New</span>
+          </button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={coverItem != null && coverGap > 0} onClose={() => setCoverId(null)} title={`Cover ${coverItem?.name ?? ''}`} position="bottom">
+        <div className="space-y-3 pb-4">
+          <p className="text-sm text-[var(--text-muted)]">
+            {centsToDisplay(coverGap)} over this month. The move lasts until {nextMonthLabel}, then {coverItem?.name} goes back to {centsToDisplay(coverMonthly)}.
+          </p>
+          {coverSources.map((source) => (
+            <button
+              key={source.id}
+              type="button"
+              onClick={() => handleCover(source.id, source.name)}
+              className="flex min-h-14 w-full items-center justify-between rounded-2xl border border-[var(--card-border)] bg-[var(--item-bg)] px-4 text-left"
+            >
+              <span className="text-sm font-bold text-[var(--text-main)]">{source.name}</span>
+              <span className="text-xs font-bold text-[var(--text-muted)]">{centsToDisplay(source.room)} room</span>
+            </button>
+          ))}
+          {unassignedMoney >= coverGap && (
+            <button
+              type="button"
+              onClick={() => handleCover('remaining', 'Remaining')}
+              className="flex min-h-14 w-full items-center justify-between rounded-2xl border border-[var(--card-border)] bg-[var(--item-bg)] px-4 text-left"
+            >
+              <span className="text-sm font-bold text-[var(--text-main)]">Remaining</span>
+              <span className="text-xs font-bold text-[var(--text-muted)]">{centsToDisplay(unassignedMoney)} free</span>
+            </button>
+          )}
+          {coverSources.length === 0 && unassignedMoney < coverGap && (
+            <p className="text-sm text-[var(--text-muted)]">Nothing else has enough room this month.</p>
+          )}
         </div>
       </Modal>
     </div>

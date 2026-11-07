@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { recurringEngine } from '@/domain/recurring/recurringEngine';
 import type { RecurringRule, RecurringRuleCreate } from '@/types';
 import { useUIStore } from '@/store';
+import { db } from '@/storage/indexeddb/database';
+import { offerUndo } from '@/lib/undo';
 
 export function useRecurring() {
   const [rules, setRules] = useState<RecurringRule[]>([]);
@@ -60,10 +62,15 @@ export function useRecurring() {
   const deleteRule = useCallback(
     async (id: number) => {
       try {
+        const rule = rules.find((entry) => entry.id === id) ?? await db.recurringRules.get(id);
         await recurringEngine.delete(id);
-        // Optimistically remove from local state — no loading spinner
         setRules(prev => prev.filter(r => r.id !== id));
-        addToast('success', 'Recurring rule deleted');
+        if (rule) {
+          offerUndo('Recurring rule deleted', async () => {
+            await db.recurringRules.add(rule);
+            await loadRules();
+          });
+        }
         return true;
       } catch (error) {
         console.error('Failed to delete recurring rule:', error);
@@ -71,7 +78,7 @@ export function useRecurring() {
         return false;
       }
     },
-    [addToast]
+    [addToast, rules, loadRules]
   );
 
   const getTransactionsForDateRange = useCallback(

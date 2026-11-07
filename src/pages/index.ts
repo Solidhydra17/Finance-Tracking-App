@@ -10,3 +10,5 @@ export { AddLoanPage } from './AddLoanPage';
 export { InsightPage } from './InsightPage';
 export { PaymentPlannerPage } from './PaymentPlannerPage';
 export { BankRulesPage } from './BankRulesPage';
+export { CustomCategoriesPage } from './CustomCategoriesPage';
+export { RecurringSeriesPage } from './RecurringSeriesPage';

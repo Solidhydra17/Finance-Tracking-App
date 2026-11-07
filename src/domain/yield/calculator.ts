@@ -52,9 +52,22 @@ const completedMonth = (today: string, startDate: string) => {
   return { date, periodKey: date.slice(0, 7) };
 };
 
+export const savingsRatePct = (rule: BankRule, balanceCents: number) => {
+  if ((rule.tierStyle ?? 'excess') === 'whole') {
+    const topFrom = rule.tierTopFromCents ?? 0;
+    if (topFrom > 0 && balanceCents >= topFrom) return rule.tierTopRatePct ?? 0;
+    if (rule.tierFromCents > 0 && balanceCents >= rule.tierFromCents) return rule.tierRatePct;
+    return rule.ratePct;
+  }
+  return rule.ratePct;
+};
+
 const dailyGross = (balanceCents: number, rule: BankRule) => {
   if (balanceCents < rule.minBalanceCents) return 0;
   const slice = (amountCents: number, ratePct: number) => amountCents * (ratePct / 100) / rule.dayCount;
+  if ((rule.tierStyle ?? 'excess') === 'whole') {
+    return slice(balanceCents, savingsRatePct(rule, balanceCents));
+  }
   if (rule.tierFromCents > 0 && rule.tierRatePct > 0 && balanceCents > rule.tierFromCents) {
     return slice(rule.tierFromCents, rule.ratePct) + slice(balanceCents - rule.tierFromCents, rule.tierRatePct);
   }
@@ -89,11 +102,92 @@ export const loanQuote = (rule: BankRule, payDate: string): LoanQuote => {
 
 const pesos = (cents: number) => `₱${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+const nameWords = (name: string) => name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+
+const hasWord = (name: string, words: string[]) => {
+  const parts = nameWords(name);
+  return words.some((word) => parts.includes(word));
+};
+
+const MARIBANK_EXCLUDED = ['utilities', 'utility', 'transportation', 'transport', 'donation', 'donations', 'charity', 'charities', 'taxes', 'tax', 'government', 'fee', 'fees', 'gambling', 'casino'];
+const MARIBANK_CAPPED = ['food', 'drinks', 'drink', 'health', 'grocery', 'groceries', 'supermarket', 'drugstore', 'pharmacy', 'fuel', 'petroleum', 'gasoline', 'gas'];
+
+export const cashbackScopeOf = (rule: BankRule): 'all' | 'group' =>
+  rule.cashbackCapScope ?? (rule.preset === 'maribank-credit' ? 'group' : 'all');
+
+const usesMariBankNames = (rule: BankRule) =>
+  rule.cashbackNames === 'maribank' || rule.preset === 'maribank-debit' || rule.preset === 'maribank-credit';
+
+/** MariBank drops cashback below ₱0.005 and rounds ₱0.005 and above up to the next centavo. */
+export const cashbackForPurchase = (amountCents: number, pct: number) => {
+  if (amountCents <= 0 || pct <= 0) return 0;
+  const centavos = amountCents * (pct / 100);
+  if (centavos < 0.5) return 0;
+  return Math.ceil(centavos - 1e-9);
+};
+
+export const statementDateFor = (expenseDate: string, day: number) => {
+  const due = Math.min(28, Math.max(1, day || 15));
+  const [year, month, date] = expenseDate.split('-').map(Number);
+  const stamp = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-${String(due).padStart(2, '0')}`;
+  if (date <= due) return stamp(year, month);
+  if (month === 12) return stamp(year + 1, 1);
+  return stamp(year, month + 1);
+};
+
+export interface CashbackPosting {
+  expenseId: number;
+  amountCents: number;
+  date: string;
+  month: string;
+}
+
+export const planCashback = (
+  rule: BankRule,
+  accountType: string,
+  transactions: Transaction[],
+  categories: { id?: number; name: string }[],
+): CashbackPosting[] => {
+  const names = new Map(categories.filter((entry) => entry.id != null).map((entry) => [entry.id as number, entry.name]));
+  const scope = cashbackScopeOf(rule);
+  const named = usesMariBankNames(rule);
+  const creditCard = accountType === 'credit';
+  const spent = new Map<string, number>();
+  const postings: CashbackPosting[] = [];
+  const purchases = transactions
+    .filter((txn) => !txn.deletedAt && txn.type === 'expense' && txn.source !== 'bank_rule' && txn.walletAccountId === rule.accountId && typeof txn.id === 'number' && txn.date >= rule.startDate)
+    .sort((a, b) => a.date.localeCompare(b.date) || Number(a.id) - Number(b.id));
+
+  for (const txn of purchases) {
+    const month = txn.date.slice(0, 7);
+    const legacy = transactions.some((row) => !row.deletedAt && row.bankRuleId === rule.id && row.source === 'bank_rule' && row.note === `${rule.name} · ${month}`);
+    if (legacy) continue;
+    const name = names.get(txn.categoryId) || '';
+    if (rule.excludedCategoryIds.includes(txn.categoryId)) continue;
+    if (named && hasWord(name, MARIBANK_EXCLUDED)) continue;
+    let reward = cashbackForPurchase(txn.amount, rule.cashbackPct);
+    if (reward <= 0) continue;
+    const cappedKind = named && hasWord(name, MARIBANK_CAPPED);
+    const sharesCap = scope === 'all' || cappedKind;
+    if (sharesCap && rule.monthlyCapCents > 0) {
+      const used = spent.get(month) || 0;
+      const room = Math.max(0, rule.monthlyCapCents - used);
+      reward = Math.min(reward, room);
+      if (reward <= 0) continue;
+      spent.set(month, used + reward);
+    }
+    const date = creditCard ? statementDateFor(txn.date, rule.dueDay || 15) : txn.date;
+    postings.push({ expenseId: txn.id as number, amountCents: reward, date, month });
+  }
+  return postings;
+};
+
 export const previewBankRule = (
   rule: BankRule,
   accounts: WalletAccount[],
   transactions: Transaction[],
   today: string,
+  categories: { id?: number; name: string }[] = [],
 ): YieldPreview | null => {
   const account = accounts.find((entry) => entry.id === rule.accountId);
   if (!account || today < rule.startDate) return null;
@@ -113,7 +207,9 @@ export const previewBankRule = (
         categoryName: 'Interest',
         note: `${rule.name} · ${today}`,
         headline: 'Today, after tax',
-        summary: `${rule.ratePct}% a year, after ${rule.taxPct}% tax.`,
+        summary: (rule.tierStyle ?? 'excess') === 'whole'
+          ? `${savingsRatePct(rule, balance)}% on the whole balance, after ${rule.taxPct}% tax.`
+          : `${rule.ratePct}% a year, after ${rule.taxPct}% tax.`,
       };
     }
     const due = completedMonth(today, rule.startDate);
@@ -129,30 +225,39 @@ export const previewBankRule = (
       categoryName: 'Interest',
       note: `${rule.name} · ${due.periodKey}`,
       headline: 'After tax',
-      summary: `${rule.ratePct}% a year, after ${rule.taxPct}% tax, at month-end.`,
+      summary: (rule.tierStyle ?? 'excess') === 'whole'
+        ? `${savingsRatePct(rule, balance)}% on the whole balance, after ${rule.taxPct}% tax, at month-end.`
+        : `${rule.ratePct}% a year, after ${rule.taxPct}% tax, at month-end.`,
     };
   }
 
   if (rule.kind === 'cashback') {
-    const due = completedMonth(today, rule.startDate);
-    if (!due) return null;
-    const spent = transactions
-      .filter((txn) => !txn.deletedAt && txn.type === 'expense' && txn.walletAccountId === rule.accountId && txn.date.startsWith(due.periodKey))
-      .filter((txn) => !rule.excludedCategoryIds.includes(txn.categoryId))
-      .reduce((sum, txn) => sum + txn.amount, 0);
-    const raw = roundCents(spent * (rule.cashbackPct / 100));
-    const capped = rule.monthlyCapCents > 0 ? Math.min(raw, rule.monthlyCapCents) : raw;
-    if (capped <= 0) return null;
+    const postings = planCashback(rule, account.type, transactions, categories);
+    const todayRows = postings.filter((row) => row.date === today);
+    const nextDate = postings.map((row) => row.date).filter((date) => date > today).sort()[0];
+    const nextRows = nextDate ? postings.filter((row) => row.date === nextDate) : [];
+    const shown = todayRows.length > 0 ? todayRows : nextRows;
+    const amountCents = shown.reduce((sum, row) => sum + row.amountCents, 0);
+    const scope = cashbackScopeOf(rule);
+    const cap = rule.monthlyCapCents > 0 ? `, cap ${pesos(rule.monthlyCapCents)}` : '';
+    const creditCard = account.type === 'credit';
+    const summary = creditCard
+      ? scope === 'group'
+        ? `${rule.cashbackPct}% of each purchase. Food, health, and fuel share one cap${cap}. Other eligible purchases have no cap. Pays the card down on day ${rule.dueDay || 15}.`
+        : `${rule.cashbackPct}% of each eligible purchase${cap}. Pays the card down on day ${rule.dueDay || 15}.`
+      : usesMariBankNames(rule)
+        ? `${rule.cashbackPct}% of each purchase, added to this account the same day. Utilities, transportation, donations, taxes, and fees are skipped${cap}.`
+        : `${rule.cashbackPct}% of each expense, added to this account${cap}.`;
     return {
-      amountCents: capped,
-      date: due.date,
-      periodKey: due.periodKey,
+      amountCents,
+      date: shown[0]?.date ?? today,
+      periodKey: shown[0]?.month ?? today.slice(0, 7),
       txnType: 'income',
       accountId: account.id!,
       categoryName: 'Cashback',
-      note: `${rule.name} · ${due.periodKey}`,
-      headline: 'Cashback',
-      summary: `${rule.cashbackPct}% of ${pesos(spent)}${rule.monthlyCapCents > 0 ? `, cap ${pesos(rule.monthlyCapCents)}` : ''}.`,
+      note: `${rule.name} cashback`,
+      headline: todayRows.length > 0 ? 'Cashback today' : nextDate ? (creditCard ? 'On the statement date' : 'On the purchase date') : 'Cashback',
+      summary,
     };
   }
 
@@ -237,14 +342,19 @@ export const emptyBankRule = (today: string): BankRule => ({
   active: true,
   preset: 'custom',
   ratePct: 3.25,
+  tierStyle: 'excess',
   tierRatePct: 0,
   tierFromCents: 0,
+  tierTopRatePct: 0,
+  tierTopFromCents: 0,
   dayCount: 365,
   creditWhen: 'daily',
   taxPct: 20,
   minBalanceCents: 0,
   cashbackPct: 1,
   monthlyCapCents: 0,
+  cashbackCapScope: 'all',
+  cashbackNames: 'none',
   excludedCategoryIds: [],
   monthlyRatePct: 2.99,
   tenorMonths: 12,
@@ -265,9 +375,11 @@ export const emptyBankRule = (today: string): BankRule => ({
 });
 
 export const bankRulePresets: Array<{ id: string; kind: BankRuleKind; label: string; patch: Partial<BankRule> }> = [
-  { id: 'maribank', kind: 'savings', label: 'MariBank', patch: { ratePct: 3.25, tierRatePct: 3.75, tierFromCents: 100_000_000, dayCount: 365, creditWhen: 'daily', taxPct: 20, minBalanceCents: 0 } },
-  { id: 'bdo', kind: 'savings', label: 'BDO passbook', patch: { ratePct: 0.0625, tierRatePct: 0, tierFromCents: 0, dayCount: 365, creditWhen: 'month-end', taxPct: 20, minBalanceCents: 1_000_000 } },
-  { id: 'maribank-debit', kind: 'cashback', label: 'MariBank debit', patch: { cashbackPct: 1, monthlyCapCents: 300_000, excludedCategoryIds: [] } },
+  { id: 'maribank', kind: 'savings', label: 'MariBank', patch: { tierStyle: 'excess', ratePct: 3.25, tierRatePct: 3.75, tierFromCents: 100_000_000, tierTopRatePct: 0, tierTopFromCents: 0, dayCount: 365, creditWhen: 'daily', taxPct: 20, minBalanceCents: 0 } },
+  { id: 'unoready', kind: 'savings', label: 'UNOready', patch: { tierStyle: 'whole', ratePct: 3, tierRatePct: 3.5, tierFromCents: 500_000, tierTopRatePct: 1, tierTopFromCents: 500_000_000, dayCount: 365, creditWhen: 'daily', taxPct: 20, minBalanceCents: 0 } },
+  { id: 'bdo', kind: 'savings', label: 'BDO passbook', patch: { tierStyle: 'excess', ratePct: 0.0625, tierRatePct: 0, tierFromCents: 0, tierTopRatePct: 0, tierTopFromCents: 0, dayCount: 365, creditWhen: 'month-end', taxPct: 20, minBalanceCents: 1_000_000 } },
+  { id: 'maribank-debit', kind: 'cashback', label: 'MariBank debit', patch: { cashbackPct: 1, monthlyCapCents: 300_000, cashbackCapScope: 'all', cashbackNames: 'maribank', excludedCategoryIds: [] } },
+  { id: 'maribank-credit', kind: 'cashback', label: 'MariBank credit', patch: { cashbackPct: 1, monthlyCapCents: 300_000, cashbackCapScope: 'group', cashbackNames: 'maribank', dueDay: 15, excludedCategoryIds: [] } },
   { id: 'gloan', kind: 'loan', label: 'GLoan', patch: { method: 'addon', monthlyRatePct: 2.99, tenorMonths: 12, processingPct: 3, includeDst: true, lateFixedPct: 1, lateDailyPct: 0.15, dueDay: 10, paidInFull: false } },
   { id: 'card-finance', kind: 'loan', label: 'Card finance', patch: { method: 'revolving', monthlyRatePct: 3, lateFeeCents: 85_000, paidInFull: true } },
   { id: 'unoearn', kind: 'deposit', label: 'UNOearn', patch: { ratePct: 4.75, tenorMonths: 12, creditWhen: 'month-end', taxPct: 20 } },

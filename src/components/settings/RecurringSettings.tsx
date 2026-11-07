@@ -5,7 +5,9 @@ import { useCategories } from '@/hooks';
 import { centsToDisplay } from '@/lib/money';
 import type { RecurringRule } from '@/types';
 import { useUIStore } from '@/store';
-import { useNavigate } from 'react-router-dom';
+import { offerUndo } from '@/lib/undo';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 export const RecurringSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -34,23 +36,35 @@ export const RecurringSettings: React.FC = () => {
     if (ruleToDelete === null) return;
     
     try {
-      // 1. Detach all transactions linked to this rule
+      const rule = await db.recurringRules.get(ruleToDelete);
+      const linked = await db.transactions.where('recurringRuleId').equals(ruleToDelete).toArray();
+      const links = linked.flatMap((txn) => (
+        typeof txn.id === 'number'
+          ? [{ id: txn.id, recurringRuleId: txn.recurringRuleId, source: txn.source }]
+          : []
+      ));
+
       await db.transactions
         .where('recurringRuleId')
         .equals(ruleToDelete)
-        .modify({ 
+        .modify({
           recurringRuleId: undefined,
-          source: 'manual' 
+          source: 'manual'
         });
 
-      // 2. Delete the rule
       await db.recurringRules.delete(ruleToDelete);
-      
-      // 3. Optimistically remove from local state — no loading
+
       setRules(prev => prev.filter(r => r.id !== ruleToDelete));
-      addToast('success', 'Recurring series deleted');
       setIsDeleteModalOpen(false);
       setRuleToDelete(null);
+      offerUndo('Recurring series deleted', async () => {
+        if (rule) await db.recurringRules.add(rule);
+        await Promise.all(links.map((link) => db.transactions.update(link.id, {
+          recurringRuleId: link.recurringRuleId,
+          source: link.source,
+        })));
+        await loadRules();
+      });
     } catch (error) {
       console.error('Failed to delete rule:', error);
       addToast('error', 'Failed to delete series');
@@ -61,8 +75,11 @@ export const RecurringSettings: React.FC = () => {
 
   return (
     <div id="section-recurring-settings" className="space-y-4">
-      <div className="flex items-center justify-between px-1">
-        <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Recurring Series</h3>
+      <div className="flex items-center gap-3 px-1">
+        <Link to="/" aria-label="Back to home" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--card-bg)] text-[var(--text-main)]">
+          <ArrowLeftIcon className="h-5 w-5" />
+        </Link>
+        <h1 className="min-w-0 flex-1 text-2xl font-extrabold text-midblue dark:text-white">Recurring series</h1>
         <span className="text-[10px] font-black text-midblue dark:text-white bg-[var(--item-bg)] px-3 py-1 rounded-full border border-[var(--card-border)]">
           {rules.length} ACTIVE
         </span>

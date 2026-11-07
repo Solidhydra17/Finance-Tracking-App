@@ -55,7 +55,20 @@ export const budgetRepository: BudgetRepository = {
 
   async updateItem(id: number, data: BudgetItemUpdate): Promise<number> {
     const now = new Date().toISOString();
-    await db.budgetItems.update(id, { ...data, updatedAt: now });
+    const existing = await db.budgetItems.get(id);
+    if (!existing) return id;
+    const next: BudgetItem = { ...existing, id, updatedAt: now };
+    (Object.keys(data) as Array<keyof BudgetItemUpdate>).forEach((key) => {
+      const value = data[key];
+      if (value === null) {
+        delete next[key];
+        return;
+      }
+      if (value !== undefined) {
+        Object.assign(next, { [key]: value });
+      }
+    });
+    await db.budgetItems.put(next);
     return id;
   },
 

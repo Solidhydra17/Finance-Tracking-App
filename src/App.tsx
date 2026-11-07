@@ -13,6 +13,8 @@ import { InsightPage } from "@/pages/InsightPage";
 import { PaymentPlannerPage } from "@/pages/PaymentPlannerPage";
 import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 import { BankRulesPage } from "@/pages/BankRulesPage";
+import { CustomCategoriesPage } from "@/pages/CustomCategoriesPage";
+import { RecurringSeriesPage } from "@/pages/RecurringSeriesPage";
 import { walletService } from '@/domain/wallet/walletService';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -300,6 +302,8 @@ export const App: React.FC = () => {
                         <Route path="insight" element={<InsightPage />} />
                         <Route path="payment-planner" element={<PaymentPlannerPage />} />
                         <Route path="bank-rules" element={<BankRulesPage />} />
+                        <Route path="custom-categories" element={<CustomCategoriesPage />} />
+                        <Route path="recurring-series" element={<RecurringSeriesPage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
