@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
-import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
+import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useTransform } from 'motion/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Delete02Icon } from '@hugeicons/core-free-icons';
 
@@ -14,6 +14,24 @@ const SPRING_UI = { type: 'spring' as const, duration: 0.3, bounce: 0 };
 const FILL_SPRING = { type: 'spring' as const, duration: 0.55, bounce: 0 };
 const SNAP_MOVE = { duration: 0.6, ease: [0.4, 0, 0.2, 1] as const };
 const DEFAULT_ACTIONS: SwipeAction[] = [{ id: 'delete', label: 'Delete' }];
+const RIPPLE_SPAN = 1.55;
+const RIPPLE_SPEED = 1.2;
+
+type Ripple = { x: number; y: number; size: number; ms: number };
+
+const coverRipple = (width: number, height: number, x: number, y: number, holdMs: number): Ripple => {
+  const reach = Math.max(
+    Math.hypot(x, y),
+    Math.hypot(width - x, y),
+    Math.hypot(x, height - y),
+    Math.hypot(width - x, height - y),
+  );
+  const size = Math.ceil(reach * 2);
+  const speed = (Math.max(1, width) * RIPPLE_SPAN * RIPPLE_SPEED) / Math.max(1, holdMs);
+  const natural = Math.round(size / Math.max(0.01, speed));
+  const cap = Math.max(1, Math.round(holdMs / RIPPLE_SPEED));
+  return { x, y, size, ms: Math.max(1, Math.min(cap, natural)) };
+};
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const rubber = (o: number, dim: number, c: number) => (o * dim * c) / (dim + c * Math.abs(o));
@@ -76,6 +94,8 @@ export type SwipeAction = {
   onSelect?: () => void;
 };
 
+type Cue = 'button' | 'release';
+
 type SwipeRowProps = {
   children?: ReactNode;
   actions?: SwipeAction[];
@@ -120,7 +140,7 @@ export const SwipeRow = ({
   snapBounce = 0.2,
   resistance = 0.55,
   collapseMs = 200,
-  commitAt = 0.6,
+  commitAt = 0.5,
   fullSwipe = true,
   disabled = false,
   open: openProp,
@@ -156,8 +176,15 @@ export const SwipeRow = ({
   const live = useRef<Live>({ move: () => undefined, up: () => undefined });
   const foldTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const holdDone = useRef(false);
+  const holdingRef = useRef(false);
+  const rippleAnim = useRef<Animation | null>(null);
   const suppressClick = useRef(false);
   const [holding, setHolding] = useState(false);
+  const [cue, setCue] = useState<Cue>('button');
+  const cueRef = useRef<Cue>('button');
+  const [ripple, setRipple] = useState<Ripple | null>(null);
+  const rippleEl = useRef<HTMLSpanElement>(null);
   const heading = useRef<number | null>(null);
   const centeredOn = useRef(false);
 
@@ -171,6 +198,8 @@ export const SwipeRow = ({
   const railXf = useTransform(exposed, (e) => `translateX(${-s * Math.max(0, D - e)}px)`);
   const shift = useTransform(exposed, (e) => Math.max(0, e - D));
   const blockXf = useTransform(shift, (v) => `translateX(${s * v}px)`);
+  const hintWidth = useTransform(exposed, (raw) => Math.max(0, raw));
+  const hintJustify = useTransform(exposed, (raw) => (raw >= 132 ? 'center' : s < 0 ? 'flex-start' : 'flex-end'));
   const glyphXf = useTransform([exposed, centered], ([raw, blend]: number[]) => {
     const width = Math.max(1, w.current);
     const reveal = Math.max(0, raw);
@@ -220,6 +249,7 @@ export const SwipeRow = ({
     () => () => {
       clearTimeout(foldTimer.current);
       clearTimeout(holdTimer.current);
+      rippleAnim.current?.cancel();
       unwatch.current?.();
     },
     []
@@ -255,11 +285,20 @@ export const SwipeRow = ({
     if ((spread.get() === 1) === on) return;
     if (reduce) spread.set(on ? 1 : 0);
     else animate(spread, on ? 1 : 0, SPRING_UI);
-    if (on && primary) {
-      setSay(`Release to ${primary.label}`);
-      if (haptic && grip.current?.touch) navigator.vibrate?.(8);
-    }
+    if (on && haptic && grip.current?.touch) navigator.vibrate?.(8);
   };
+  const cueLabel = primary?.label.toLowerCase() ?? 'delete';
+  const applyCue = (reveal: number) => {
+    const releaseAt = canCommit() ? commitPoint() : Number.POSITIVE_INFINITY;
+    const prev = cueRef.current;
+    const next: Cue = prev === 'release' ? (reveal >= releaseAt - 16 ? 'release' : 'button') : reveal >= releaseAt ? 'release' : 'button';
+    if (next === prev) return;
+    cueRef.current = next;
+    setCue(next);
+    if (next === 'release') setSay(`Release to ${cueLabel}`);
+    else if (primary) setSay(primary.label);
+  };
+  useMotionValueEvent(exposed, 'change', (value) => applyCue(Math.max(0, value)));
   const commit = (a: SwipeAction, viaKey: boolean, v = 0) => {
     const leap = a === primary;
     setPhase('committing');
@@ -295,9 +334,59 @@ export const SwipeRow = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, D]);
 
+  const releaseRipple = (shrink: boolean) => {
+    const node = rippleEl.current;
+    const current = rippleAnim.current;
+    rippleAnim.current = null;
+    if (!node) return;
+    const progress = Number(current?.effect?.getComputedTiming().progress ?? 0);
+    if (current) current.onfinish = null;
+    node.getAnimations().forEach((anim) => anim.cancel());
+    if (!shrink || reduce || progress <= 0.02) return;
+    node.animate(
+      [
+        { transform: `translate(-50%, -50%) scale(${progress})` },
+        { transform: 'translate(-50%, -50%) scale(0)' },
+      ],
+      { duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }
+    );
+  };
   const stopHold = () => {
+    holdingRef.current = false;
     clearTimeout(holdTimer.current);
+    releaseRipple(true);
     setHolding(false);
+  };
+  const finishHold = () => {
+    if (holdDone.current || !holdingRef.current) return;
+    const current = grip.current;
+    if (!current || current.moved) return;
+    holdDone.current = true;
+    holdingRef.current = false;
+    clearTimeout(holdTimer.current);
+    suppressClick.current = true;
+    releaseRipple(true);
+    setHolding(false);
+    onHold?.();
+  };
+  const playRipple = (ms: number) => {
+    const node = rippleEl.current;
+    if (!node) return;
+    releaseRipple(false);
+    const anim = reduce
+      ? node.animate([{ opacity: 0 }, { opacity: 0.5 }], { duration: ms, easing: 'linear', fill: 'forwards' })
+      : node.animate(
+          [
+            { transform: 'translate(-50%, -50%) scale(0)' },
+            { transform: 'translate(-50%, -50%) scale(1)' },
+          ],
+          { duration: ms, easing: 'linear', fill: 'forwards' }
+        );
+    rippleAnim.current = anim;
+    anim.onfinish = () => {
+      if (rippleAnim.current !== anim) return;
+      finishHold();
+    };
   };
   const down = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (disabled || n === 0 || phase !== 'idle' || grip.current || event.button !== 0) return;
@@ -320,14 +409,25 @@ export const SwipeRow = ({
     unwatch.current?.();
     unwatch.current = watchWindow(live);
     if (!onHold || open) return;
+    const rect = surface.current?.getBoundingClientRect();
+    const next =
+      rect && rect.width > 0 && rect.height > 0
+        ? coverRipple(rect.width, rect.height, event.clientX - rect.left, event.clientY - rect.top, holdMs)
+        : null;
+    if (next && root.current) {
+      root.current.style.setProperty('--sr-ripple-x', `${next.x}px`);
+      root.current.style.setProperty('--sr-ripple-y', `${next.y}px`);
+      root.current.style.setProperty('--sr-ripple-size', `${next.size}px`);
+      root.current.style.setProperty('--sr-hold', `${next.ms}ms`);
+    }
+    if (next) setRipple(next);
+    holdDone.current = false;
+    holdingRef.current = true;
+    const ms = next?.ms ?? holdMs;
+    void rippleEl.current?.offsetWidth;
     setHolding(true);
-    holdTimer.current = setTimeout(() => {
-      const current = grip.current;
-      if (!current || current.moved) return;
-      suppressClick.current = true;
-      setHolding(false);
-      onHold();
-    }, holdMs);
+    playRipple(ms);
+    holdTimer.current = setTimeout(finishHold, ms + 80);
   };
   const move = (event: PointerEvent) => {
     const g = grip.current;
@@ -455,6 +555,7 @@ export const SwipeRow = ({
       data-open={open ? '' : undefined}
       data-phase={phase}
       data-holding={holding ? '' : undefined}
+      data-cue={cue}
       data-disabled={disabled ? '' : undefined}
       style={{
         '--sr-h': `${height}px`,
@@ -467,7 +568,14 @@ export const SwipeRow = ({
         '--sr-action': actionColor,
         '--sr-on-action': onColor(actionColor),
         '--sr-collapse': `${collapseMs}ms`,
-        '--sr-hold': `${holdMs}ms`,
+        '--sr-hold': `${ripple?.ms ?? holdMs}ms`,
+        ...(ripple
+          ? {
+              '--sr-ripple-x': `${ripple.x}px`,
+              '--sr-ripple-y': `${ripple.y}px`,
+              '--sr-ripple-size': `${ripple.size}px`,
+            }
+          : {}),
         ...style,
       } as CSSProperties}
     >
@@ -506,6 +614,16 @@ export const SwipeRow = ({
                   <span>{primary.label}</span>
                 </span>
               </motion.button>
+              <motion.div
+                className="swipe-row__hint"
+                data-cue={cue}
+                aria-hidden="true"
+                style={{ width: hintWidth, justifyContent: hintJustify }}
+              >
+                <span className="swipe-row__flip" data-cue={cue}>
+                  <span className="swipe-row__flip-face">Release to {cueLabel}</span>
+                </span>
+              </motion.div>
             </motion.div>
           ) : null}
         </motion.div>
@@ -524,7 +642,7 @@ export const SwipeRow = ({
             if (onHold) event.preventDefault();
           }}
         >
-          {onHold ? <span className="swipe-row__ripple" aria-hidden="true" /> : null}
+          {onHold ? <span ref={rippleEl} className="swipe-row__ripple" aria-hidden="true" /> : null}
           <div className="swipe-row__content">{children}</div>
           <button
             type="button"

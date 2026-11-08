@@ -94,8 +94,25 @@
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.01em;
+  white-space: nowrap;
   line-height: 1;
-  transition: transform 160ms var(--sr-ease-out);
+  transition:
+    transform 220ms var(--sr-ease-out),
+    opacity 180ms ease;
+}
+
+.swipe-row__action--commit .swipe-row__glyph {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.swipe-row[data-cue='release'] .swipe-row__action--commit .swipe-row__glyph {
+  opacity: 0;
+  transform: translateX(-14px);
+}
+
+.swipe-row[data-direction='right'][data-cue='release'] .swipe-row__action--commit .swipe-row__glyph {
+  transform: translateX(14px);
 }
 
 .swipe-row__glyph span {
@@ -129,6 +146,7 @@
 .swipe-row__action--commit {
   background: transparent;
   color: var(--sr-on-action);
+  overflow: visible;
 }
 
 .swipe-row[data-direction='left'] .swipe-row__action--commit {
@@ -139,24 +157,66 @@
   right: 0;
 }
 
+.swipe-row__hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  box-sizing: border-box;
+  padding-inline: 8px;
+  overflow: hidden;
+  color: var(--sr-on-action);
+  pointer-events: none;
+}
+
+.swipe-row[data-direction='right'] .swipe-row__hint {
+  left: auto;
+  right: 0;
+}
+
+.swipe-row__flip {
+  position: relative;
+  display: grid;
+  perspective: 520px;
+  transform-style: preserve-3d;
+}
+
+.swipe-row__flip-face {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  backface-visibility: hidden;
+  transform-origin: center;
+  transform: rotateX(var(--flip, 90deg));
+  opacity: var(--flip-o, 0);
+  transition:
+    transform 280ms var(--sr-ease-out),
+    opacity 180ms ease;
+}
+
+.swipe-row__flip[data-cue='release'] .swipe-row__flip-face {
+  --flip: 0deg;
+  --flip-o: 1;
+}
+
 .swipe-row__ripple {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: var(--sr-ripple-x, 50%);
+  top: var(--sr-ripple-y, 50%);
   z-index: 0;
-  width: 155%;
+  width: var(--sr-ripple-size, 155%);
   aspect-ratio: 1;
   border-radius: 9999px;
   background: #285ccc;
   opacity: 0.5;
   pointer-events: none;
   transform: translate(-50%, -50%) scale(0);
-  transition: transform 180ms var(--sr-ease-out);
-}
-
-.swipe-row[data-holding] .swipe-row__ripple {
-  transform: translate(-50%, -50%) scale(1);
-  transition: transform var(--sr-hold) linear;
 }
 
 .swipe-row__content {
@@ -253,18 +313,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .swipe-row__action:active .swipe-row__glyph {
+  .swipe-row__action:active .swipe-row__glyph,
+  .swipe-row__glyph,
+  .swipe-row__hint,
+  .swipe-row__flip-face {
     transform: none;
   }
 
   .swipe-row__ripple {
     transform: translate(-50%, -50%) scale(1);
     opacity: 0;
-    transition: opacity 180ms ease;
-  }
-
-  .swipe-row[data-holding] .swipe-row__ripple {
-    opacity: 0.5;
-    transition: opacity var(--sr-hold) linear;
   }
 }
