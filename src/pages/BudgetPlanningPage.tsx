@@ -10,6 +10,7 @@ import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine
 import type { BudgetItem, BudgetItemType, BudgetItemFrequency } from '@/types';
 import { categoryRepository, db } from '@/storage/indexeddb';
 import { useUIStore } from '@/store';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 
 export const BudgetPlanningPage: React.FC = () => {
   const { plan, items, isLoading, savePlan, createItem, updateItem, deleteItem, saveCovers } = useBudget();
@@ -292,6 +293,7 @@ export const BudgetPlanningPage: React.FC = () => {
             <ArrowLeftIcon className="h-5 w-5" />
           </Link>
           <h1 className="min-w-0 flex-1 text-2xl font-extrabold text-midblue dark:text-white tracking-wider">Budget Planning</h1>
+          <WalletSwitcher />
         </div>
         <p className="pl-14 text-sm text-[var(--text-muted)] font-bold">Plan your salary before you spend it.</p>
       </header>

@@ -15,6 +15,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { useLoanStore } from '@/store/loanStore';
 import { useUIStore } from '@/store/uiStore';
 import { refreshWidget } from '@/lib/notificationSettings';
+import { getActiveWallet } from '@/storage/indexeddb/wallets';
 import { calculateBalances } from '@/lib/balances';
 
 function fmt(n: number, sym: string, pos: 'prefix' | 'suffix'): string {
@@ -78,6 +79,7 @@ export async function syncWidget(): Promise<void> {
             Preferences.set({ key: 'widget_owedToYou',        value: f(totalOwedToYou) }),
             Preferences.set({ key: 'widget_youOwe',           value: f(loanDebt) }),
             Preferences.set({ key: 'widget_accounts',         value: JSON.stringify(accountsData) }),
+            Preferences.set({ key: 'widget_walletName',       value: getActiveWallet()?.name ?? 'Wallet' }),
         ]);
 
         await refreshWidget();

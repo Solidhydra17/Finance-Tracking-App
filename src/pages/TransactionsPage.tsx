@@ -13,6 +13,7 @@ import { useTransactions, useCategories, useDebouncedValue } from "@/hooks";
 import { useUIStore, useWalletStore } from "@/store";
 import { centsToDisplay } from "@/lib/money";
 import { Icon } from "@/components/ui";
+import { WalletSwitcher } from "@/components/wallets/WalletSwitcher";
 import type { TransactionTypeFilter } from "@/types";
 import { formatDateLocal, parseDateLocal, getMonthRange, formatTime12Hour } from "@/lib/date";
 
@@ -197,10 +198,9 @@ export const TransactionsPage: React.FC = () => {
 
     return (
         <div id="page-transactions">
-            <header className="px-4 pt-4 mb-6">
-                <div>
-                    <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Transactions</h1>
-                </div>
+            <header className="mb-6 flex items-center justify-between gap-3 px-4 pt-4">
+                <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Transactions</h1>
+                <WalletSwitcher />
             </header>
 
             <div id="search-container" className="px-4 mb-4">

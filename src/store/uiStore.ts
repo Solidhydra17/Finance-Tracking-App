@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { consumeSkipFunnyLoad } from '@/lib/skipFunnyLoad';
 import type { Toast, ToastAction, ToastType } from '@/lib/toast';
 import type { FilterState, DateRange } from '@/types';
 import type { DashboardData } from '@/domain/dashboard/types';
@@ -151,7 +152,7 @@ export const useUIStore = create<UIState>((set) => ({
   // Loading
   isLoading: false,
   setLoading: (loading) => set({ isLoading: loading }),
-  isFirstLoad: true,
+  isFirstLoad: !consumeSkipFunnyLoad(),
   setFirstLoad: (first) => set({ isFirstLoad: first }),
 
   // Preferences

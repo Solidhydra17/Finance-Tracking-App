@@ -6,7 +6,7 @@ export interface Transaction {
   type: TransactionType;
   amount: number; // integer cents
   date: string; // ISO date string (YYYY-MM-DD)
-  time: string; // HH:mm (24-hour) time of day
+  time: string; // HH:mm, or HH:mm:ss.SSS when the save captured seconds
   categoryId: number;
   note: string;
   source: TransactionSource;

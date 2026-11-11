@@ -77,7 +77,7 @@ export const PWAUpdateBanner: React.FC = () => {
     if (!isVisible) return null;
 
     const currentVersion =
-        typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.0.30";
+        typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.0.31";
 
     return (
         <div

@@ -1,7 +1,14 @@
 import { Preferences } from '@capacitor/preferences'
+import { PRIMARY_DB_NAME } from '@/storage/indexeddb/database'
+import { getActiveWallet } from '@/storage/indexeddb/wallets'
 import type { DailyInsightRecord, InsightQuotaStatus } from './types'
 
 const DAILY_KEY = 'insight_daily'
+
+const dailyKey = (): string => {
+  const id = getActiveWallet()?.id
+  return id ? `${DAILY_KEY}_${id}` : DAILY_KEY
+}
 const QUOTA_KEY = 'insight_quota_blocked'
 
 export const getLocalDayKey = (): string => {
@@ -12,14 +19,21 @@ export const getLocalDayKey = (): string => {
   return `${y}-${m}-${day}`
 }
 
+const parseDailyInsight = (value: string | null): DailyInsightRecord | null => {
+  if (!value) return null
+  const parsed = JSON.parse(value) as DailyInsightRecord
+  if (parsed.day !== getLocalDayKey()) return null
+  if (!parsed.insight?.text || !parsed.txRevision) return null
+  return parsed
+}
+
 export const readDailyInsight = async (): Promise<DailyInsightRecord | null> => {
   try {
-    const { value } = await Preferences.get({ key: DAILY_KEY })
-    if (!value) return null
-    const parsed = JSON.parse(value) as DailyInsightRecord
-    if (parsed.day !== getLocalDayKey()) return null
-    if (!parsed.insight?.text || !parsed.txRevision) return null
-    return parsed
+    const current = parseDailyInsight((await Preferences.get({ key: dailyKey() })).value)
+    if (current) return current
+    const active = getActiveWallet()
+    if (active?.dbName !== PRIMARY_DB_NAME) return null
+    return parseDailyInsight((await Preferences.get({ key: DAILY_KEY })).value)
   } catch {
     return null
   }
@@ -27,7 +41,7 @@ export const readDailyInsight = async (): Promise<DailyInsightRecord | null> => 
 
 export const writeDailyInsight = async (record: DailyInsightRecord): Promise<void> => {
   try {
-    await Preferences.set({ key: DAILY_KEY, value: JSON.stringify(record) })
+    await Preferences.set({ key: dailyKey(), value: JSON.stringify(record) })
   } catch {
     // ignore storage failures
   }

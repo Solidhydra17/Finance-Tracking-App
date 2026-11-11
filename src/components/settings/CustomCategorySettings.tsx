@@ -6,6 +6,7 @@ import { useCategories } from '@/hooks';
 import { categoryRepository } from '@/storage/indexeddb';
 import { useUIStore } from '@/store';
 import type { Category } from '@/types';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 
 export const CustomCategorySettings: React.FC = () => {
   const { categories, refetch } = useCategories('both');
@@ -72,6 +73,7 @@ export const CustomCategorySettings: React.FC = () => {
         <span className="text-[10px] font-black text-midblue dark:text-white bg-[var(--item-bg)] px-3 py-1 rounded-full border border-[var(--card-border)]">
           {customCategories.length} TOTAL
         </span>
+        <WalletSwitcher />
       </div>
 
       {customCategories.length === 0 ? (

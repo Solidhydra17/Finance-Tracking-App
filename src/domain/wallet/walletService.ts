@@ -4,6 +4,7 @@ import { walletRepository } from '@/storage/indexeddb/walletRepository';
 import { db } from '@/storage/indexeddb/database';
 import type { CreditPayment } from '@/types';
 import { getSystemCategoryId } from '@/storage/indexeddb/categoryRepository';
+import { withCurrentSeconds } from '@/lib/date';
 
 export class WalletService {
     constructor(private repository: WalletRepository) {}
@@ -175,7 +176,7 @@ export class WalletService {
             targetWalletAccountId: paymentData.creditCardAccountId,
             amount: paymentData.amount,
             date: paymentData.date,
-            time: paymentData.time || '00:00',
+            time: withCurrentSeconds(paymentData.time || '00:00'),
             note: paymentData.notes || '',
             source: 'manual',
             categoryId,
@@ -199,7 +200,7 @@ export class WalletService {
             targetWalletAccountId: data.destinationAccountId,
             amount: data.amount,
             date: data.date,
-            time: data.time || '00:00',
+            time: withCurrentSeconds(data.time || '00:00'),
             note: data.notes || '',
             source: 'manual',
             categoryId,

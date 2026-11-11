@@ -22,4 +22,10 @@ export const paymentPlanRepository = {
   async delete(id: number): Promise<void> {
     await db.paymentPlans.delete(id);
   },
+
+  async expenseDates(categoryId?: number): Promise<string[]> {
+    if (!categoryId) return [];
+    const rows = await db.transactions.where('categoryId').equals(categoryId).toArray();
+    return rows.filter((row) => row.type === 'expense' && !row.deletedAt).map((row) => row.date);
+  },
 };

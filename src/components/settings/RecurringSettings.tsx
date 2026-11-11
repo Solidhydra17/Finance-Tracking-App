@@ -8,6 +8,7 @@ import { useUIStore } from '@/store';
 import { offerUndo } from '@/lib/undo';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 
 export const RecurringSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -83,6 +84,7 @@ export const RecurringSettings: React.FC = () => {
         <span className="text-[10px] font-black text-midblue dark:text-white bg-[var(--item-bg)] px-3 py-1 rounded-full border border-[var(--card-border)]">
           {rules.length} ACTIVE
         </span>
+        <WalletSwitcher />
       </div>
 
       {rules.length === 0 ? (

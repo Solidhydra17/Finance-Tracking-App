@@ -7,6 +7,7 @@ import { displayToCents, formatCurrency, centsToDisplay } from '@/lib/money';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import { loanRepository } from '@/storage/indexeddb/loanRepository';
 import type { Loan } from '@/types';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 
 export const AddLoanPage: React.FC = () => {
     const navigate = useNavigate();
@@ -225,9 +226,10 @@ export const AddLoanPage: React.FC = () => {
                 >
                     <Icon name="ArrowLeftIcon" className="w-6 h-6 text-[var(--text-main)]" />
                 </button>
-                <h1 className="text-xl font-bold text-[var(--text-main)]">
+                <h1 className="min-w-0 flex-1 text-xl font-bold text-[var(--text-main)]">
                     {isEditMode ? 'Edit Loan' : 'Add Loan'}
                 </h1>
+                <WalletSwitcher />
             </header>
 
             <div className="px-4 py-6">

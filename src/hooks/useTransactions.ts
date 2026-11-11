@@ -4,6 +4,7 @@ import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { loanRepository } from '@/storage/indexeddb/loanRepository';
 import { db } from '@/storage/indexeddb/database';
 import type { TransactionCreate, TransactionUpdate, FilterState } from '@/types';
+import { compareTransactionsNewestFirst } from '@/lib/date';
 import { useUIStore, useTransactionStore } from '@/store';
 import { paginateItems, type PaginationResult } from '@/lib/pagination';
 import { refreshFinancialState } from '@/lib/financialState';
@@ -60,6 +61,7 @@ export function useTransactions(filters: FilterState) {
             amount: loan.amount,
             date: loan.acquiredDate,
             time: loan.time ?? '00:00',
+            createdAt: loan.createdAt,
             originalLoan: loan,
             categoryId: -1
         }));
@@ -106,12 +108,7 @@ export function useTransactions(filters: FilterState) {
       const engineTransactions = await transactionsEngine.getByFilters(filters);
       allTransactions = [...allTransactions, ...engineTransactions];
 
-      allTransactions.sort((a, b) => {
-        if (a.date !== b.date) return b.date.localeCompare(a.date);
-        const timeA = a.time ?? '00:00';
-        const timeB = b.time ?? '00:00';
-        return timeB.localeCompare(timeA);
-      });
+      allTransactions.sort(compareTransactionsNewestFirst);
       
       setTransactions(allTransactions);
       setTotal(allTransactions.length);

@@ -24,8 +24,10 @@ import { scheduleReminders, schedulePaymentPlans } from '@/lib/notifications';
 import { getReminders } from '@/hooks/useReminders';
 import { refreshFinancialState } from '@/lib/financialState';
 import { ensureFreshInstallDefaults } from '@/storage/indexeddb/database';
+import { getActiveWallet } from '@/storage/indexeddb/wallets';
+import { WelcomeWallet } from '@/components/wallets/WelcomeWallet';
 import { paymentPlanRepository } from '@/storage';
-import { useWalletStore, useLoanStore, useUIStore } from '@/store';
+import { useWalletStore, useLoanStore, useUIStore, useWalletBookStore } from '@/store';
 import { refreshWidget } from '@/lib/notificationSettings';
 
 export async function updateNativeWidget(): Promise<void> {
@@ -93,6 +95,7 @@ export async function updateNativeWidget(): Promise<void> {
     await Preferences.set({ key: 'widget_owedToYou', value: fmt(totalOwedToYou) });
     await Preferences.set({ key: 'widget_youOwe', value: fmt(totalYouOwe) });
     await Preferences.set({ key: 'widget_accounts', value: JSON.stringify(accountsData) });
+    await Preferences.set({ key: 'widget_walletName', value: getActiveWallet()?.name ?? 'Wallet' });
 
     await refreshWidget();
   } catch (e) {
@@ -211,10 +214,19 @@ const WidgetDeepLinkManager: React.FC = () => {
 
 
 export const App: React.FC = () => {
+    const walletStatus = useWalletBookStore((state) => state.status);
+    const darkMode = useUIStore((state) => state.darkMode);
+
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', darkMode);
+    }, [darkMode]);
+
     useEffect(() => {
         if (Capacitor.isNativePlatform()) {
             SplashScreen.hide();
         }
+
+        if (useWalletBookStore.getState().status !== 'ready') return;
 
         const boot = async () => {
             await ensureFreshInstallDefaults();
@@ -247,6 +259,7 @@ export const App: React.FC = () => {
 
                 // Balances are stored in integer cents — divide by 100 for display
                 const widgetData = {
+                    walletName: getActiveWallet()?.name ?? 'Wallet',
                     totalBalance: (totals.totalWalletBalance / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                     currency: '₱',
                     accounts: accounts.map((a) => ({
@@ -280,6 +293,14 @@ export const App: React.FC = () => {
             navigator.serviceWorker.removeEventListener('message', handleSWMessage);
         };
     }, []);
+
+    if (walletStatus !== 'ready') {
+        return (
+            <ErrorBoundary>
+                {walletStatus === 'welcome' ? <WelcomeWallet /> : <div className="min-h-screen bg-[var(--bg-color)]" />}
+            </ErrorBoundary>
+        );
+    }
 
     return (
         <ErrorBoundary>

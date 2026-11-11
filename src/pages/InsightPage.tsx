@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { ArrowLeftIcon, ArrowTrendingDownIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline'
+import { BillStatusCards } from '@/components/bills/BillStatusCards'
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher'
 import { AiInsightCard } from '@/components/dashboard/AiInsightCard'
 import { BudgetRings } from '@/components/charts/BudgetRings'
 import { useBudget, useCategories, useDashboard } from '@/hooks'
@@ -331,7 +333,8 @@ export const InsightPage = () => {
         <Link to="/" aria-label="Back to home" className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--card-bg)] text-[var(--text-main)]">
           <ArrowLeftIcon className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-extrabold text-midblue dark:text-white">Insight</h1>
+        <h1 className="min-w-0 flex-1 text-2xl font-extrabold text-midblue dark:text-white">Insight</h1>
+        <WalletSwitcher />
       </header>
 
       {data && (
@@ -345,6 +348,8 @@ export const InsightPage = () => {
           presentation="page"
         />
       )}
+
+      <BillStatusCards />
 
       <section className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
