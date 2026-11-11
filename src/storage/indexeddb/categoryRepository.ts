@@ -164,6 +164,77 @@ export async function getSystemCategoryId(key: SystemCategoryKey): Promise<numbe
   return cat.id;
 }
 
+const BILL_CATEGORY_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#f59e0b',
+  '#eab308',
+  '#22c55e',
+  '#14b8a6',
+  '#0ea5e9',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+  '#f43f5e',
+  '#0891b2',
+  '#a855f7',
+  '#fb923c',
+];
+
+const pickBillCategoryColor = (used: string[]) => {
+  const taken = new Set(used.map((color) => color.toLowerCase()));
+  const open = BILL_CATEGORY_COLORS.filter((color) => !taken.has(color));
+  const pool = open.length > 0 ? open : BILL_CATEGORY_COLORS;
+  return pool[Math.floor(Math.random() * pool.length)];
+};
+
+const findExpenseCategory = async (name: string) => {
+  const key = name.trim().toLowerCase();
+  return db.categories
+    .filter((entry) => entry.name.trim().toLowerCase() === key && (entry.type === 'expense' || entry.type === 'both'))
+    .first();
+};
+
+/** One expense category per bill name, so a logged payment can clear that bill. */
+export async function ensureBillCategory(name: string, currentId?: number): Promise<number> {
+  const trimmed = name.trim();
+  const existing = await findExpenseCategory(trimmed);
+
+  if (currentId) {
+    const current = await db.categories.get(currentId);
+    if (current && current.name.trim().toLowerCase() === trimmed.toLowerCase()) return currentId;
+    if (existing?.id) return existing.id;
+    if (current?.isCustom) {
+      const shared = await db.paymentPlans.filter((plan) => plan.categoryId === currentId).count();
+      if (shared <= 1) {
+        try {
+          await db.categories.update(currentId, { name: trimmed });
+          return currentId;
+        } catch {
+          const afterRename = await findExpenseCategory(trimmed);
+          if (afterRename?.id) return afterRename.id;
+        }
+      }
+    }
+  }
+
+  if (existing?.id) return existing.id;
+  const usedColors = (await db.categories.toArray()).map((entry) => entry.color);
+  try {
+    return await db.categories.add({
+      name: trimmed,
+      type: 'expense',
+      color: pickBillCategoryColor(usedColors),
+      icon: 'ReceiptPercentIcon',
+      isCustom: true,
+    });
+  } catch {
+    const created = await findExpenseCategory(trimmed);
+    if (created?.id) return created.id;
+    throw new Error(`Could not create a category for ${trimmed}`);
+  }
+}
+
 /** Backfill older txs that were saved with categoryId 0. */
 export async function backfillSystemCategoryAssignments(): Promise<void> {
   await ensureSystemCategories();

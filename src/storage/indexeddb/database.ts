@@ -1,6 +1,8 @@
 import Dexie, { type Table } from 'dexie';
 import type { Transaction, Category, Loan, LoanPayment, RecurringRule, BudgetPlan, BudgetItem, WalletAccount, CreditPayment, PaymentPlan, BankRule } from '@/types';
 
+export const PRIMARY_DB_NAME = 'FinanceTrackerDB';
+
 export class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction, number>;
   categories!: Table<Category, number>;
@@ -14,8 +16,8 @@ export class FinanceDatabase extends Dexie {
   paymentPlans!: Table<PaymentPlan, number>;
   bankRules!: Table<BankRule, number>;
 
-  constructor() {
-    super('FinanceTrackerDB');
+  constructor(name: string = PRIMARY_DB_NAME) {
+    super(name);
     
     const categoryCleanup = async (tx: any) => {
       console.log('Starting category cleanup migration...');
@@ -157,7 +159,43 @@ export class FinanceDatabase extends Dexie {
   }
 }
 
-export const db = new FinanceDatabase();
+let activeDb: FinanceDatabase | null = null;
+
+export const setActiveDatabase = (database: FinanceDatabase | null): void => {
+  if (activeDb && activeDb !== database) {
+    activeDb.close();
+  }
+  activeDb = database;
+};
+
+export const closeActiveDatabase = (): void => {
+  if (!activeDb) return;
+  activeDb.close();
+  activeDb = null;
+};
+
+export const peekActiveDatabase = (): FinanceDatabase | null => activeDb;
+
+export const getActiveDatabase = (): FinanceDatabase => {
+  if (!activeDb) {
+    throw new Error('Wallet database is not open');
+  }
+  return activeDb;
+};
+
+export const db = new Proxy({} as FinanceDatabase, {
+  get(_target, prop) {
+    const database = getActiveDatabase();
+    const value = Reflect.get(database, prop, database);
+    if (typeof value === 'function') return value.bind(database);
+    return value;
+  },
+  set(_target, prop, value) {
+    const database = getActiveDatabase();
+    Reflect.set(database, prop, value, database);
+    return true;
+  },
+});
 
 export async function ensureFreshInstallDefaults(): Promise<void> {
   // Ensure default Cash wallet account exists

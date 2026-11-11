@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, centsToDisplay, formatCurrency } from '@/lib/money';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { RecurringFrequency } from '@/types';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 
 export const RecurringPage: React.FC = () => {
   const { rules, isLoading, createRule, deleteRule } = useRecurring();
@@ -88,11 +89,14 @@ export const RecurringPage: React.FC = () => {
 
   return (
     <div id="page-recurring" className="px-4 space-y-4">
-      <div id="recurring-header" className="flex items-center justify-between">
+      <div id="recurring-header" className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-gray-900">Recurring</h1>
-        <Button size="sm" onClick={() => setAddRecurringOpen(true)}>
-          + Add Rule
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button size="sm" onClick={() => setAddRecurringOpen(true)}>
+            + Add Rule
+          </Button>
+          <WalletSwitcher />
+        </div>
       </div>
 
       {rules.length === 0 ? (

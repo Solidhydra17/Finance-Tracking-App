@@ -3,6 +3,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import type { Reminder } from '@/types/reminder';
 import type { PaymentPlan } from '@/types/paymentPlan';
 import { formatDateLocal } from '@/lib/date';
+import { dueDates } from '@/lib/paymentPlanSchedule';
 
 export function isNotificationsSupported(): boolean {
   if (Capacitor.isNativePlatform()) return true;
@@ -126,14 +127,6 @@ export async function scheduleReminders(reminders: Reminder[]): Promise<void> {
   }
 }
 
-const addMonths = (date: Date, months: number) => {
-  const day = date.getDate();
-  const next = new Date(date.getFullYear(), date.getMonth() + months, 1);
-  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-  next.setDate(Math.min(day, lastDay));
-  return next;
-};
-
 export async function schedulePaymentPlans(plans: PaymentPlan[]): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
 
@@ -158,12 +151,10 @@ export async function schedulePaymentPlans(plans: PaymentPlan[]): Promise<void> 
   let idCounter = 8000;
 
   for (const plan of enabled) {
-    const firstDue = new Date(`${plan.dueDate}T00:00:00`);
-    if (Number.isNaN(firstDue.getTime())) continue;
     const lead = Math.max(0, plan.remindDaysBefore);
 
-    for (let month = 0; month < plan.months && notifications.length < 40; month += 1) {
-      const due = addMonths(firstDue, month);
+    for (const due of dueDates(plan, now)) {
+      if (notifications.length >= 40) break;
       const remind = new Date(due);
       remind.setDate(remind.getDate() - lead);
       remind.setHours(9, 0, 0, 0);

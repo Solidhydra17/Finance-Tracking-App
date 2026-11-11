@@ -4,7 +4,9 @@ export interface PaymentPlan {
   amount: number;
   dueDate: string;
   months: number;
+  repeatsMonthly?: boolean;
   remindDaysBefore: number;
+  categoryId?: number;
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -15,6 +17,8 @@ export interface PaymentPlanCreate {
   amount: number;
   dueDate: string;
   months: number;
+  repeatsMonthly?: boolean;
   remindDaysBefore: number;
+  categoryId?: number;
   enabled: boolean;
 }

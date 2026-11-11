@@ -29,10 +29,12 @@ public class WalletWidget extends AppWidgetProvider {
   public static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
     SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
+    String walletName      = prefs.getString("widget_walletName", "Wallet");
     String projectedBalance = prefs.getString("widget_projectedBalance", "₱0.00");
     String totalBalance     = prefs.getString("widget_totalBalance",     "₱0.00");
     String accountsJson     = prefs.getString("widget_accounts",         "[]");
 
+    if (walletName == null || walletName.isEmpty()) walletName = "Wallet";
     if (projectedBalance == null) projectedBalance = "₱0.00";
     if (totalBalance == null)     totalBalance     = "₱0.00";
     if (accountsJson == null)     accountsJson     = "[]";
@@ -40,6 +42,7 @@ public class WalletWidget extends AppWidgetProvider {
     RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_wallet);
 
     // Set the main balance labels
+    views.setTextViewText(R.id.widget_wallet_name,         walletName);
     views.setTextViewText(R.id.widget_projected_balance,   projectedBalance);
     views.setTextViewText(R.id.widget_total_balance_sub,   "Total Wallet Balance: " + totalBalance);
 

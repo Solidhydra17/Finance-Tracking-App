@@ -4,6 +4,7 @@ import { BottomNav } from "./BottomNav";
 import { ToastContainer, Modal, Icon } from "@/components/ui";
 import { ConnectivityListener, StatusToast } from "@/components/ui/StatusToast";
 import { PWAUpdateBanner } from "@/components/ui/PWAUpdateBanner";
+import { NativeUpdateBanner } from "@/components/ui/NativeUpdateBanner";
 import { useUIStore } from "@/store";
 import { useShallow } from 'zustand/react/shallow';
 import { AddTransactionModal } from "@/pages/AddTransactionModal";
@@ -64,6 +65,7 @@ export const AppLayout: React.FC = () => {
             <StatusToast />
             <ConnectivityListener />
             <PWAUpdateBanner />
+            <NativeUpdateBanner />
             <FundTransferModal />
 
             {/* Selection Menu (Bottom Sheet Style) */}

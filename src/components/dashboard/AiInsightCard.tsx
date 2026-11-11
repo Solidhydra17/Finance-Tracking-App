@@ -8,6 +8,7 @@ import { loadInsightForDay } from '@/lib/insights/generateInsight'
 import { formatAvailableAt, isOnline } from '@/lib/insights/insightStorage'
 import type { InsightContext, InsightQuotaStatus, InsightResult, InsightTone } from '@/lib/insights/types'
 import { composeInsightText, normalizeInsightResult } from '@/lib/insights/types'
+import { loadBillBoard } from '@/lib/billBoard'
 
 const withLiveTrendAndGoal = (insight: InsightResult, ctx: InsightContext): InsightResult => {
   const base = normalizeInsightResult(insight)
@@ -68,6 +69,21 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   const [quota, setQuota] = useState<InsightQuotaStatus | null>(null)
   const [regenHint, setRegenHint] = useState<string | null>(null)
   const [regenerating, setRegenerating] = useState(false)
+  const [billOverview, setBillOverview] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    loadBillBoard()
+      .then((board) => {
+        if (active) setBillOverview(board.overview)
+      })
+      .catch(() => {
+        if (active) setBillOverview(null)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const buildCtx = useCallback(async () => {
     const categoryNames = new Map<number, string>()
@@ -155,8 +171,9 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
   }
 
   const tone = insight?.tone ?? 'neutral'
+  const overview = [insight?.observation, billOverview].filter(Boolean).join('\n\n')
   const hasSections = Boolean(
-    insight && (insight.observation || insight.suggestion || insight.trend || insight.goal)
+    overview || (insight && (insight.suggestion || insight.trend || insight.goal))
   )
   const detailSections = [
     insight?.suggestion ? { label: 'Suggestion', text: insight.suggestion } : null,
@@ -202,11 +219,11 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
         )}
       </div>
 
-      {loading && !insight && !offlineEmpty ? (
+      {loading && !insight && !offlineEmpty && !billOverview ? (
         <p className="text-sm text-[var(--text-muted)] animate-pulse">
           Reading your spending…
         </p>
-      ) : offlineEmpty ? (
+      ) : offlineEmpty && !hasSections ? (
         <div className="space-y-1">
           <p className="text-sm leading-relaxed text-[var(--text-main)] font-medium">
             You’re offline and there’s no saved insight for today yet.
@@ -217,11 +234,11 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({
         </div>
       ) : hasSections ? (
         <div className="flex flex-col">
-          {insight?.observation ? (
-            <InsightBlock label="Overview">{insight.observation}</InsightBlock>
+          {overview ? (
+            <InsightBlock label="Overview">{overview}</InsightBlock>
           ) : null}
           {detailSections.length > 0 ? (
-            <div className={insight?.observation ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}>
+            <div className={overview ? 'mt-4 pt-4 border-t border-[var(--card-border)]' : ''}>
               {presentation === 'page' ? (
                 <div id="insight-extra-details" className="flex flex-col gap-4">
                   {detailSections.map((section) => (

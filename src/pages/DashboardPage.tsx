@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { budgetEngine, type PlannedVsActual } from '@/domain/budget/budgetEngine';
 import { useBudget } from '@/hooks';
 import { AiInsightCard } from '@/components/dashboard/AiInsightCard';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 import { BudgetRings } from '@/components/charts/BudgetRings';
 import { SpendingBubbles } from '@/components/charts/SpendingBubbles';
 import { EyeIcon, EyeSlashIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
@@ -177,20 +178,27 @@ export const DashboardPage: React.FC = () => {
     return <FunnyLoadingScreen />;
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center px-4 text-sm font-medium text-[var(--text-muted)]">
+        Opening wallet…
+      </div>
+    );
+  }
 
   const currentPreset = filters.dateRange.preset;
 
   return (
     <div id="page-dashboard" className="px-4 space-y-6">
       {/* App Header */}
-      <header id="dashboard-header" className="flex items-end justify-between pt-4">
-        <div>
+      <header id="dashboard-header" className="flex items-center justify-between gap-3 pt-4">
+        <div className="min-w-0">
           <h1 className="text-3xl font-extrabold tracking-tight text-midblue dark:text-white">{greeting}</h1>
           <p className="mt-1 text-xs font-bold uppercase tracking-widest text-gray-400">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
+        <WalletSwitcher />
       </header>
 
       <div id="card-balance" className="rounded-3xl border-2 border-midblue bg-midblue p-6 shadow-medium">

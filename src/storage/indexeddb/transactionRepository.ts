@@ -1,4 +1,5 @@
 import type { Transaction, TransactionCreate, TransactionUpdate, FilterState } from '@/types';
+import { compareTransactionsNewestFirst, toTimeInputValue, withCurrentSeconds } from '@/lib/date';
 import { db } from './database';
 
 export interface TransactionRepository {
@@ -25,7 +26,7 @@ export const transactionRepository: TransactionRepository = {
 
   async create(data: TransactionCreate): Promise<number> {
     const now = new Date().toISOString();
-    const time = (data as any).time ?? '00:00';
+    const time = withCurrentSeconds((data as any).time);
     const transaction: Transaction = {
       ...data,
       time,
@@ -38,7 +39,14 @@ export const transactionRepository: TransactionRepository = {
 
   async update(id: number, data: TransactionUpdate): Promise<number> {
     const now = new Date().toISOString();
-    await db.transactions.update(id, { ...data, updatedAt: now });
+    const existing = data.time ? await db.transactions.get(id) : undefined;
+    const time =
+      data.time && existing?.time && toTimeInputValue(data.time) === toTimeInputValue(existing.time)
+        ? existing.time
+        : data.time
+          ? withCurrentSeconds(data.time)
+          : undefined;
+    await db.transactions.update(id, { ...data, ...(time ? { time } : {}), updatedAt: now });
     return id;
   },
 
@@ -109,11 +117,6 @@ export const transactionRepository: TransactionRepository = {
       );
     }
 
-    return allTransactions.sort((a, b) => {
-      if (a.date !== b.date) return b.date.localeCompare(a.date);
-      const timeA = a.time ?? '00:00';
-      const timeB = b.time ?? '00:00';
-      return timeB.localeCompare(timeA);
-    });
+    return allTransactions.sort(compareTransactionsNewestFirst);
   },
 };

@@ -32,7 +32,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     editTransaction ? centsToDisplay(editTransaction.amount) : ''
   );
   const [date, setDate] = useState(editTransaction?.date || getCurrentLocalDate());
-  const [time, setTime] = useState(editTransaction?.time || getCurrentLocalTime());
+  const [time, setTime] = useState((editTransaction?.time || getCurrentLocalTime()).slice(0, 5));
   const [categoryId, setCategoryId] = useState<number>(editTransaction?.categoryId || 0);
   const [note, setNote] = useState(editTransaction?.note || '');
   const [isSubmitting, setIsSubmitting] = useState(false);

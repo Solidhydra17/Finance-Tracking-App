@@ -1,13 +1,14 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
-declare const __APP_VERSION__: string;
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.30';
 import { Card, CardBody, Button, Modal, Icon } from '@/components/ui';
+import { APK_DOWNLOAD_URL, APP_VERSION, useAppUpdate } from '@/lib/appUpdate';
 import { useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { exportAllData, clearAllData, importData, db } from '@/storage';
 import { categoryRepository } from '@/storage';
 import { ReminderSettings } from '@/components/settings/ReminderSettings';
+import { WalletBookSettings } from '@/components/wallets/WalletBookSettings';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 import { useNavigate } from 'react-router-dom';
 import { useTransactionStore, useBudgetStore, useWalletStore, useLoanStore } from '@/store';
 import { Capacitor } from '@capacitor/core';
@@ -40,7 +41,7 @@ export const SettingsPage: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
-  const [hasApkUpdate, setHasApkUpdate] = useState(false);
+  const { available: hasApkUpdate } = useAppUpdate();
 
   const tapCount = useRef(0);
   const lastTapTime = useRef(0);
@@ -125,22 +126,6 @@ export const SettingsPage: React.FC = () => {
         clearTimeout(resetTimer.current);
       }
     };
-  }, []);
-
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      fetch('https://api.github.com/repos/Solidhydra17/Finance-Tracking-App/releases/latest')
-        .then(res => res.json())
-        .then(data => {
-          // The tag_name is "latest", so extract version from the release name (e.g., "Kuripot v1.0.11 (6114090)")
-          const match = (data.name || data.tag_name || '').match(/v?(\d+\.\d+\.\d+)/);
-          const latestVersion = match ? match[1] : null;
-          if (latestVersion && latestVersion.localeCompare(APP_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > 0) {
-            setHasApkUpdate(true);
-          }
-        })
-        .catch(err => console.error('Failed to check for updates', err));
-    }
   }, []);
 
   const handleExportJSON = useCallback(async () => {
@@ -252,10 +237,15 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div id="page-settings" className="px-4 space-y-6 pb-20">
-      <header className="pt-4">
-        <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Settings</h1>
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Settings & Preferences</p>
+      <header className="flex items-center justify-between gap-3 pt-4">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Settings</h1>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Settings & Preferences</p>
+        </div>
+        <WalletSwitcher />
       </header>
+
+      <WalletBookSettings />
 
       {/* Preferences */}
       <Card id="card-preferences">
@@ -355,7 +345,7 @@ export const SettingsPage: React.FC = () => {
                     : 'Download and install the Kuripot app directly on your Android phone for the full native experience.'}
                 </p>
                 <a
-                  href="https://github.com/Solidhydra17/Finance-Tracking-App/releases/latest/download/kuripot.apk"
+                  href={APK_DOWNLOAD_URL}
                   download="kuripot.apk"
                   className="inline-flex items-center gap-2 mt-3 px-5 py-3 rounded-2xl bg-midblue text-white font-bold text-sm active:scale-95 transition-all shadow-md shadow-midblue/20"
                 >
@@ -375,6 +365,7 @@ export const SettingsPage: React.FC = () => {
       <Card id="card-data-management">
         <CardBody className="space-y-4">
           <h3 className="font-bold text-midblue dark:text-white uppercase text-xs tracking-widest">Data Management</h3>
+          <p className="text-xs font-medium text-[var(--text-muted)]">Export and import apply to the wallet you are viewing.</p>
 
           <div className="space-y-3">
             <Button
@@ -412,8 +403,8 @@ export const SettingsPage: React.FC = () => {
         <CardBody className="space-y-4">
           <h3 className="font-bold text-danger-600 dark:text-danger-400 uppercase text-xs tracking-widest">Danger Zone</h3>
           <p className="text-sm text-[var(--text-muted)] font-medium">
-            Deleting all data will permanently remove all your transactions,
-            loans, and recurring rules. <span className="font-bold text-midblue dark:text-white">Your categories will be kept.</span>
+            This removes transactions, loans, and recurring rules in the wallet you are viewing.
+            Other wallets stay as they are. <span className="font-bold text-midblue dark:text-white">Categories in this wallet are kept.</span>
           </p>
           <Button
             variant="danger"
@@ -462,7 +453,7 @@ export const SettingsPage: React.FC = () => {
             <div>
               <p className="font-bold text-[var(--text-main)] text-lg">Are you absolutely sure?</p>
               <p className="text-[var(--text-muted)] text-sm mt-1 leading-relaxed">
-                This will permanently delete all transactions, loans, and recurring rules.
+                This deletes transactions, loans, and recurring rules in the wallet you are viewing. Other wallets stay.
                 <span className="text-danger-500 font-black block mt-2 uppercase tracking-tighter">This cannot be undone!</span>
               </p>
             </div>

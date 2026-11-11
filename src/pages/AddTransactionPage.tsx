@@ -10,8 +10,9 @@ import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { recurringRepository, categoryRepository } from '@/storage/indexeddb';
 import { db } from '@/storage/indexeddb/database';
 import { getSystemCategoryId, isSystemCategoryName } from '@/storage/indexeddb/categoryRepository';
-import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
+import { getCurrentLocalDate, getCurrentLocalTime, withCurrentSeconds } from '@/lib/date';
 import { refreshFinancialState } from '@/lib/financialState';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 
 export const AddTransactionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ export const AddTransactionPage: React.FC = () => {
             setDate(transaction.date);
             setCategoryId(resolvedCategoryId);
             setWalletAccountId(transaction.walletAccountId || '');
-            setTime(transaction.time || '00:00');
+            setTime((transaction.time || '00:00').slice(0, 5));
             setNote(transaction.note);
             setEditSource(transaction.source);
             setIsCategoryLocked(locked);
@@ -266,7 +267,7 @@ export const AddTransactionPage: React.FC = () => {
           type,
           amount,
           date,
-          time,
+          time: withCurrentSeconds(time),
           categoryId: resolvedCategoryId,
           walletAccountId: walletAccountId ? Number(walletAccountId) : undefined,
           note: note || 'Recurring Transaction',
@@ -363,10 +364,11 @@ export const AddTransactionPage: React.FC = () => {
         >
           <Icon name="ArrowLeftIcon" className="w-6 h-6 text-[var(--text-main)]" />
         </button>
-        <h1 className="text-xl font-bold text-[var(--text-main)]">
+        <h1 className="min-w-0 flex-1 text-xl font-bold text-[var(--text-main)]">
           {editId ? 'Edit' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}
           {isConfiguringRecurring && <span className="block text-[10px] text-midblue dark:text-white font-black uppercase tracking-widest mt-0.5">(Configuring recurring settings)</span>}
         </h1>
+        <WalletSwitcher />
       </header>
 
       <div id="add-transaction-content" className="px-4 py-6">

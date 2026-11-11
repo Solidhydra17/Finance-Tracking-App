@@ -3,6 +3,7 @@ import { WalletSummary } from '@/components/wallet/WalletSummary';
 import { WalletAccountsList } from '@/components/wallet/WalletAccountsList';
 import { WalletLoansList } from '@/components/wallet/WalletLoansList';
 import { useWalletStore, useLoanStore, useUIStore } from '@/store';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 import { useShallow } from 'zustand/react/shallow';
 
 export const WalletPage: React.FC = () => {
@@ -38,8 +39,9 @@ export const WalletPage: React.FC = () => {
 
     return (
         <div id="page-wallet" className="mx-auto w-full max-w-md space-y-6 px-4 pb-24 pt-4 animate-fade-in">
-            <header>
+            <header className="flex items-center justify-between gap-3">
                 <h1 className="text-3xl font-extrabold tracking-wider text-midblue dark:text-white">Wallet</h1>
+                <WalletSwitcher />
             </header>
 
             {isLoading ? (

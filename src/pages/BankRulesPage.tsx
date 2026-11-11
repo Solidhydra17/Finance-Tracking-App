@@ -12,6 +12,7 @@ import type { BankRule, BankRuleKind, Category, Transaction, WalletAccount } fro
 import { bankRulePresets, cashbackScopeOf, emptyBankRule, previewBankRule } from '@/domain/yield/calculator';
 import { materializeBankRules, payLoanEarly } from '@/domain/yield/materializer';
 import { offerUndo } from '@/lib/undo';
+import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 
 const kindLabel: Record<BankRuleKind, string> = {
   savings: 'Interest',
@@ -147,6 +148,7 @@ export const BankRulesPage: React.FC = () => {
             {draft ? kindLabel[draft.kind] : 'Interest, cashback, loans, and deposits'}
           </p>
         </div>
+        <WalletSwitcher />
       </div>
 
       {!draft && (

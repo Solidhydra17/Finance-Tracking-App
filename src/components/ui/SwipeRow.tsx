@@ -16,6 +16,7 @@ const SNAP_MOVE = { duration: 0.6, ease: [0.4, 0, 0.2, 1] as const };
 const DEFAULT_ACTIONS: SwipeAction[] = [{ id: 'delete', label: 'Delete' }];
 const RIPPLE_SPAN = 1.55;
 const RIPPLE_SPEED = 1.2;
+const HOLD_MAX_MS = 900;
 
 type Ripple = { x: number; y: number; size: number; ms: number };
 
@@ -29,7 +30,7 @@ const coverRipple = (width: number, height: number, x: number, y: number, holdMs
   const size = Math.ceil(reach * 2);
   const speed = (Math.max(1, width) * RIPPLE_SPAN * RIPPLE_SPEED) / Math.max(1, holdMs);
   const natural = Math.round(size / Math.max(0.01, speed));
-  const cap = Math.max(1, Math.round(holdMs / RIPPLE_SPEED));
+  const cap = Math.max(1, Math.min(HOLD_MAX_MS, Math.round(holdMs / RIPPLE_SPEED)));
   return { x, y, size, ms: Math.max(1, Math.min(cap, natural)) };
 };
 
@@ -423,7 +424,7 @@ export const SwipeRow = ({
     if (next) setRipple(next);
     holdDone.current = false;
     holdingRef.current = true;
-    const ms = next?.ms ?? holdMs;
+    const ms = next?.ms ?? Math.min(holdMs, HOLD_MAX_MS);
     void rippleEl.current?.offsetWidth;
     setHolding(true);
     playRipple(ms);
@@ -568,7 +569,7 @@ export const SwipeRow = ({
         '--sr-action': actionColor,
         '--sr-on-action': onColor(actionColor),
         '--sr-collapse': `${collapseMs}ms`,
-        '--sr-hold': `${ripple?.ms ?? holdMs}ms`,
+        '--sr-hold': `${ripple?.ms ?? Math.min(holdMs, HOLD_MAX_MS)}ms`,
         ...(ripple
           ? {
               '--sr-ripple-x': `${ripple.x}px`,

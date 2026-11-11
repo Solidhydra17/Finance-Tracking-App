@@ -4,7 +4,7 @@
   "body": [
     {
       "type": "TextBlock",
-      "text": "KURIPOT · Total Balance",
+      "text": "{{walletName}}",
       "size": "Small",
       "weight": "Bolder",
       "color": "Accent"
