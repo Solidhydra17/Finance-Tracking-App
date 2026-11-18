@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 
 declare const __APP_VERSION__: string;
 
-export const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.31';
+export const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.32';
 export const APK_DOWNLOAD_URL = 'https://github.com/Solidhydra17/Finance-Tracking-App/releases/latest/download/kuripot.apk';
 
 const CHECK_INTERVAL_MS = 15 * 60 * 1000;

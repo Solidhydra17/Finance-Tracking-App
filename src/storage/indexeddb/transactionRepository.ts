@@ -89,7 +89,14 @@ export const transactionRepository: TransactionRepository = {
       collection = collection.and(t => t.categoryId === filters.categoryId);
     }
 
-    if (filters.transactionType === 'loans') {
+    const selectedKinds = filters.transactionTypes ?? [];
+    if (selectedKinds.length > 0) {
+      collection = collection.and((t) => selectedKinds.some((kind) => {
+        if (kind === 'loans') return t.source === 'loan_payment';
+        if (kind === 'income' || kind === 'expense') return t.type === kind && t.source !== 'loan_payment';
+        return t.type === kind;
+      }));
+    } else if (filters.transactionType === 'loans') {
       // Real loan repayments are stored as income/expense with source loan_payment
       collection = collection.and(t => t.source === 'loan_payment');
     } else if (filters.transactionType === 'income' || filters.transactionType === 'expense') {

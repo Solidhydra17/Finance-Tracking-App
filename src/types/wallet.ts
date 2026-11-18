@@ -6,6 +6,8 @@ export interface WalletAccount {
     type: WalletAccountType;
     balance: number; // in integer cents
     creditLimit?: number; // in integer cents, only applicable for credit cards
+    /** Developer adjustment so a credit or loan can start from a chosen used amount. */
+    balanceAdjustment?: number;
     createdAt: string; // ISO string
 }
 

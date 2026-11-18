@@ -50,8 +50,13 @@ export function useTransactions(filters: FilterState) {
     try {
       let allTransactions: any[] = [];
       
+      const selectedKinds = filters.transactionTypes ?? [];
+      const includeVirtualLoans = selectedKinds.length > 0
+        ? selectedKinds.includes('loans')
+        : filters.transactionType === 'all' || filters.transactionType === 'loans';
+
       // Loan principals (+ legacy payments without a linked transaction) for All / Loans
-      if (filters.transactionType === 'all' || filters.transactionType === 'loans') {
+      if (includeVirtualLoans) {
         const loans = await loanRepository.getAll();
         const loanPayments = await db.loanPayments.toArray();
         
@@ -107,6 +112,26 @@ export function useTransactions(filters: FilterState) {
       // - Loans: repayment txs (source loan_payment) via getByFilters
       const engineTransactions = await transactionsEngine.getByFilters(filters);
       allTransactions = [...allTransactions, ...engineTransactions];
+
+      const walletTypes = filters.walletTypes ?? [];
+      if (walletTypes.length > 0) {
+        const accounts = await db.walletAccounts.toArray();
+        const typeById = new Map(accounts.map((account) => [account.id, account.type]));
+        const allowed = new Set(walletTypes);
+        allTransactions = allTransactions.filter((item) => {
+          const ids = [
+            item.walletAccountId,
+            item.targetWalletAccountId,
+            item.originalLoan?.sourceWalletAccountId,
+            item.originalLoan?.destinationWalletAccountId,
+          ];
+          return ids.some((id) => {
+            if (id == null) return false;
+            const accountType = typeById.get(id);
+            return accountType != null && allowed.has(accountType);
+          });
+        });
+      }
 
       allTransactions.sort(compareTransactionsNewestFirst);
       

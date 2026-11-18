@@ -14,6 +14,7 @@ interface WalletState {
     fetchAccounts: () => Promise<void>;
     createAccount: (account: Omit<WalletAccount, 'id' | 'createdAt' | 'balance'>) => Promise<void>;
     updateAccount: (id: number, updates: Partial<WalletAccount>) => Promise<void>;
+    setUsedAmount: (id: number, usedCents: number) => Promise<void>;
     deleteAccount: (id: number) => Promise<void>;
     payCreditCard: (paymentData: Omit<CreditPayment, 'id' | 'createdAt'> & { time?: string }) => Promise<void>;
     createFundTransfer: (data: { sourceAccountId: number; destinationAccountId: number; amount: number; date: string; time?: string; notes?: string }) => Promise<void>;
@@ -85,6 +86,18 @@ export const useWalletStore = create<WalletState>((set) => ({
             set({ error: error.message, isLoading: false });
             throw error;
         }
+    },
+
+    setUsedAmount: async (id, usedCents) => {
+        await walletService.setUsedAmount(id, usedCents);
+        const accounts = await walletService.getAllAccounts();
+        const totals = await walletService.getTotals();
+        set({
+            accounts,
+            totalWalletBalance: totals.totalWalletBalance,
+            totalCreditDebt: totals.totalCreditDebt,
+            totalWalletLoanDebt: totals.totalWalletLoanDebt,
+        });
     },
 
     deleteAccount: async (id) => {

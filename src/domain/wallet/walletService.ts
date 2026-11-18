@@ -83,36 +83,38 @@ export class WalletService {
                 acc.balance += ft.amount;
             }
         } else if (acc.type === 'credit' || acc.type === 'loan') {
-            let owed = 0;
-            
-            // Expenses on this card/loan
-            const txs = await db.transactions.where('walletAccountId').equals(acc.id).toArray();
-            for (const tx of txs) {
-                if (!tx.deletedAt && tx.type === 'expense') {
-                    owed += tx.amount;
-                }
-            }
-            
-            // Fund Transfers from this card/loan (e.g. borrowing money to cash)
-            const outTransfers = await db.transactions
-                .where('walletAccountId').equals(acc.id)
-                .filter(tx => tx.type === 'fund_transfer' && !tx.deletedAt)
-                .toArray();
-            for (const ft of outTransfers) {
-                owed += ft.amount; // Borrowing money increases the debt
-            }
-
-            // Minus Credit/Loan Payments to this account
-            const creditPayments = await db.transactions
-                .where('targetWalletAccountId').equals(acc.id)
-                .filter(tx => tx.type === 'credit_payment' && !tx.deletedAt)
-                .toArray();
-            for (const cp of creditPayments) {
-                owed -= cp.amount;
-            }
-            
-            acc.balance = Math.max(0, owed);
+            const owed = await this.creditOwed(acc.id);
+            acc.balance = Math.max(0, owed + (acc.balanceAdjustment ?? 0));
         }
+    }
+
+    private async creditOwed(accountId: number): Promise<number> {
+        let owed = 0;
+
+        const txs = await db.transactions.where('walletAccountId').equals(accountId).toArray();
+        for (const tx of txs) {
+            if (!tx.deletedAt && tx.type === 'expense') {
+                owed += tx.amount;
+            }
+        }
+
+        const outTransfers = await db.transactions
+            .where('walletAccountId').equals(accountId)
+            .filter(tx => tx.type === 'fund_transfer' && !tx.deletedAt)
+            .toArray();
+        for (const ft of outTransfers) {
+            owed += ft.amount;
+        }
+
+        const creditPayments = await db.transactions
+            .where('targetWalletAccountId').equals(accountId)
+            .filter(tx => tx.type === 'credit_payment' && !tx.deletedAt)
+            .toArray();
+        for (const cp of creditPayments) {
+            owed -= cp.amount;
+        }
+
+        return owed;
     }
 
     async createAccount(account: Omit<WalletAccount, 'id' | 'createdAt' | 'balance'>): Promise<number> {
@@ -131,6 +133,15 @@ export class WalletService {
             throw new Error("Cannot change account type to cash.");
         }
         await this.repository.update(id, updates);
+    }
+
+    async setUsedAmount(id: number, usedCents: number): Promise<void> {
+        const account = await this.repository.getById(id);
+        if (!account || (account.type !== 'credit' && account.type !== 'loan')) {
+            throw new Error('Amount used can only be set on credit and loan accounts.');
+        }
+        const owed = await this.creditOwed(id);
+        await this.repository.update(id, { balanceAdjustment: usedCents - owed });
     }
 
     async deleteAccount(id: number): Promise<void> {

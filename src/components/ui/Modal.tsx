@@ -8,6 +8,7 @@ interface ModalProps {
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
   position?: 'center' | 'bottom';
+  scrollBody?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -17,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   size = 'md',
   position = 'center',
+  scrollBody = false,
 }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
@@ -74,7 +76,8 @@ export const Modal: React.FC<ModalProps> = ({
         className={`
           ui-modal-container
           relative bg-[var(--card-bg)] rounded-t-3xl ${position === 'center' ? 'sm:rounded-2xl' : ''} shadow-hard
-          w-full ${sizeClasses[size]} max-h-[90dvh] overflow-auto border-x border-t border-[var(--card-border)]
+          w-full ${sizeClasses[size]} max-h-[90dvh] border-x border-t border-[var(--card-border)]
+          ${scrollBody ? 'flex flex-col overflow-hidden' : 'overflow-auto'}
           ${isClosing ? 'animate-[slideOutDown_0.3s_ease-in-out] fill-mode-forwards' : 'animate-[slideUp_0.3s_ease-out]'}
         `}
       >
@@ -89,7 +92,7 @@ export const Modal: React.FC<ModalProps> = ({
             </button>
           </div>
         )}
-        <div className="p-4">{children}</div>
+        <div className={scrollBody ? 'min-h-0 flex-1 overflow-y-auto p-4' : 'p-4'}>{children}</div>
       </div>
     </div>,
     document.body

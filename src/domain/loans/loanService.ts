@@ -3,6 +3,7 @@ import type { Loan, LoanPayment } from '@/types';
 import { loanRepository } from '@/storage/indexeddb/loanRepository';
 import { transactionsEngine } from '@/domain/transactions/transactionsEngine';
 import { getSystemCategoryId } from '@/storage/indexeddb/categoryRepository';
+import { withCurrentSeconds } from '@/lib/date';
 
 export class LoanService {
     constructor(
@@ -84,12 +85,13 @@ export class LoanService {
         if (amount <= 0) throw new Error("Repayment amount must be greater than zero");
         if (amount > remaining) throw new Error(`Repayment of ${amount} exceeds remaining balance of ${remaining}`);
 
+        const stampedTime = withCurrentSeconds(time || '00:00');
         const categoryId = await getSystemCategoryId('LOAN_REPAYMENT');
         const transactionId = await transactionsEngine.create({
             type: loan.direction === 'outbound' ? 'income' : 'expense',
             amount,
             date,
-            time: time || '00:00',
+            time: stampedTime,
             categoryId,
             note: notes || (loan.direction === 'outbound' ? `Repayment received from ${loan.personName}` : `Repayment made to ${loan.personName}`),
             source: 'loan_payment',
@@ -101,7 +103,7 @@ export class LoanService {
             amount,
             walletAccountId,
             paidDate: date,
-            time: time || '00:00',
+            time: stampedTime,
             notes,
             transactionId
         } as any;

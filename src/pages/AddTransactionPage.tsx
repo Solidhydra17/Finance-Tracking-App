@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CalcInput, Input, DayPicker, TextArea, Button, Icon, Modal, AVAILABLE_ICONS } from '@/components/ui';
+import { CalcInput, Input, DayPicker, TextArea, Button, Icon, Modal, ChoicePopover, AVAILABLE_ICONS } from '@/components/ui';
 import { useCategories, useTransactions } from '@/hooks';
 import { useUIStore, useWalletStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -521,25 +521,17 @@ export const AddTransactionPage: React.FC = () => {
                 <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
                     Wallet Account
                 </label>
-                <div className="relative">
-                    <select
-                        value={walletAccountId}
-                        onChange={(e) => setWalletAccountId(Number(e.target.value))}
-                        required
-                        disabled={isConfiguringRecurring}
-                        className={`w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer ${isConfiguringRecurring ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        <option value="" disabled>Select Wallet...</option>
-                        {transactionAccounts.map(account => (
-                            <option key={account.id} value={account.id}>
-                                {account.name} ({formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})
-                            </option>
-                        ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
-                    </div>
-                </div>
+                <ChoicePopover
+                    id="field-wallet-choice"
+                    value={walletAccountId === '' ? '' : String(walletAccountId)}
+                    placeholder="Select Wallet..."
+                    disabled={isConfiguringRecurring}
+                    options={transactionAccounts.map((account) => ({
+                        value: String(account.id),
+                        label: `${account.name} (${formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})`,
+                    }))}
+                    onChange={(next) => setWalletAccountId(Number(next))}
+                />
             </div>
 
             {/* Custom Category Picker Trigger */}

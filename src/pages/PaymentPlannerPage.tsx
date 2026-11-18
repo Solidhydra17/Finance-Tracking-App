@@ -1,22 +1,23 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Delete02Icon } from '@hugeicons/core-free-icons';
-import { Modal, SwipeRow } from '@/components/ui';
+import { Icon, Input, Modal, SwipeRow, AVAILABLE_ICONS } from '@/components/ui';
 import { BillStatusPill } from '@/components/bills/BillStatusPill';
 import { centsToDisplay, displayToCents } from '@/lib/money';
 import { getCurrentLocalDate } from '@/lib/date';
 import { billStatus, ordinal, type BillStatus } from '@/lib/paymentPlanSchedule';
 import { requestNotificationPermission, schedulePaymentPlans } from '@/lib/notifications';
-import { ensureBillCategory } from '@/storage/indexeddb/categoryRepository';
+import { categoryRepository, isSystemCategoryName } from '@/storage/indexeddb/categoryRepository';
 import { Capacitor } from '@capacitor/core';
 import { paymentPlanRepository } from '@/storage';
-import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
 import { db } from '@/storage/indexeddb/database';
-import { useUIStore } from '@/store';
+import { useCategories } from '@/hooks';
+import { useUIStore, useWalletStore } from '@/store';
+import { useShallow } from 'zustand/react/shallow';
 import { offerUndo } from '@/lib/undo';
-import type { PaymentPlan } from '@/types';
+import type { Category, PaymentPlan } from '@/types';
 
 const deleteIcon = <HugeiconsIcon icon={Delete02Icon} size={20} />;
 
@@ -103,6 +104,84 @@ const BillSwipeRow = ({
 
 const amountToInput = (cents: number) => (cents / 100).toFixed(2);
 
+const accountPaymentLabel = (accountName: string) => `${accountName} Payment`;
+
+const categoryChoice = (id: number) => `category-${id}`;
+
+const accountChoice = (id: number) => `account-${id}`;
+
+const isUncategorizedName = (name: string) => name.trim().toLowerCase() === 'uncategorized';
+
+type ChoiceTile = {
+  choice: string;
+  name: string;
+  color: string;
+  icon: string;
+  hint?: string;
+};
+
+const accountTile = (account: { id?: number; name: string; type: string }): ChoiceTile => ({
+  choice: accountChoice(account.id!),
+  name: accountPaymentLabel(account.name),
+  color: account.type === 'loan' ? '#f97316' : '#64748b',
+  icon: account.type === 'loan' ? 'HandRaisedIcon' : 'CreditCardIcon',
+  hint: account.type === 'loan' ? 'Loan' : 'Credit',
+});
+
+const categoryTile = (category: Category): ChoiceTile => ({
+  choice: categoryChoice(category.id!),
+  name: category.name,
+  color: category.color,
+  icon: category.icon,
+});
+
+const ChoiceGrid = ({
+  title,
+  tiles,
+  selection,
+  onSelect,
+}: {
+  title: string;
+  tiles: ChoiceTile[];
+  selection: string;
+  onSelect: (choice: string) => void;
+}) => {
+  if (tiles.length === 0) return null;
+  return (
+    <section className="space-y-1">
+      <h3 className="px-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{title}</h3>
+      <div className="grid grid-cols-3 gap-3">
+        {tiles.map((tile) => {
+          const selected = tile.choice === selection;
+          return (
+            <button
+              key={tile.choice}
+              type="button"
+              aria-label={tile.name}
+              aria-pressed={selected}
+              onClick={() => onSelect(tile.choice)}
+              className={`flex min-h-11 flex-col items-center gap-2 rounded-2xl p-3 transition-all active:scale-95 ${selected ? 'bg-midblue/10 ring-2 ring-midblue' : ''}`}
+            >
+              <span
+                className="flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg"
+                style={{ backgroundColor: tile.color }}
+              >
+                <Icon name={tile.icon} className="h-8 w-8" />
+              </span>
+              <span className={`text-center text-[11px] font-bold leading-tight ${selected ? 'text-midblue dark:text-white' : 'text-[var(--text-main)]'}`}>
+                {tile.name}
+              </span>
+              {tile.hint && (
+                <span className="text-center text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{tile.hint}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
 export const PaymentPlannerPage = () => {
   const addToast = useUIStore((state) => state.addToast);
   const darkMode = useUIStore((state) => state.darkMode);
@@ -110,21 +189,32 @@ export const PaymentPlannerPage = () => {
   const setSheetOpen = useUIStore((state) => state.setPaymentPlanOpen);
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [statuses, setStatuses] = useState<Record<number, BillStatus>>({});
+  const { categories, refetch: refetchCategories } = useCategories('both');
+  const { accounts, fetchAccounts } = useWalletStore(useShallow((state) => ({
+    accounts: state.accounts,
+    fetchAccounts: state.fetchAccounts,
+  })));
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [name, setName] = useState('');
+  const [selection, setSelection] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState(getCurrentLocalDate());
   const [everyMonth, setEveryMonth] = useState(false);
   const [months, setMonths] = useState('6');
   const [remindDaysBefore, setRemindDaysBefore] = useState('3');
   const [saving, setSaving] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+  const [newCategoryIcon, setNewCategoryIcon] = useState(AVAILABLE_ICONS[0]);
 
   const load = async () => {
     const stored = await paymentPlanRepository.getAll();
     const nextStatuses: Record<number, BillStatus> = {};
     await Promise.all(stored.map(async (plan) => {
       if (!plan.id) return;
-      nextStatuses[plan.id] = billStatus(plan, await paymentPlanRepository.expenseDates(plan.categoryId));
+      nextStatuses[plan.id] = billStatus(plan, await paymentPlanRepository.paidDates(plan));
     }));
     setPlans(stored);
     setStatuses(nextStatuses);
@@ -133,17 +223,53 @@ export const PaymentPlannerPage = () => {
 
   useEffect(() => {
     load().catch(() => addToast('error', 'Could not load payment plans'));
+    fetchAccounts().catch(() => undefined);
     return () => setSheetOpen(false);
-  }, [addToast, setSheetOpen]);
+  }, [addToast, fetchAccounts, setSheetOpen]);
+
+  const namedCategories = useMemo(() => (
+    categories.filter((category) => category.id && !isUncategorizedName(category.name))
+  ), [categories]);
+
+  const expenseCategories = useMemo(() => (
+    namedCategories
+      .filter((category) => category.type === 'expense' && !isSystemCategoryName(category.name))
+      .sort((left, right) => left.name.localeCompare(right.name))
+  ), [namedCategories]);
+
+  const incomeCategories = useMemo(() => (
+    namedCategories
+      .filter((category) => category.type === 'income' && !isSystemCategoryName(category.name))
+      .sort((left, right) => left.name.localeCompare(right.name))
+  ), [namedCategories]);
+
+  const payableAccounts = useMemo(() => (
+    accounts
+      .filter((account) => account.id && (account.type === 'credit' || account.type === 'loan'))
+      .sort((left, right) => left.name.localeCompare(right.name))
+  ), [accounts]);
+
+  const search = categorySearch.trim().toLowerCase();
+  const matchesSearch = (name: string) => name.toLowerCase().includes(search);
+  const accountTiles = payableAccounts.map(accountTile);
+  const expenseTiles = expenseCategories.map(categoryTile);
+  const incomeTiles = incomeCategories.map(categoryTile);
+  const visibleDefaults = accountTiles.filter((tile) => matchesSearch(tile.name));
+  const visibleExpenses = expenseTiles.filter((tile) => matchesSearch(tile.name));
+  const visibleIncome = incomeTiles.filter((tile) => matchesSearch(tile.name));
+  const selectedTile = [...accountTiles, ...expenseTiles, ...incomeTiles].find((tile) => tile.choice === selection);
 
   const resetForm = () => {
     setEditingId(null);
-    setName('');
+    setSelection('');
     setAmount('');
     setDueDate(getCurrentLocalDate());
     setEveryMonth(false);
     setMonths('6');
     setRemindDaysBefore('3');
+    setPickerOpen(false);
+    setCategorySearch('');
+    setIsAddingCategory(false);
   };
 
   const handleOpenAdd = () => {
@@ -154,7 +280,9 @@ export const PaymentPlannerPage = () => {
   const handleOpenEdit = (plan: PaymentPlan) => {
     if (!plan.id) return;
     setEditingId(plan.id);
-    setName(plan.name);
+    if (plan.walletAccountId) setSelection(accountChoice(plan.walletAccountId));
+    else if (plan.categoryId) setSelection(categoryChoice(plan.categoryId));
+    else setSelection('');
     setAmount(amountToInput(plan.amount));
     setDueDate(plan.dueDate);
     setEveryMonth(plan.repeatsMonthly === true);
@@ -164,15 +292,63 @@ export const PaymentPlannerPage = () => {
   };
 
   const handleClose = () => {
+    setPickerOpen(false);
     setSheetOpen(false);
   };
 
+  const handleOpenPicker = () => {
+    setCategorySearch('');
+    setIsAddingCategory(false);
+    setPickerOpen(true);
+    fetchAccounts().catch(() => undefined);
+  };
+
+  const handlePick = (choice: string) => {
+    setSelection(choice);
+    setPickerOpen(false);
+    setCategorySearch('');
+    setIsAddingCategory(false);
+  };
+
+  const handleAddCategory = async () => {
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) {
+      addToast('warning', 'Please enter a category name');
+      return;
+    }
+    if (isUncategorizedName(trimmed) || isSystemCategoryName(trimmed)) {
+      addToast('warning', 'Please choose a specific category name');
+      return;
+    }
+    try {
+      const id = await categoryRepository.create({
+        name: trimmed,
+        type: 'expense',
+        color: newCategoryColor,
+        icon: newCategoryIcon,
+        isCustom: true,
+      });
+      await refetchCategories();
+      setSelection(categoryChoice(id));
+      setNewCategoryName('');
+      setNewCategoryColor('#3b82f6');
+      setNewCategoryIcon(AVAILABLE_ICONS[0]);
+      setIsAddingCategory(false);
+      setPickerOpen(false);
+      addToast('success', 'Category added');
+    } catch {
+      addToast('error', 'Failed to add category');
+    }
+  };
+
   const handleSave = async () => {
-    const billName = name.trim();
     const monthCount = Number(months);
     const lead = Number(remindDaysBefore);
-    if (!billName) {
-      addToast('warning', 'Add a name for this bill');
+    const selectedAccount = payableAccounts.find((account) => accountChoice(account.id!) === selection);
+    const selectedCategory = [...expenseCategories, ...incomeCategories]
+      .find((category) => categoryChoice(category.id!) === selection);
+    if (!selectedAccount && !selectedCategory) {
+      addToast('warning', 'Choose a category, credit card, or loan');
       return;
     }
     if (!amount.trim() || displayToCents(amount) <= 0) {
@@ -191,20 +367,27 @@ export const PaymentPlannerPage = () => {
       addToast('warning', 'Reminder days should be between 0 and 30');
       return;
     }
+    const alreadyUsed = plans.some((plan) => {
+      if (plan.id === editingId) return false;
+      if (selectedAccount) return plan.walletAccountId === selectedAccount.id;
+      return !plan.walletAccountId && plan.categoryId === selectedCategory?.id;
+    });
+    if (alreadyUsed) {
+      addToast('warning', 'That choice already has a bill');
+      return;
+    }
 
     setSaving(true);
     try {
-      const categoryId = await ensureBillCategory(billName, editingId
-        ? plans.find((plan) => plan.id === editingId)?.categoryId
-        : undefined);
       const payload = {
-        name: billName,
+        name: selectedAccount ? accountPaymentLabel(selectedAccount.name) : selectedCategory!.name,
         amount: displayToCents(amount),
         dueDate,
         months: everyMonth ? (Number.isInteger(monthCount) && monthCount > 0 ? monthCount : 6) : monthCount,
         repeatsMonthly: everyMonth,
         remindDaysBefore: lead,
-        categoryId,
+        categoryId: selectedAccount ? undefined : selectedCategory!.id,
+        walletAccountId: selectedAccount?.id,
         enabled: true,
       };
 
@@ -268,7 +451,6 @@ export const PaymentPlannerPage = () => {
           >
             Add +
           </button>
-          <WalletSwitcher />
         </div>
         <p className="pl-14 text-xs font-medium text-[var(--text-muted)]">Bills to pay, with a reminder before each due date.</p>
       </header>
@@ -314,7 +496,10 @@ export const PaymentPlannerPage = () => {
 
       <Modal
         isOpen={sheetOpen}
-        onClose={handleClose}
+        onClose={() => {
+          if (pickerOpen) return;
+          handleClose();
+        }}
         title={editingId ? 'Edit bill' : 'Add bill'}
         position="bottom"
         size="md"
@@ -326,18 +511,33 @@ export const PaymentPlannerPage = () => {
             handleSave();
           }}
         >
-          <label className="block space-y-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Bill</span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Rent, Meralco, tuition"
-              className="min-h-12 w-full rounded-2xl border border-[var(--card-border)] bg-[var(--item-bg)] px-4 text-sm font-bold text-[var(--text-main)] outline-none"
-            />
+          <div className="block space-y-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">What this bill follows</span>
+            <button
+              type="button"
+              onClick={handleOpenPicker}
+              aria-haspopup="dialog"
+              aria-expanded={pickerOpen}
+              className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--item-bg)] px-4 text-left"
+            >
+              {selectedTile ? (
+                <>
+                  <span
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white"
+                    style={{ backgroundColor: selectedTile.color }}
+                  >
+                    <Icon name={selectedTile.icon} className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 truncate text-sm font-bold text-[var(--text-main)]">{selectedTile.name}</span>
+                </>
+              ) : (
+                <span className="text-sm font-bold text-[var(--text-muted)]">Choose a category, credit card, or loan</span>
+              )}
+            </button>
             <span className="block text-[11px] font-medium text-[var(--text-muted)]">
-              An expense category with this name is created. Log the payment there and an overdue bill clears.
+              Each credit card and loan in this wallet is its own choice, such as Maribank Payment. A payment only clears that account.
             </span>
-          </label>
+          </div>
           <label className="block space-y-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Amount</span>
             <input
@@ -411,6 +611,111 @@ export const PaymentPlannerPage = () => {
             </button>
           )}
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={pickerOpen}
+        onClose={() => {
+          setPickerOpen(false);
+          setIsAddingCategory(false);
+        }}
+        title={isAddingCategory ? 'Create New Category' : 'Select Category'}
+        position="bottom"
+        size="lg"
+        scrollBody
+      >
+        <div className="flex flex-col space-y-4 pb-6">
+          {!isAddingCategory ? (
+            <>
+              <div className="flex gap-2 px-1">
+                <div className="min-w-0 flex-1">
+                  <Input
+                    placeholder="Search category..."
+                    value={categorySearch}
+                    onChange={(event) => setCategorySearch(event.target.value)}
+                    leftIcon={<Icon name="MagnifyingGlassIcon" className="h-5 w-5 text-[var(--text-muted)]" />}
+                    className="border-none bg-[var(--item-bg)]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCategory(true)}
+                  className="whitespace-nowrap rounded-xl bg-midblue/10 px-4 text-sm font-bold text-midblue active:scale-95"
+                >
+                  + Add
+                </button>
+              </div>
+              <div className="space-y-4 pr-1">
+                <ChoiceGrid title="Defaults" tiles={visibleDefaults} selection={selection} onSelect={handlePick} />
+                <ChoiceGrid title="Expense" tiles={visibleExpenses} selection={selection} onSelect={handlePick} />
+                <ChoiceGrid title="Income" tiles={visibleIncome} selection={selection} onSelect={handlePick} />
+                {visibleDefaults.length === 0 && visibleExpenses.length === 0 && visibleIncome.length === 0 && (
+                  <div className="py-12 text-center font-medium text-[var(--text-muted)]">
+                    <Icon name="FaceFrownIcon" className="mx-auto mb-2 h-12 w-12 opacity-20" />
+                    <p>No categories found</p>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-6 pt-2">
+              <Input
+                label="Category Name"
+                placeholder="e.g. Netflix, Gym, etc."
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+                autoFocus
+              />
+              <div className="space-y-2">
+                <span className="ml-1 text-sm font-bold text-[var(--text-muted)]">Choose Color</span>
+                <div className="flex flex-wrap gap-3">
+                  {['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#78716c'].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      aria-label={`Color ${color}`}
+                      onClick={() => setNewCategoryColor(color)}
+                      className={`h-10 w-10 rounded-full active:scale-90 ${newCategoryColor === color ? 'ring-4 ring-[var(--card-border)] ring-offset-2' : ''}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <span className="ml-1 text-sm font-bold text-[var(--text-muted)]">Choose Icon</span>
+                <div className="grid max-h-[200px] grid-cols-6 gap-3 overflow-y-auto p-1">
+                  {AVAILABLE_ICONS.map((iconName) => (
+                    <button
+                      key={iconName}
+                      type="button"
+                      aria-label={iconName}
+                      onClick={() => setNewCategoryIcon(iconName)}
+                      className={`flex h-11 items-center justify-center rounded-xl ${newCategoryIcon === iconName ? 'bg-midblue text-white' : 'bg-[var(--item-bg)] text-[var(--text-main)]'}`}
+                    >
+                      <Icon name={iconName} className="h-5 w-5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCategory(false)}
+                  className="min-h-12 flex-1 rounded-2xl text-sm font-bold text-[var(--text-muted)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  className="min-h-12 flex-1 rounded-2xl bg-midblue text-sm font-bold text-white"
+                >
+                  Save category
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

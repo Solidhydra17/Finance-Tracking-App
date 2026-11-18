@@ -86,6 +86,8 @@ const defaultFilters: FilterState = {
   dateRange: getDefaultDateRange(),
   categoryId: null,
   transactionType: 'all',
+  transactionTypes: [],
+  walletTypes: [],
   loanOnly: false,
   searchQuery: '',
 };

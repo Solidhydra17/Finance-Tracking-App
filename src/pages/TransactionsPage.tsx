@@ -8,13 +8,13 @@ import {
 } from "@/components/ui";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon } from "@hugeicons/core-free-icons";
-import { FilterBar, FilterChip } from "@/components/layout";
+import { TransactionFilterMenu } from "@/components/transactions/TransactionFilterMenu";
 import { useTransactions, useCategories, useDebouncedValue } from "@/hooks";
 import { useUIStore, useWalletStore } from "@/store";
 import { centsToDisplay } from "@/lib/money";
 import { Icon } from "@/components/ui";
 import { WalletSwitcher } from "@/components/wallets/WalletSwitcher";
-import type { TransactionTypeFilter } from "@/types";
+import type { TransactionKindFilter, WalletAccountType } from "@/types";
 import { formatDateLocal, parseDateLocal, getMonthRange, formatTime12Hour } from "@/lib/date";
 
 const deleteIcon = <HugeiconsIcon icon={Delete02Icon} size={20} />;
@@ -166,8 +166,9 @@ export const TransactionsPage: React.FC = () => {
         }, 100);
     };
 
-    const handleTypeFilter = (type: TransactionTypeFilter) => {
-        setFilters({ transactionType: type });
+    const handleApplyFilters = (transactionTypes: TransactionKindFilter[], walletTypes: WalletAccountType[]) => {
+        setPage(1);
+        setFilters({ transactionType: "all", transactionTypes, walletTypes });
     };
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,60 +204,21 @@ export const TransactionsPage: React.FC = () => {
                 <WalletSwitcher />
             </header>
 
-            <div id="search-container" className="px-4 mb-4">
-                <Input
-                    placeholder="Search transactions..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    leftIcon={<Icon name="MagnifyingGlassIcon" className="w-5 h-5 text-gray-400" />}
+            <div id="search-container" className="mb-4 flex items-center gap-2 px-4">
+                <div className="min-w-0 flex-1">
+                    <Input
+                        placeholder="Search transactions..."
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        leftIcon={<Icon name="MagnifyingGlassIcon" className="w-5 h-5 text-gray-400" />}
+                    />
+                </div>
+                <TransactionFilterMenu
+                    types={filters.transactionTypes ?? []}
+                    wallets={filters.walletTypes ?? []}
+                    onApply={handleApplyFilters}
                 />
             </div>
-
-            <FilterBar id="transactions-filter-bar">
-                <FilterChip
-                    id="filter-type-all"
-                    isActive={filters.transactionType === "all"}
-                    onClick={() => handleTypeFilter("all")}
-                >
-                    All
-                </FilterChip>
-                <FilterChip
-                    id="filter-type-income"
-                    isActive={filters.transactionType === "income"}
-                    onClick={() => handleTypeFilter("income")}
-                >
-                    Income
-                </FilterChip>
-                <FilterChip
-                    id="filter-type-expense"
-                    isActive={filters.transactionType === "expense"}
-                    onClick={() => handleTypeFilter("expense")}
-                >
-                    Expenses
-                </FilterChip>
-                <FilterChip
-                    id="filter-type-credit-payment"
-                    isActive={filters.transactionType === "credit_payment"}
-                    onClick={() => handleTypeFilter("credit_payment")}
-                >
-                    Credit Payments
-                </FilterChip>
-                <FilterChip
-                    id="filter-type-loans"
-                    isActive={filters.transactionType === "loans"}
-                    onClick={() => handleTypeFilter("loans")}
-                >
-                    Loans
-                </FilterChip>
-                <FilterChip
-                    id="filter-type-fund-transfer"
-                    isActive={filters.transactionType === "fund_transfer"}
-                    onClick={() => handleTypeFilter("fund_transfer")}
-                >
-                    Fund Transfers
-                </FilterChip>
-            </FilterBar>
-            <div className="mb-4"></div>
 
             {/* Monthly Navigator */}
             <div className="px-4 py-2">

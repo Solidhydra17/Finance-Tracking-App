@@ -1,10 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CalcInput, Input, TextArea, Button, Icon } from '@/components/ui';
+import { CalcInput, Input, TextArea, Button, Icon, ChoicePopover } from '@/components/ui';
 import { useLoanStore, useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { displayToCents, formatCurrency, centsToDisplay } from '@/lib/money';
-import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
+import { getCurrentLocalDate, getCurrentLocalTime, toTimeInputValue } from '@/lib/date';
 import { loanRepository } from '@/storage/indexeddb/loanRepository';
 import type { Loan } from '@/types';
 import { WalletSwitcher } from '@/components/wallets/WalletSwitcher';
@@ -67,7 +67,7 @@ export const AddLoanPage: React.FC = () => {
                 setPersonName(loan.personName);
                 setAmountDisplay(centsToDisplay(loan.amount));
                 setDate(loan.acquiredDate);
-                setTime(loan.time ?? '00:00');
+                setTime(toTimeInputValue(loan.time));
                 setDueDate(loan.dueDate ?? '');
                 setWalletAccountId(
                     loan.direction === 'outbound'
@@ -307,23 +307,17 @@ export const AddLoanPage: React.FC = () => {
                                 <label className="text-sm font-bold text-[var(--text-muted)] ml-1">
                                     Source Loan Account <span className="font-normal text-[var(--text-muted)]">(optional — leave blank for manual loans)</span>
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        value={loanAccountId}
-                                        onChange={(e) => setLoanAccountId(e.target.value ? Number(e.target.value) : '')}
-                                        className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="">No loan account (manual)</option>
-                                        {loanAccounts.map(acc => (
-                                            <option key={acc.id} value={acc.id}>
-                                                {acc.name} (Avail: {formatCurrency(Math.max(0, (acc.creditLimit || 0) - acc.balance), currencySymbol, currencyPosition)})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
-                                    </div>
-                                </div>
+                                <ChoicePopover
+                                    value={loanAccountId === '' ? '' : String(loanAccountId)}
+                                    placeholder="No loan account (manual)"
+                                    allowEmpty
+                                    emptyLabel="No loan account (manual)"
+                                    options={loanAccounts.map((acc) => ({
+                                        value: String(acc.id),
+                                        label: `${acc.name} (Avail: ${formatCurrency(Math.max(0, (acc.creditLimit || 0) - acc.balance), currencySymbol, currencyPosition)})`,
+                                    }))}
+                                    onChange={(next) => setLoanAccountId(next ? Number(next) : '')}
+                                />
                             </div>
                         )}
 
@@ -363,24 +357,15 @@ export const AddLoanPage: React.FC = () => {
                                     <span className="text-lg font-bold text-[var(--text-muted)]">{lockedWalletName ?? 'Locked'}</span>
                                 </div>
                             ) : (
-                                <div className="relative">
-                                    <select
-                                        value={walletAccountId}
-                                        onChange={(e) => setWalletAccountId(Number(e.target.value))}
-                                        required
-                                        className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="" disabled>Select Wallet...</option>
-                                        {(direction === 'inbound' ? cashDebitAccounts : accounts.filter(a => a.type !== 'loan')).map(account => (
-                                            <option key={account.id} value={account.id}>
-                                                {account.name} ({formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
-                                    </div>
-                                </div>
+                                <ChoicePopover
+                                    value={walletAccountId === '' ? '' : String(walletAccountId)}
+                                    placeholder="Select Wallet..."
+                                    options={(direction === 'inbound' ? cashDebitAccounts : accounts.filter(a => a.type !== 'loan')).map((account) => ({
+                                        value: String(account.id),
+                                        label: `${account.name} (${formatCurrency(account.type === 'credit' ? ((account.creditLimit || 0) - Math.max(0, account.balance)) : account.balance, currencySymbol, currencyPosition)})`,
+                                    }))}
+                                    onChange={(next) => setWalletAccountId(Number(next))}
+                                />
                             )}
                         </div>
 

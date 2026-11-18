@@ -1,6 +1,6 @@
 import { db } from '@/storage/indexeddb/database';
 import { getYieldCategoryId } from '@/storage/indexeddb/categoryRepository';
-import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
+import { getCurrentLocalDate, getCurrentLocalTime, withCurrentSeconds } from '@/lib/date';
 import type { BankRule, Transaction } from '@/types';
 import { loanQuote, planCashback, previewBankRule, writesLedgerRow } from './calculator';
 import { walletService } from '@/domain/wallet/walletService';
@@ -200,7 +200,7 @@ export const materializeBankRules = async (): Promise<number> => {
         type: preview.txnType,
         amount: preview.amountCents,
         date: preview.date,
-        time: getCurrentLocalTime(),
+        time: withCurrentSeconds(getCurrentLocalTime()),
         categoryId,
         note: preview.note,
         source: 'bank_rule',
@@ -242,7 +242,7 @@ export const payLoanEarly = async (ruleId: number): Promise<{ cashbackCents: num
     type: 'income',
     amount: quote.cashbackCents,
     date: today,
-    time: getCurrentLocalTime(),
+    time: withCurrentSeconds(getCurrentLocalTime()),
     categoryId,
     note: `${rule.name} cashback · ${span}`,
     source: 'bank_rule',

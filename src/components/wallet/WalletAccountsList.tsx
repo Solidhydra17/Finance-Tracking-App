@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ListBulletIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
 import { Icon, Modal, Input, Button } from '@/components/ui';
@@ -13,26 +14,31 @@ import { offerUndo } from '@/lib/undo';
 
 export const WalletAccountsList: React.FC = () => {
     const navigate = useNavigate();
-    const { accounts, createAccount, updateAccount, deleteAccount, payCreditCard } = useWalletStore(useShallow(state => ({
+    const { accounts, createAccount, updateAccount, saveUsedAmount, deleteAccount, payCreditCard } = useWalletStore(useShallow(state => ({
         accounts: state.accounts,
         createAccount: state.createAccount,
         updateAccount: state.updateAccount,
+        saveUsedAmount: state.setUsedAmount,
         deleteAccount: state.deleteAccount,
         payCreditCard: state.payCreditCard
     })));
 
-    const { currencySymbol, currencyPosition, addToast, balancesHidden } = useUIStore(useShallow(state => ({
+    const { currencySymbol, currencyPosition, addToast, balancesHidden, devOptionsVisible } = useUIStore(useShallow(state => ({
         currencySymbol: state.currencySymbol,
         currencyPosition: state.currencyPosition,
         addToast: state.addToast,
         balancesHidden: state.balancesHidden,
+        devOptionsVisible: state.devOptionsVisible,
     })));
 
+    const [walletListView, setWalletListView] = useState(() => localStorage.getItem('walletListView') === 'true');
+    const [walletPhase, setWalletPhase] = useState<'idle' | 'out' | 'in'>('idle');
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<WalletAccount | null>(null);
     const [accountType, setAccountType] = useState<WalletAccountType>('debit');
     const [name, setName] = useState('');
     const [creditLimit, setCreditLimit] = useState(''); // input as string (dollars)
+    const [usedAmount, setUsedAmount] = useState('');
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
     // Pay Card Modal State
@@ -60,6 +66,7 @@ export const WalletAccountsList: React.FC = () => {
         setAccountType(type);
         setName('');
         setCreditLimit('');
+        setUsedAmount('');
         setIsManageModalOpen(true);
     };
 
@@ -68,6 +75,7 @@ export const WalletAccountsList: React.FC = () => {
         setAccountType(account.type);
         setName(account.name);
         setCreditLimit(account.creditLimit ? (account.creditLimit / 100).toString() : '');
+        setUsedAmount((account.balance / 100).toString());
         setIsManageModalOpen(true);
     };
 
@@ -79,6 +87,19 @@ export const WalletAccountsList: React.FC = () => {
         }
 
         const limitCents = creditLimit ? Math.round(parseFloat(creditLimit) * 100) : undefined;
+        const canEditUsed = devOptionsVisible && (accountType === 'credit' || accountType === 'loan');
+        let usedCents: number | undefined;
+        if (canEditUsed && usedAmount.trim()) {
+            const amount = Number(usedAmount);
+            if (!Number.isFinite(amount) || amount < 0) {
+                addToast('error', 'Amount used must be zero or more');
+                return;
+            }
+            usedCents = Math.round(amount * 100);
+        } else if (canEditUsed && editingAccount) {
+            addToast('error', 'Amount used is required');
+            return;
+        }
 
         try {
             if (editingAccount) {
@@ -86,12 +107,16 @@ export const WalletAccountsList: React.FC = () => {
                     name: accountType === 'cash' ? 'Cash' : name,
                     creditLimit: (accountType === 'credit' || accountType === 'loan') ? limitCents : undefined
                 });
+                if (canEditUsed && usedCents !== undefined) {
+                    await saveUsedAmount(editingAccount.id!, usedCents);
+                }
                 addToast('success', 'Account updated');
             } else {
                 await createAccount({
                     name: accountType === 'cash' ? 'Cash' : name,
                     type: accountType,
-                    creditLimit: (accountType === 'credit' || accountType === 'loan') ? limitCents : undefined
+                    creditLimit: (accountType === 'credit' || accountType === 'loan') ? limitCents : undefined,
+                    ...(usedCents !== undefined ? { balanceAdjustment: usedCents } : {}),
                 });
                 addToast('success', 'Account created');
             }
@@ -237,25 +262,127 @@ export const WalletAccountsList: React.FC = () => {
         );
     };
 
+    const handleWalletView = () => {
+        if (walletPhase !== 'idle') return;
+        setWalletPhase('out');
+    };
+
+    useEffect(() => {
+        if (walletPhase === 'idle') return;
+        if (walletPhase === 'out') {
+            const id = window.setTimeout(() => {
+                setWalletListView((current) => {
+                    const next = !current;
+                    localStorage.setItem('walletListView', String(next));
+                    return next;
+                });
+                setWalletPhase('in');
+            }, 200);
+            return () => window.clearTimeout(id);
+        }
+        let second = 0;
+        const first = window.requestAnimationFrame(() => {
+            second = window.requestAnimationFrame(() => setWalletPhase('idle'));
+        });
+        return () => {
+            window.cancelAnimationFrame(first);
+            window.cancelAnimationFrame(second);
+        };
+    }, [walletPhase]);
+
+    const walletTypeLabel = (type: WalletAccount['type']) => {
+        if (type === 'ecash') return 'E-Cash';
+        if (type === 'debit') return 'Debit';
+        return 'Cash';
+    };
+
     return (
         <div className="space-y-6">
             {/* Cash Section */}
             <section className="space-y-3">
-                <div className="flex items-center justify-between px-1">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-midblue dark:text-white">Wallets</h3>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-midblue dark:text-white">Wallets</h3>
+                        <button
+                            type="button"
+                            aria-pressed={walletListView}
+                            aria-label={walletListView ? 'Show wallets as cards' : 'Show wallets as a list'}
+                            onClick={handleWalletView}
+                            className="flex h-11 w-11 items-center justify-center rounded-full text-midblue"
+                        >
+                            <span
+                                className={`inline-flex transition-all duration-200 ease-out ${walletPhase === 'idle' ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
+                            >
+                                {walletListView ? <Squares2X2Icon className="h-5 w-5" /> : <ListBulletIcon className="h-5 w-5" />}
+                            </span>
+                        </button>
+                    </div>
                     <div className="flex gap-3">
-                        {!cashAccount && <button type="button" onClick={() => openCreateModal('cash')} className="text-xs font-bold text-midblue">Cash</button>}
-                        <button type="button" onClick={() => openCreateModal('ecash')} className="text-xs font-bold text-midblue">E-cash</button>
-                        <button type="button" onClick={() => openCreateModal('debit')} className="text-xs font-bold text-midblue">Debit</button>
+                        {!cashAccount && <button type="button" onClick={() => openCreateModal('cash')} className="min-h-11 text-xs font-bold text-midblue">Cash</button>}
+                        <button type="button" onClick={() => openCreateModal('ecash')} className="min-h-11 text-xs font-bold text-midblue">E-cash</button>
+                        <button type="button" onClick={() => openCreateModal('debit')} className="min-h-11 text-xs font-bold text-midblue">Debit</button>
                     </div>
                 </div>
-                <WalletCardDeck
-                    accounts={nonCreditAccounts}
-                    hidden={balancesHidden}
-                    currencySymbol={currencySymbol}
-                    currencyPosition={currencyPosition}
-                    onSelect={openEditModal}
-                />
+                <div className={`transition-opacity duration-200 ease-out ${walletPhase === 'idle' ? 'opacity-100' : 'opacity-0'}`}>
+                {walletListView ? (
+                    nonCreditAccounts.length === 0 ? (
+                        <p className="rounded-2xl border-2 border-dashed border-[var(--card-border)] p-6 text-center text-sm text-[var(--text-muted)]">Add a cash, e-cash, or debit account to see it here.</p>
+                    ) : (
+                        <ul className="space-y-2">
+                            {nonCreditAccounts.map((account) => {
+                                const amount = balancesHidden ? '••••' : formatCurrency(account.balance, currencySymbol, currencyPosition);
+                                const editable = account.type !== 'cash';
+                                const row = (
+                                    <>
+                                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                                            account.type === 'cash' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                account.type === 'debit' ? 'bg-blue-500/10 text-blue-500' :
+                                                    'bg-teal-500/10 text-teal-500'
+                                        }`}>
+                                            <Icon name={
+                                                account.type === 'cash' ? 'BanknotesIcon' :
+                                                    account.type === 'debit' ? 'BuildingLibraryIcon' :
+                                                        'DevicePhoneMobileIcon'
+                                            } className="h-5 w-5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate font-bold text-[var(--text-main)]">{account.name}</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{walletTypeLabel(account.type)}</p>
+                                        </div>
+                                        <p className="shrink-0 font-extrabold text-[var(--text-main)]">{amount}</p>
+                                    </>
+                                );
+                                return (
+                                    <li key={account.id}>
+                                        {editable ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => openEditModal(account)}
+                                                aria-label={`${account.name}, ${amount}`}
+                                                className="flex min-h-11 w-full items-center gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-3 text-left"
+                                            >
+                                                {row}
+                                            </button>
+                                        ) : (
+                                            <div className="flex min-h-11 w-full items-center gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-3">
+                                                {row}
+                                            </div>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )
+                ) : (
+                    <WalletCardDeck
+                        accounts={nonCreditAccounts}
+                        hidden={balancesHidden}
+                        currencySymbol={currencySymbol}
+                        currencyPosition={currencyPosition}
+                        onSelect={openEditModal}
+                    />
+                )}
+                </div>
             </section>
 
             <section className="space-y-3">
@@ -346,6 +473,26 @@ export const WalletAccountsList: React.FC = () => {
                             required
                             leftIcon={<span className="text-[var(--text-muted)] font-bold px-3">{currencySymbol}</span>}
                         />
+                    )}
+
+                    {devOptionsVisible && (accountType === 'credit' || accountType === 'loan') && (
+                        <div>
+                            <Input
+                                label="Amount used"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={usedAmount}
+                                onChange={(e) => setUsedAmount(e.target.value)}
+                                placeholder="0.00"
+                                required={!!editingAccount}
+                                aria-describedby="amount-used-help"
+                                leftIcon={<span className="text-[var(--text-muted)] font-bold px-3">{currencySymbol}</span>}
+                            />
+                            <p id="amount-used-help" className="text-xs text-[var(--text-muted)] mt-1.5 ml-1">
+                                Sets the outstanding amount. New charges and payments still change it.
+                            </p>
+                        </div>
                     )}
 
                     <div className="pt-4 flex gap-3">
