@@ -7,6 +7,7 @@ export interface PaymentPlan {
   repeatsMonthly?: boolean;
   remindDaysBefore: number;
   categoryId?: number;
+  walletAccountId?: number;
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -20,5 +21,6 @@ export interface PaymentPlanCreate {
   repeatsMonthly?: boolean;
   remindDaysBefore: number;
   categoryId?: number;
+  walletAccountId?: number;
   enabled: boolean;
 }

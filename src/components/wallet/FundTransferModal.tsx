@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWalletStore, useUIStore, useTransactionStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
-import { Modal, Input, CalcInput, Button, Icon } from '@/components/ui';
+import { Modal, Input, CalcInput, Button, ChoicePopover } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
 import { getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { WalletAccount } from '@/types';
@@ -90,46 +90,32 @@ export const FundTransferModal: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4 p-4 pb-6">
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-[var(--text-muted)] ml-1">From Account</label>
-                    <div className="relative">
-                        <select
-                            value={transferFromId}
-                            onChange={(e) => setTransferFromId(Number(e.target.value))}
-                            required
-                            className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
-                        >
-                            <option value="" disabled>Select Source...</option>
-                            {nonCreditAccounts.map(acc => (
-                                <option key={acc.id} value={acc.id}>
-                                    {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
-                        </div>
-                    </div>
+                    <ChoicePopover
+                        value={transferFromId === '' ? '' : String(transferFromId)}
+                        placeholder="Select Source..."
+                        options={nonCreditAccounts.map((acc) => ({
+                            value: String(acc.id),
+                            label: `${acc.name} (${formatCurrency(acc.balance, currencySymbol, currencyPosition)})`,
+                        }))}
+                        onChange={(next) => {
+                            const id = Number(next);
+                            setTransferFromId(id);
+                            if (transferToId === id) setTransferToId('');
+                        }}
+                    />
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-[var(--text-muted)] ml-1">To Account</label>
-                    <div className="relative">
-                        <select
-                            value={transferToId}
-                            onChange={(e) => setTransferToId(Number(e.target.value))}
-                            required
-                            className="w-full h-[56px] px-4 appearance-none rounded-2xl border-2 border-transparent bg-[var(--item-bg)] text-lg font-bold text-[var(--text-main)] hover:border-midblue/20 focus:border-midblue outline-none transition-all cursor-pointer"
-                        >
-                            <option value="" disabled>Select Destination...</option>
-                            {nonCreditAccounts.filter(acc => acc.id !== transferFromId).map(acc => (
-                                <option key={acc.id} value={acc.id}>
-                                    {acc.name} ({formatCurrency(acc.balance, currencySymbol, currencyPosition)})
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <Icon name="ChevronUpDownIcon" className="w-5 h-5 text-[var(--text-muted)]" />
-                        </div>
-                    </div>
+                    <ChoicePopover
+                        value={transferToId === '' ? '' : String(transferToId)}
+                        placeholder="Select Destination..."
+                        options={nonCreditAccounts.filter((acc) => acc.id !== transferFromId).map((acc) => ({
+                            value: String(acc.id),
+                            label: `${acc.name} (${formatCurrency(acc.balance, currencySymbol, currencyPosition)})`,
+                        }))}
+                        onChange={(next) => setTransferToId(Number(next))}
+                    />
                 </div>
 
                 <CalcInput

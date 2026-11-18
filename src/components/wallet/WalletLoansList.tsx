@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoanStore, useWalletStore, useUIStore } from '@/store';
 import { useShallow } from 'zustand/react/shallow';
-import { Modal, Input, Button, Icon } from '@/components/ui';
+import { Modal, Input, Button, Icon, ChoicePopover } from '@/components/ui';
 import { formatCurrency } from '@/lib/money';
 import { formatDateLocal, getCurrentLocalDate, getCurrentLocalTime } from '@/lib/date';
 import type { Loan, LoanPayment, WalletAccount } from '@/types';
@@ -29,9 +29,15 @@ interface InstitutionalPaymentRow {
     notes: string;
 }
 
+const COMPLETED_PREVIEW = 3
+
+type WalletLoansListProps = {
+    variant?: 'wallet' | 'completed'
+}
+
 // ----------- Component -----------
 
-export const WalletLoansList: React.FC = () => {
+export const WalletLoansList: React.FC<WalletLoansListProps> = ({ variant = 'wallet' }) => {
     const navigate = useNavigate();
     const { loans, repayLoan, getLoanDetails } = useLoanStore(useShallow(state => ({
         loans: state.loans,
@@ -97,9 +103,6 @@ export const WalletLoansList: React.FC = () => {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [detailLoan, setDetailLoan] = useState<LoanWithRemaining | null>(null);
     const [detailInstitutional, setDetailInstitutional] = useState<{ account: WalletAccount; payments: InstitutionalPaymentRow[] } | null>(null);
-
-    // ----------- Completed section toggle -----------
-    const [showCompleted, setShowCompleted] = useState(false);
 
     // ----------- Helpers -----------
     const fmt = (cents: number) => formatCurrency(cents, currencySymbol, currencyPosition);
@@ -366,8 +369,15 @@ export const WalletLoansList: React.FC = () => {
     const currentRepayAmountCents = Math.round(parseFloat(repayAmount || '0') * 100);
     const wouldOverpay = currentRepayAmountCents > repayRemaining && repayRemaining > 0;
 
+    const completedItems = [
+        ...completedP2P.map((loan) => ({ kind: 'p2p' as const, key: `p2p-${loan.id}`, loan })),
+        ...institutionalCompleted.map((account) => ({ kind: 'institutional' as const, key: `inst-${account.id}`, account })),
+    ]
+    const visibleCompleted = variant === 'completed' ? completedItems : completedItems.slice(0, COMPLETED_PREVIEW)
+
     return (
-        <div className="space-y-6 mt-6">
+        <div className={variant === 'completed' ? 'space-y-3' : 'mt-6 space-y-6'}>
+            {variant === 'wallet' && <>
             {/* Outbound / You Lent */}
             <section className="space-y-3">
                 <div className="flex justify-between items-center px-1">
@@ -400,40 +410,73 @@ export const WalletLoansList: React.FC = () => {
                     )}
                 </div>
             </section>
+            </>}
 
-            {/* Completed Loans — collapsed by default */}
-            {(completedP2P.length > 0 || institutionalCompleted.length > 0) && (
+            {(variant === 'completed' || completedItems.length > 0) && (
                 <section className="space-y-3">
-                    <button
-                        onClick={() => setShowCompleted(p => !p)}
-                        className="flex items-center gap-2 px-1 w-full text-left"
-                    >
-                        <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-widest">
-                            Completed Loans ({completedP2P.length + institutionalCompleted.length})
-                        </h3>
-                        <Icon
-                            name={showCompleted ? 'ChevronUpIcon' : 'ChevronDownIcon'}
-                            className="w-4 h-4 text-[var(--text-muted)]"
-                        />
-                    </button>
-                    {showCompleted && (
+                    {variant === 'wallet' && (
+                        <div className="flex items-center justify-between gap-3 px-1">
+                            <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-widest">
+                                Completed Loans ({completedItems.length})
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/completed-loans')}
+                                className="min-h-11 shrink-0 text-xs font-bold text-midblue"
+                            >
+                                See all
+                            </button>
+                        </div>
+                    )}
+                    {visibleCompleted.length === 0 ? (
+                        <div className="text-center p-6 border-2 border-dashed border-[var(--card-border)] rounded-2xl">
+                            <p className="text-sm text-[var(--text-muted)] font-medium">No completed loans.</p>
+                        </div>
+                    ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {completedP2P.map(loan => {
-                                const totalPaid = getTotalPaid(loan);
+                            {visibleCompleted.map((item) => {
+                                if (item.kind === 'p2p') {
+                                    const totalPaid = getTotalPaid(item.loan);
+                                    return (
+                                        <div key={item.key} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm opacity-70">
+                                            <button
+                                                type="button"
+                                                onClick={() => openDetailP2P(item.loan)}
+                                                className="w-full min-h-11 text-left"
+                                            >
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <p className="font-bold text-[var(--text-main)] leading-tight">{item.loan.personName}</p>
+                                                    <p className="font-extrabold text-emerald-500">{fmt(item.loan.amount)}</p>
+                                                </div>
+                                                <p className="text-[10px] text-[var(--text-muted)] font-medium">
+                                                    Paid {fmt(totalPaid)} · Due: {formatDateLocal(new Date(item.loan.dueDate))}
+                                                </p>
+                                            </button>
+                                            <div className="pt-3 mt-2 border-t border-[var(--card-border)]">
+                                                {statusBadge('paid')}
+                                            </div>
+                                        </div>
+                                    );
+                                }
                                 return (
-                                    <div key={loan.id} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm opacity-70">
+                                    <div key={item.key} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm opacity-70">
                                         <button
                                             type="button"
-                                            onClick={() => openDetailP2P(loan)}
-                                            className="w-full text-left"
+                                            onClick={() => openDetailInstitutional(item.account)}
+                                            className="w-full min-h-11 text-left"
                                         >
                                             <div className="flex justify-between items-start mb-1">
-                                                <p className="font-bold text-[var(--text-main)] leading-tight">{loan.personName}</p>
-                                                <p className="font-extrabold text-emerald-500">{fmt(loan.amount)}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-500">
+                                                        <Icon name="DocumentTextIcon" className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-[var(--text-main)] leading-tight">{item.account.name}</p>
+                                                        <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">Institutional</p>
+                                                    </div>
+                                                </div>
+                                                <p className="font-extrabold text-emerald-500">{fmt(0)}</p>
                                             </div>
-                                            <p className="text-[10px] text-[var(--text-muted)] font-medium">
-                                                Paid {fmt(totalPaid)} · Due: {formatDateLocal(new Date(loan.dueDate))}
-                                            </p>
                                         </button>
                                         <div className="pt-3 mt-2 border-t border-[var(--card-border)]">
                                             {statusBadge('paid')}
@@ -441,36 +484,12 @@ export const WalletLoansList: React.FC = () => {
                                     </div>
                                 );
                             })}
-                            {institutionalCompleted.map(account => (
-                                <div key={`inst_done_${account.id}`} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm opacity-70">
-                                    <button
-                                        type="button"
-                                        onClick={() => openDetailInstitutional(account)}
-                                        className="w-full text-left"
-                                    >
-                                        <div className="flex justify-between items-start mb-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-500">
-                                                    <Icon name="DocumentTextIcon" className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-[var(--text-main)] leading-tight">{account.name}</p>
-                                                    <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">Institutional</p>
-                                                </div>
-                                            </div>
-                                            <p className="font-extrabold text-emerald-500">{fmt(0)}</p>
-                                        </div>
-                                    </button>
-                                    <div className="pt-3 mt-2 border-t border-[var(--card-border)]">
-                                        {statusBadge('paid')}
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     )}
                 </section>
             )}
 
+            {variant === 'wallet' && <>
             {/* Repay Modal */}
             <Modal
                 isOpen={isRepayModalOpen}
@@ -522,19 +541,15 @@ export const WalletLoansList: React.FC = () => {
                         <label className="text-xs font-bold text-[var(--text-main)] uppercase tracking-widest ml-1">
                             {repayTarget?.type === 'p2p' && repayTarget.loan.direction === 'outbound' ? 'Receive into Wallet' : 'Pay from Wallet'}
                         </label>
-                        <select
-                            value={walletAccountId}
-                            onChange={(e) => setWalletAccountId(Number(e.target.value))}
-                            required
-                            className="w-full h-12 px-4 rounded-xl border-2 border-[var(--card-border)] bg-[var(--item-bg)] text-[var(--text-main)] font-medium focus:border-midblue focus:ring-0 outline-none transition-colors"
-                        >
-                            <option value="" disabled>Select Wallet Account</option>
-                            {nonLoanAccounts.map(account => (
-                                <option key={account.id} value={account.id}>
-                                    {account.name} ({fmt(account.balance)})
-                                </option>
-                            ))}
-                        </select>
+                        <ChoicePopover
+                            value={walletAccountId === '' ? '' : String(walletAccountId)}
+                            placeholder="Select Wallet Account"
+                            options={nonLoanAccounts.map((account) => ({
+                                value: String(account.id),
+                                label: `${account.name} (${fmt(account.balance)})`,
+                            }))}
+                            onChange={(next) => setWalletAccountId(Number(next))}
+                        />
                     </div>
 
                     <div className="flex gap-4">
@@ -569,6 +584,7 @@ export const WalletLoansList: React.FC = () => {
                     </div>
                 </form>
             </Modal>
+            </>}
 
             {/* Detail / Payment History Modal */}
             <Modal

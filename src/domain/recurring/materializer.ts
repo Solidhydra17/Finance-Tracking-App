@@ -1,6 +1,6 @@
 import { db } from '@/storage/indexeddb/database';
 import { recurringEngine } from './recurringEngine';
-import { formatDateLocal, formatTimeLocal, parseDateLocal } from '@/lib/date';
+import { formatDateLocal, formatTimeLocal, parseDateLocal, withCurrentSeconds } from '@/lib/date';
 
 let isProcessing = false;
 
@@ -63,7 +63,7 @@ export const recurringMaterializer = {
             type: rule.type,
             amount: rule.amount,
             date: date,
-            time: ruleTime,
+            time: withCurrentSeconds(ruleTime),
             categoryId: rule.categoryId,
             note: rule.description || `Recurring ${rule.type}`,
             source: 'recurring',

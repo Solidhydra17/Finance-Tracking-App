@@ -52,7 +52,7 @@ export const loadBillBoard = async (): Promise<BillBoard> => {
   const plans = await paymentPlanRepository.getAll();
   const rows = await Promise.all(plans.map(async (plan) => ({
     plan,
-    status: billStatus(plan, await paymentPlanRepository.expenseDates(plan.categoryId)),
+    status: billStatus(plan, await paymentPlanRepository.paidDates(plan)),
   })));
   const counts = emptyCounts();
   const cards: BillCard[] = TONES.map((tone) => {

@@ -15,6 +15,7 @@ import { BudgetPlanningPage } from "@/pages/BudgetPlanningPage";
 import { BankRulesPage } from "@/pages/BankRulesPage";
 import { CustomCategoriesPage } from "@/pages/CustomCategoriesPage";
 import { RecurringSeriesPage } from "@/pages/RecurringSeriesPage";
+import { CompletedLoansPage } from "@/pages/CompletedLoansPage";
 import { walletService } from '@/domain/wallet/walletService';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -315,6 +316,7 @@ export const App: React.FC = () => {
                             element={<TransactionsPage />}
                         />
                         <Route path="wallet" element={<WalletPage />} />
+                        <Route path="completed-loans" element={<CompletedLoansPage />} />
                         <Route path="recurring" element={<RecurringPage />} />
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="add-transaction" element={<AddTransactionPage />} />

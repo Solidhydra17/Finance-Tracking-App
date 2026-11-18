@@ -1,6 +1,7 @@
 import { db } from './database';
 import type { Loan, LoanPayment } from '@/types';
 import type { LoanRepository } from '@/domain/loans/loanRepository';
+import { toTimeInputValue, withCurrentSeconds } from '@/lib/date';
 
 export class IndexedDBLoanRepository implements LoanRepository {
     async getAll(): Promise<Loan[]> {
@@ -14,12 +15,18 @@ export class IndexedDBLoanRepository implements LoanRepository {
     async create(loan: Omit<Loan, 'id' | 'createdAt'>): Promise<number> {
         const newLoan: Loan = {
             ...loan,
+            time: withCurrentSeconds(loan.time),
             createdAt: new Date().toISOString()
         };
         return await db.loans.add(newLoan);
     }
 
     async update(id: number, updates: Partial<Loan>): Promise<void> {
+        if (updates.time) {
+            const existing = await db.loans.get(id);
+            const sameMinute = existing?.time && toTimeInputValue(updates.time) === toTimeInputValue(existing.time);
+            updates = { ...updates, time: sameMinute ? existing.time : withCurrentSeconds(updates.time) };
+        }
         await db.loans.update(id, updates);
     }
 
